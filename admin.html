@@ -7,12 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    
     <style>
         :root {
             --bg-dark: #0a0a0f;
@@ -34,10 +28,7 @@
             min-height: 100vh;
         }
         
-        h1, h2, h3, .heading {
-            font-family: 'Syne', sans-serif;
-        }
-        
+        h1, h2, h3, .heading { font-family: 'Syne', sans-serif; }
         .glow-cyan { text-shadow: 0 0 20px var(--accent-cyan); }
         .glow-magenta { text-shadow: 0 0 20px var(--accent-magenta); }
         
@@ -60,47 +51,16 @@
             border: 2px solid transparent;
         }
         
-        .btn-cyan {
-            background: var(--accent-cyan);
-            color: var(--bg-dark);
-        }
-        .btn-cyan:hover {
-            box-shadow: 0 0 20px var(--accent-cyan);
-            transform: translateY(-2px);
-        }
+        .btn-cyan { background: var(--accent-cyan); color: var(--bg-dark); }
+        .btn-cyan:hover { box-shadow: 0 0 20px var(--accent-cyan); transform: translateY(-2px); }
+        .btn-magenta { background: var(--accent-magenta); color: white; }
+        .btn-magenta:hover { box-shadow: 0 0 20px var(--accent-magenta); transform: translateY(-2px); }
+        .btn-outline { background: transparent; border: 2px solid var(--border-color); color: var(--text-primary); }
+        .btn-outline:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { box-shadow: 0 0 20px #dc2626; }
         
-        .btn-magenta {
-            background: var(--accent-magenta);
-            color: white;
-        }
-        .btn-magenta:hover {
-            box-shadow: 0 0 20px var(--accent-magenta);
-            transform: translateY(-2px);
-        }
-        
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--border-color);
-            color: var(--text-primary);
-        }
-        .btn-outline:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-        
-        .btn-danger {
-            background: #dc2626;
-            color: white;
-        }
-        .btn-danger:hover {
-            box-shadow: 0 0 20px #dc2626;
-        }
-        
-        #imageCanvas {
-            cursor: crosshair;
-            max-width: 100%;
-            border-radius: 8px;
-        }
+        #imageCanvas { cursor: crosshair; max-width: 100%; border-radius: 8px; }
         
         .zone-list-item {
             background: rgba(255,255,255,0.05);
@@ -109,7 +69,6 @@
             padding: 12px;
             margin-bottom: 8px;
         }
-        
         .zone-good { border-left: 4px solid #4ade80; }
         .zone-perfect { border-left: 4px solid #3b82f6; }
         
@@ -123,21 +82,10 @@
             font-size: 13px;
             width: 100%;
         }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-cyan); }
+        select option { background: var(--bg-panel); }
         
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-        }
-        
-        select option {
-            background: var(--bg-panel);
-        }
-        
-        .radio-group {
-            display: flex;
-            gap: 8px;
-        }
-        
+        .radio-group { display: flex; gap: 8px; }
         .radio-btn {
             padding: 8px 16px;
             border: 2px solid var(--border-color);
@@ -146,11 +94,7 @@
             transition: all 0.2s;
             font-size: 12px;
         }
-        
-        .radio-btn.active {
-            border-color: var(--accent-cyan);
-            background: rgba(0, 245, 212, 0.1);
-        }
+        .radio-btn.active { border-color: var(--accent-cyan); background: rgba(0, 245, 212, 0.1); }
         
         .level-card {
             background: rgba(255,255,255,0.03);
@@ -159,17 +103,8 @@
             overflow: hidden;
             transition: all 0.2s;
         }
-        
-        .level-card:hover {
-            border-color: var(--accent-cyan);
-            transform: translateY(-4px);
-        }
-        
-        .level-card img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-        }
+        .level-card:hover { border-color: var(--accent-cyan); transform: translateY(-4px); }
+        .level-card img { width: 100%; height: 150px; object-fit: cover; }
         
         .toast {
             position: fixed;
@@ -181,7 +116,6 @@
             z-index: 1000;
             animation: slideIn 0.3s ease;
         }
-        
         .toast-success { background: #059669; }
         .toast-error { background: #dc2626; }
         .toast-info { background: #3b82f6; }
@@ -209,10 +143,7 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
         .tab-btn {
             padding: 12px 24px;
@@ -221,25 +152,14 @@
             transition: all 0.2s;
             font-weight: 600;
         }
+        .tab-btn.active { border-bottom-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .tab-btn:hover:not(.active) { color: var(--accent-cyan); }
         
-        .tab-btn.active {
-            border-bottom-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-        
-        .tab-btn:hover:not(.active) {
-            color: var(--accent-cyan);
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .status-connected { background: #4ade80; }
         .status-disconnected { background: #dc2626; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -281,7 +201,7 @@
                     <span class="status-dot" id="connectionStatus"></span>
                     <span id="connectionText">Checking...</span>
                 </div>
-                <div id="userInfo" class="hidden flex items-center gap-3">
+                <div id="userInfo" class="hidden items-center gap-3">
                     <span id="userName" class="text-sm text-gray-400"></span>
                     <button id="signOutBtn" class="text-xs text-gray-500 hover:text-red-400 transition-colors">Sign Out</button>
                 </div>
@@ -311,12 +231,10 @@
                     <div class="panel p-4">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-lg font-bold heading">Image Canvas</h2>
-                            <div class="flex gap-2">
-                                <label class="btn btn-outline cursor-pointer">
-                                    Upload Image
-                                    <input type="file" id="imageUpload" accept="image/*" class="hidden">
-                                </label>
-                            </div>
+                            <label class="btn btn-outline cursor-pointer">
+                                Upload Image
+                                <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                            </label>
                         </div>
                         
                         <div id="canvasContainer" class="relative bg-black/50 rounded-lg min-h-[400px] flex items-center justify-center">
@@ -345,10 +263,8 @@
                     </div>
                 </div>
                 
-                <!-- Right Panel: Level Settings -->
+                <!-- Right Panel: Settings -->
                 <div class="space-y-4">
-                    
-                    <!-- Level Info -->
                     <div class="panel p-4">
                         <h3 class="font-bold heading mb-4">Level Settings</h3>
                         <div class="space-y-4">
@@ -357,17 +273,16 @@
                                 <input type="text" id="levelName" placeholder="e.g., Mountain Lake">
                             </div>
                             <div>
-                                <label class="text-xs text-gray-400 block mb-1">General Feedback (when no good spot exists)</label>
-                                <textarea id="levelFeedback" rows="2" placeholder="e.g., This image is too busy..."></textarea>
+                                <label class="text-xs text-gray-400 block mb-1">General Feedback</label>
+                                <textarea id="levelFeedback" rows="2" placeholder="Shown when no good spot exists..."></textarea>
                             </div>
                             <div>
-                                <label class="text-xs text-gray-400 block mb-1">Placement Feedback (shown after answer)</label>
-                                <textarea id="placementFeedback" rows="2" placeholder="e.g., The perfect spot is above the mountain..."></textarea>
+                                <label class="text-xs text-gray-400 block mb-1">Placement Feedback</label>
+                                <textarea id="placementFeedback" rows="2" placeholder="Shown after answer..."></textarea>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Zones List -->
                     <div class="panel p-4">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold heading">Zones</h3>
@@ -378,17 +293,9 @@
                         </div>
                     </div>
                     
-                    <!-- Actions -->
                     <div class="panel p-4 space-y-3">
                         <button id="saveLevelBtn" class="btn btn-cyan w-full">Save Level</button>
                         <button id="newLevelBtn" class="btn btn-outline w-full">New Level</button>
-                        <div class="flex gap-2">
-                            <button id="exportBtn" class="btn btn-outline flex-1 text-xs">Export JSON</button>
-                            <label class="btn btn-outline flex-1 text-xs cursor-pointer text-center">
-                                Import JSON
-                                <input type="file" id="importJson" accept=".json" class="hidden">
-                            </label>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -410,11 +317,7 @@
             <div class="max-w-2xl mx-auto">
                 <div class="panel p-6">
                     <h2 class="text-xl font-bold heading mb-2">Migrate Original Images</h2>
-                    <p class="text-gray-400 mb-6">This will download the original game images and upload them to your Firebase Storage, along with their zone configurations.</p>
-                    
-                    <div class="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4 mb-6">
-                        <p class="text-yellow-400 text-sm">⚠️ This may take a few minutes. Make sure your Firebase is configured correctly before proceeding.</p>
-                    </div>
+                    <p class="text-gray-400 mb-6">Download original game images and upload them to Firebase.</p>
                     
                     <div id="migrationProgress" class="hidden mb-6">
                         <div class="flex items-center justify-between mb-2">
@@ -424,7 +327,7 @@
                         <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
                             <div id="migrationBar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300" style="width: 0%"></div>
                         </div>
-                        <div id="migrationLog" class="mt-4 bg-black/50 rounded-lg p-4 max-h-[200px] overflow-y-auto font-mono text-xs space-y-1"></div>
+                        <div id="migrationLog" class="mt-4 bg-black/50 rounded-lg p-4 max-h-[300px] overflow-y-auto font-mono text-xs space-y-1"></div>
                     </div>
                     
                     <button id="startMigrationBtn" class="btn btn-magenta">Start Migration</button>
@@ -443,8 +346,8 @@
                     <input type="text" id="zoneId" placeholder="e.g., sky_centered">
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 block mb-1">Hint (shown when close but not perfect)</label>
-                    <textarea id="zoneHint" rows="3" placeholder="e.g., Try centering above the mountain peak..."></textarea>
+                    <label class="text-xs text-gray-400 block mb-1">Hint</label>
+                    <textarea id="zoneHint" rows="3" placeholder="Shown when close but not perfect..."></textarea>
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
@@ -454,109 +357,40 @@
         </div>
     </div>
 
-    <script src="firebase-config.js"></script>
-    <script>
+    <script type="module">
         // ============================================
-        // FIREBASE INITIALIZATION & AUTH
+        // FIREBASE IMPORTS (Modular SDK - matches bell system)
         // ============================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, orderBy, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // ============================================
+        // FIREBASE CONFIG
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfo45UBu-pR8nqMQhVlS_QgyYZ2kzBdvM",
+            authDomain: "ellisbell-c185c.firebaseapp.com",
+            projectId: "ellisbell-c185c",
+            storageBucket: "ellisbell-c185c.firebasestorage.app",
+            appId: "1:441560045695:web:94e51a006663404b8f474a"
+        };
+
+        // ============================================
+        // INITIALIZE FIREBASE
+        // ============================================
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
         
-        let db, storage, auth;
-        let firebaseReady = false;
         let currentUser = null;
-        
-        function initFirebase() {
-            try {
-                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                    showConnectionStatus(false, "Not configured");
-                    document.getElementById('loginOverlay').innerHTML = `
-                        <div class="text-center">
-                            <h1 class="text-4xl font-bold heading text-red-400 mb-4">Configuration Error</h1>
-                            <p class="text-gray-400">Please configure Firebase in firebase-config.js</p>
-                        </div>
-                    `;
-                    return false;
-                }
-                
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                storage = firebase.storage();
-                auth = firebase.auth();
-                
-                // Set up auth state listener
-                auth.onAuthStateChanged(handleAuthStateChange);
-                
-                return true;
-            } catch (error) {
-                console.error("Firebase init error:", error);
-                showConnectionStatus(false, "Error");
-                return false;
-            }
-        }
-        
-        function handleAuthStateChange(user) {
-            const loginOverlay = document.getElementById('loginOverlay');
-            const userInfo = document.getElementById('userInfo');
-            const userName = document.getElementById('userName');
-            
-            if (user) {
-                // User is signed in
-                currentUser = user;
-                firebaseReady = true;
-                
-                loginOverlay.classList.add('hidden');
-                userInfo.classList.remove('hidden');
-                userInfo.classList.add('flex');
-                userName.textContent = user.displayName || user.email || 'User';
-                
-                showConnectionStatus(true, "Connected");
-                console.log("Signed in as:", user.displayName || user.email);
-            } else {
-                // User is signed out
-                currentUser = null;
-                firebaseReady = false;
-                
-                loginOverlay.classList.remove('hidden');
-                userInfo.classList.add('hidden');
-                userInfo.classList.remove('flex');
-                
-                showConnectionStatus(false, "Not signed in");
-            }
-        }
-        
-        async function signInWithGoogle() {
-            try {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                await auth.signInWithPopup(provider);
-            } catch (error) {
-                console.error("Sign in error:", error);
-                showToast("Sign in failed: " + error.message, "error");
-            }
-        }
-        
-        async function signOut() {
-            try {
-                await auth.signOut();
-                showToast("Signed out", "info");
-            } catch (error) {
-                console.error("Sign out error:", error);
-            }
-        }
-        
-        function showConnectionStatus(connected, text) {
-            const dot = document.getElementById('connectionStatus');
-            const label = document.getElementById('connectionText');
-            dot.className = 'status-dot ' + (connected ? 'status-connected' : 'status-disconnected');
-            label.textContent = text;
-        }
-        
-        // Auth event listeners
-        document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
-        document.getElementById('signOutBtn').addEventListener('click', signOut);
-        
+        let firebaseReady = false;
+
         // ============================================
-        // STATE MANAGEMENT
+        // STATE
         // ============================================
-        
         let currentLevel = {
             id: null,
             name: '',
@@ -576,16 +410,13 @@
         let editingZoneIndex = null;
         let editingZoneColor = null;
         let editingZoneType = null;
-        
-        // Canvas state
         let canvas, ctx;
         let loadedImage = null;
         let imageScale = 1;
-        
+
         // ============================================
         // UI HELPERS
         // ============================================
-        
         function showLoading(text = 'Loading...') {
             document.getElementById('loadingText').textContent = text;
             document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -603,10 +434,70 @@
             setTimeout(() => toast.remove(), 3000);
         }
         
+        function showConnectionStatus(connected, text) {
+            const dot = document.getElementById('connectionStatus');
+            const label = document.getElementById('connectionText');
+            dot.className = 'status-dot ' + (connected ? 'status-connected' : 'status-disconnected');
+            label.textContent = text;
+        }
+
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        onAuthStateChanged(auth, (user) => {
+            const loginOverlay = document.getElementById('loginOverlay');
+            const userInfo = document.getElementById('userInfo');
+            const userName = document.getElementById('userName');
+            
+            if (user) {
+                currentUser = user;
+                firebaseReady = true;
+                
+                loginOverlay.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userInfo.style.display = 'flex';
+                userName.textContent = user.displayName || user.email || 'User';
+                
+                showConnectionStatus(true, "Connected");
+                console.log("Signed in as:", user.displayName || user.email);
+            } else {
+                currentUser = null;
+                firebaseReady = false;
+                
+                loginOverlay.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                
+                showConnectionStatus(false, "Not signed in");
+            }
+        });
+        
+        async function signInWithGoogle() {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Google Sign-In Error:", error);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    showToast("Sign in failed: " + error.message, "error");
+                }
+            }
+        }
+        
+        async function signOutUser() {
+            try {
+                await firebaseSignOut(auth);
+                showToast("Signed out", "info");
+            } catch (error) {
+                console.error("Sign out error:", error);
+            }
+        }
+        
+        document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
+        document.getElementById('signOutBtn').addEventListener('click', signOutUser);
+
         // ============================================
         // TAB NAVIGATION
         // ============================================
-        
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -617,11 +508,10 @@
                 if (btn.dataset.tab === 'levels') loadLevelsList();
             });
         });
-        
+
         // ============================================
-        // CANVAS DRAWING
+        // CANVAS
         // ============================================
-        
         function initCanvas() {
             canvas = document.getElementById('imageCanvas');
             ctx = canvas.getContext('2d');
@@ -638,8 +528,6 @@
             
             img.onload = () => {
                 loadedImage = img;
-                
-                // Scale to fit container
                 const container = document.getElementById('canvasContainer');
                 const maxWidth = container.clientWidth - 32;
                 const maxHeight = 500;
@@ -653,10 +541,7 @@
                 redrawCanvas();
             };
             
-            img.onerror = () => {
-                showToast("Failed to load image", "error");
-            };
-            
+            img.onerror = () => showToast("Failed to load image", "error");
             img.src = imageUrl;
         }
         
@@ -666,13 +551,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(loadedImage, 0, 0, canvas.width, canvas.height);
             
-            // Draw existing zones
             drawZones(currentLevel.goodZones.white, 'rgba(76, 175, 80, 0.4)', 'white');
             drawZones(currentLevel.goodZones.black, 'rgba(76, 175, 80, 0.4)', 'black');
             drawZones(currentLevel.perfectZones.white, 'rgba(59, 130, 246, 0.4)', 'white');
             drawZones(currentLevel.perfectZones.black, 'rgba(59, 130, 246, 0.4)', 'black');
             
-            // Draw temp rect while drawing
             if (tempRect) {
                 const color = currentZoneType === 'good' ? 'rgba(76, 175, 80, 0.5)' : 'rgba(59, 130, 246, 0.5)';
                 ctx.fillStyle = color;
@@ -698,7 +581,6 @@
                 ctx.strokeRect(x, y, w, h);
                 ctx.setLineDash([]);
                 
-                // Draw label
                 ctx.fillStyle = textColor === 'white' ? '#fff' : '#000';
                 ctx.font = '12px Space Mono';
                 ctx.fillText(`${textColor[0].toUpperCase()}${index + 1}`, x + 4, y + 14);
@@ -735,15 +617,13 @@
                 return;
             }
             
-            // Convert to percentages
             const zone = {
-                x: (tempRect.x / canvas.width) * 100,
-                y: (tempRect.y / canvas.height) * 100,
-                width: (tempRect.width / canvas.width) * 100,
-                height: (tempRect.height / canvas.height) * 100
+                x: Math.round((tempRect.x / canvas.width) * 10000) / 100,
+                y: Math.round((tempRect.y / canvas.height) * 10000) / 100,
+                width: Math.round((tempRect.width / canvas.width) * 10000) / 100,
+                height: Math.round((tempRect.height / canvas.height) * 10000) / 100
             };
             
-            // Minimum size check
             if (zone.width < 2 || zone.height < 2) {
                 tempRect = null;
                 isDrawing = false;
@@ -751,13 +631,6 @@
                 return;
             }
             
-            // Round to 2 decimal places
-            zone.x = Math.round(zone.x * 100) / 100;
-            zone.y = Math.round(zone.y * 100) / 100;
-            zone.width = Math.round(zone.width * 100) / 100;
-            zone.height = Math.round(zone.height * 100) / 100;
-            
-            // Add to appropriate array
             if (currentZoneType === 'good') {
                 currentLevel.goodZones[currentColor].push(zone);
             } else {
@@ -771,16 +644,14 @@
             redrawCanvas();
             updateZonesList();
         }
-        
+
         // ============================================
-        // ZONES LIST UI
+        // ZONES LIST
         // ============================================
-        
         function updateZonesList() {
             const container = document.getElementById('zonesList');
             const allZones = [];
             
-            // Collect all zones with metadata
             ['white', 'black'].forEach(color => {
                 currentLevel.goodZones[color].forEach((zone, index) => {
                     allZones.push({ zone, color, type: 'good', index });
@@ -803,42 +674,47 @@
                         <div>
                             <span class="text-xs uppercase ${type === 'good' ? 'text-green-400' : 'text-blue-400'}">${type}</span>
                             <span class="text-xs text-gray-400 ml-2">${color}</span>
-                            ${zone.id ? `<span class="text-xs text-gray-300 ml-2">#${zone.id}</span>` : ''}
                         </div>
                         <div class="flex gap-2">
-                            ${type === 'perfect' ? `<button class="text-xs text-cyan-400 hover:underline" onclick="editZone('${type}', '${color}', ${index})">Edit</button>` : ''}
-                            <button class="text-xs text-red-400 hover:underline" onclick="deleteZone('${type}', '${color}', ${index})">Delete</button>
+                            ${type === 'perfect' ? `<button class="text-xs text-cyan-400 hover:underline" data-action="edit" data-type="${type}" data-color="${color}" data-index="${index}">Edit</button>` : ''}
+                            <button class="text-xs text-red-400 hover:underline" data-action="delete" data-type="${type}" data-color="${color}" data-index="${index}">Delete</button>
                         </div>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
                         x:${zone.x.toFixed(1)}% y:${zone.y.toFixed(1)}% w:${zone.width.toFixed(1)}% h:${zone.height.toFixed(1)}%
                     </div>
-                    ${zone.hint ? `<div class="text-xs text-gray-400 mt-1 italic">"${zone.hint}"</div>` : ''}
                 </div>
             `).join('');
-        }
-        
-        window.deleteZone = function(type, color, index) {
-            if (type === 'good') {
-                currentLevel.goodZones[color].splice(index, 1);
-            } else {
-                currentLevel.perfectZones[color].splice(index, 1);
-            }
-            redrawCanvas();
-            updateZonesList();
-        };
-        
-        window.editZone = function(type, color, index) {
-            editingZoneType = type;
-            editingZoneColor = color;
-            editingZoneIndex = index;
             
-            const zone = currentLevel.perfectZones[color][index];
-            document.getElementById('zoneId').value = zone.id || '';
-            document.getElementById('zoneHint').value = zone.hint || '';
-            document.getElementById('zoneModal').classList.remove('hidden');
-            document.getElementById('zoneModal').classList.add('flex');
-        };
+            // Add event listeners
+            container.querySelectorAll('[data-action="delete"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const { type, color, index } = btn.dataset;
+                    if (type === 'good') {
+                        currentLevel.goodZones[color].splice(parseInt(index), 1);
+                    } else {
+                        currentLevel.perfectZones[color].splice(parseInt(index), 1);
+                    }
+                    redrawCanvas();
+                    updateZonesList();
+                });
+            });
+            
+            container.querySelectorAll('[data-action="edit"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const { type, color, index } = btn.dataset;
+                    editingZoneType = type;
+                    editingZoneColor = color;
+                    editingZoneIndex = parseInt(index);
+                    
+                    const zone = currentLevel.perfectZones[color][editingZoneIndex];
+                    document.getElementById('zoneId').value = zone.id || '';
+                    document.getElementById('zoneHint').value = zone.hint || '';
+                    document.getElementById('zoneModal').classList.remove('hidden');
+                    document.getElementById('zoneModal').style.display = 'flex';
+                });
+            });
+        }
         
         document.getElementById('saveZoneBtn').addEventListener('click', () => {
             if (editingZoneIndex !== null) {
@@ -854,14 +730,13 @@
         
         function closeZoneModal() {
             document.getElementById('zoneModal').classList.add('hidden');
-            document.getElementById('zoneModal').classList.remove('flex');
+            document.getElementById('zoneModal').style.display = 'none';
             editingZoneIndex = null;
         }
-        
+
         // ============================================
         // RADIO BUTTONS
         // ============================================
-        
         document.querySelectorAll('[data-zone-type]').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('[data-zone-type]').forEach(b => b.classList.remove('active'));
@@ -877,51 +752,43 @@
                 currentColor = btn.dataset.color;
             });
         });
-        
+
         // ============================================
         // IMAGE UPLOAD
         // ============================================
-        
         document.getElementById('imageUpload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             
             if (!firebaseReady) {
-                // Load locally for preview
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    currentLevel.imageUrl = ev.target.result;
-                    loadImageToCanvas(ev.target.result);
-                };
-                reader.readAsDataURL(file);
+                showToast("Please sign in first", "error");
                 return;
             }
             
             showLoading('Uploading image...');
             
             try {
-                const fileName = `${Date.now()}_${file.name}`;
-                const storageRef = storage.ref(`game-images/${fileName}`);
-                await storageRef.put(file);
-                const url = await storageRef.getDownloadURL();
+                const fileName = `${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
+                const storageRef = ref(storage, `game-images/${fileName}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
                 
                 currentLevel.imageUrl = url;
                 currentLevel.imagePath = `game-images/${fileName}`;
                 loadImageToCanvas(url);
                 
                 hideLoading();
-                showToast('Image uploaded successfully', 'success');
+                showToast('Image uploaded!', 'success');
             } catch (error) {
                 console.error('Upload error:', error);
                 hideLoading();
                 showToast('Upload failed: ' + error.message, 'error');
             }
         });
-        
+
         // ============================================
         // LEVEL OPERATIONS
         // ============================================
-        
         document.getElementById('saveLevelBtn').addEventListener('click', saveLevel);
         document.getElementById('newLevelBtn').addEventListener('click', newLevel);
         document.getElementById('undoBtn').addEventListener('click', undoLastZone);
@@ -929,12 +796,12 @@
         
         async function saveLevel() {
             if (!currentLevel.imageUrl) {
-                showToast('Please upload an image first', 'error');
+                showToast('Upload an image first', 'error');
                 return;
             }
             
             if (!firebaseReady) {
-                showToast('Firebase not configured - use Export JSON instead', 'error');
+                showToast('Please sign in first', 'error');
                 return;
             }
             
@@ -953,19 +820,19 @@
                     placementFeedback: currentLevel.placementFeedback,
                     goodZones: currentLevel.goodZones,
                     perfectZones: currentLevel.perfectZones,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    updatedAt: serverTimestamp()
                 };
                 
                 if (currentLevel.id) {
-                    await db.collection('levels').doc(currentLevel.id).update(levelData);
+                    await updateDoc(doc(db, 'levels', currentLevel.id), levelData);
                 } else {
-                    levelData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    const docRef = await db.collection('levels').add(levelData);
+                    levelData.createdAt = serverTimestamp();
+                    const docRef = await addDoc(collection(db, 'levels'), levelData);
                     currentLevel.id = docRef.id;
                 }
                 
                 hideLoading();
-                showToast('Level saved successfully', 'success');
+                showToast('Level saved!', 'success');
             } catch (error) {
                 console.error('Save error:', error);
                 hideLoading();
@@ -975,12 +842,8 @@
         
         function newLevel() {
             currentLevel = {
-                id: null,
-                name: '',
-                imageUrl: '',
-                imagePath: '',
-                feedback: '',
-                placementFeedback: '',
+                id: null, name: '', imageUrl: '', imagePath: '',
+                feedback: '', placementFeedback: '',
                 goodZones: { white: [], black: [] },
                 perfectZones: { white: [], black: [] }
             };
@@ -990,13 +853,12 @@
             document.getElementById('placementFeedback').value = '';
             
             loadedImage = null;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
             document.getElementById('canvasPlaceholder').classList.remove('hidden');
             updateZonesList();
         }
         
         function undoLastZone() {
-            // Remove the most recently added zone of current type/color
             const zones = currentZoneType === 'good' 
                 ? currentLevel.goodZones[currentColor]
                 : currentLevel.perfectZones[currentColor];
@@ -1015,64 +877,67 @@
             redrawCanvas();
             updateZonesList();
         }
-        
+
         // ============================================
         // LEVELS LIST
         // ============================================
-        
         async function loadLevelsList() {
             const container = document.getElementById('levelsList');
             
             if (!firebaseReady) {
-                container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-12">Firebase not configured</p>';
+                container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-12">Please sign in first</p>';
                 return;
             }
             
             try {
-                const snapshot = await db.collection('levels').orderBy('createdAt', 'desc').get();
+                const snapshot = await getDocs(collection(db, 'levels'));
                 
                 if (snapshot.empty) {
-                    container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-12">No levels yet. Create one in the editor!</p>';
+                    container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-12">No levels yet. Create one or run migration!</p>';
                     return;
                 }
                 
-                container.innerHTML = snapshot.docs.map(doc => {
-                    const level = doc.data();
-                    return `
-                        <div class="level-card">
-                            <img src="${level.imageUrl}" alt="${level.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/></svg>'">
-                            <div class="p-3">
-                                <h4 class="font-bold truncate">${level.name || 'Untitled'}</h4>
-                                <p class="text-xs text-gray-400 mt-1">
-                                    ${(level.goodZones?.white?.length || 0) + (level.goodZones?.black?.length || 0)} good zones,
-                                    ${(level.perfectZones?.white?.length || 0) + (level.perfectZones?.black?.length || 0)} perfect
-                                </p>
-                                <div class="flex gap-2 mt-3">
-                                    <button class="btn btn-outline text-xs flex-1" onclick="loadLevel('${doc.id}')">Edit</button>
-                                    <button class="btn btn-danger text-xs" onclick="deleteLevel('${doc.id}')">×</button>
-                                </div>
+                container.innerHTML = '';
+                snapshot.docs.forEach(docSnap => {
+                    const level = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = 'level-card';
+                    card.innerHTML = `
+                        <img src="${level.imageUrl}" alt="${level.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/></svg>'">
+                        <div class="p-3">
+                            <h4 class="font-bold truncate">${level.name || 'Untitled'}</h4>
+                            <p class="text-xs text-gray-400 mt-1">
+                                ${(level.goodZones?.white?.length || 0) + (level.goodZones?.black?.length || 0)} good,
+                                ${(level.perfectZones?.white?.length || 0) + (level.perfectZones?.black?.length || 0)} perfect
+                            </p>
+                            <div class="flex gap-2 mt-3">
+                                <button class="btn btn-outline text-xs flex-1 edit-btn">Edit</button>
+                                <button class="btn btn-danger text-xs delete-btn">×</button>
                             </div>
                         </div>
                     `;
-                }).join('');
+                    
+                    card.querySelector('.edit-btn').addEventListener('click', () => loadLevel(docSnap.id));
+                    card.querySelector('.delete-btn').addEventListener('click', () => deleteLevelById(docSnap.id));
+                    
+                    container.appendChild(card);
+                });
             } catch (error) {
                 console.error('Load levels error:', error);
                 container.innerHTML = '<p class="text-red-400 col-span-full text-center py-12">Error loading levels</p>';
             }
         }
         
-        window.loadLevel = async function(levelId) {
+        async function loadLevel(levelId) {
             showLoading('Loading level...');
             
             try {
-                const doc = await db.collection('levels').doc(levelId).get();
-                if (!doc.exists) {
-                    throw new Error('Level not found');
-                }
+                const docSnap = await getDoc(doc(db, 'levels', levelId));
+                if (!docSnap.exists()) throw new Error('Level not found');
                 
-                const data = doc.data();
+                const data = docSnap.data();
                 currentLevel = {
-                    id: doc.id,
+                    id: docSnap.id,
                     name: data.name || '',
                     imageUrl: data.imageUrl,
                     imagePath: data.imagePath || '',
@@ -1101,168 +966,44 @@
                 hideLoading();
                 showToast('Failed to load level', 'error');
             }
-        };
+        }
         
-        window.deleteLevel = async function(levelId) {
-            if (!confirm('Delete this level? This cannot be undone.')) return;
+        async function deleteLevelById(levelId) {
+            if (!confirm('Delete this level?')) return;
             
             try {
-                await db.collection('levels').doc(levelId).delete();
+                await deleteDoc(doc(db, 'levels', levelId));
                 showToast('Level deleted', 'success');
                 loadLevelsList();
             } catch (error) {
                 console.error('Delete error:', error);
                 showToast('Delete failed', 'error');
             }
-        };
+        }
         
         document.getElementById('refreshLevelsBtn').addEventListener('click', loadLevelsList);
-        
-        // ============================================
-        // IMPORT/EXPORT
-        // ============================================
-        
-        document.getElementById('exportBtn').addEventListener('click', () => {
-            currentLevel.name = document.getElementById('levelName').value;
-            currentLevel.feedback = document.getElementById('levelFeedback').value;
-            currentLevel.placementFeedback = document.getElementById('placementFeedback').value;
-            
-            const exportData = {
-                name: currentLevel.name,
-                imageUrl: currentLevel.imageUrl,
-                feedback: currentLevel.feedback,
-                placementFeedback: currentLevel.placementFeedback,
-                goodZones: currentLevel.goodZones,
-                perfectZones: currentLevel.perfectZones
-            };
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `level_${currentLevel.name || 'untitled'}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-        
-        document.getElementById('importJson').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    currentLevel = {
-                        id: null,
-                        name: data.name || '',
-                        imageUrl: data.imageUrl || '',
-                        imagePath: '',
-                        feedback: data.feedback || '',
-                        placementFeedback: data.placementFeedback || '',
-                        goodZones: data.goodZones || { white: [], black: [] },
-                        perfectZones: data.perfectZones || { white: [], black: [] }
-                    };
-                    
-                    document.getElementById('levelName').value = currentLevel.name;
-                    document.getElementById('levelFeedback').value = currentLevel.feedback;
-                    document.getElementById('placementFeedback').value = currentLevel.placementFeedback;
-                    
-                    if (currentLevel.imageUrl) {
-                        loadImageToCanvas(currentLevel.imageUrl);
-                    }
-                    updateZonesList();
-                    showToast('Level imported', 'success');
-                } catch (error) {
-                    showToast('Invalid JSON file', 'error');
-                }
-            };
-            reader.readAsText(file);
-        });
-        
+
         // ============================================
         // MIGRATION
         // ============================================
-        
         const originalGameImages = [
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/herbert-geddes-life-in-japan/People_in_boats_on_waterways_through_rice_fields;_snow-covered_mountain_in_background._(19329128803).jpg',
-                name: 'Mountain Rice Fields',
-                goodZones: { 
-                    white: [ { x: 25, y: 75, width: 75, height: 25 } ], 
-                    black: [ { x: 0.9, y: 0, width: 40.5, height: 38.1 }, { x: 41.4, y: 0, width: 57.1, height: 25 } ] 
-                },
-                perfectZones: { 
-                    white: [ { id: 'water_centered', hint: "This spot is shifted right to align with the clearest part of the water.", x: 40, y: 75, width: 30, height: 20 } ], 
-                    black: [ { id: 'sky_peak_centered', hint: "This spot is centered above the peak of the mountain for a strong focal point.", x: 35.75, y: 3, width: 30, height: 20 }, { id: 'sky_left_balanced', hint: "This spot is balanced between the edge of the frame and the mountain's peak.", x: 10.3, y: 5.7, width: 30, height: 20 } ] 
-                }
-            },
-            { 
-                src: 'https://pdr-assets.b-cdn.net/collections/nathaniel-hawthorne-s-tanglewood-tales-illustrated-by-virginia-frances-sterrett-1921/4_2fabcd2a0_b.jpg',
-                name: 'Tanglewood Dragon',
-                goodZones: { white: [], black: [ { x: 5.6, y: 67, width: 88.885, height: 33 }, { x: 5.6, y: 53, width: 34.4, height: 14 } ] },
-                perfectZones: { white: [], black: [ { id: 'creative', hint: "Excellent creative composition!", x: 10, y: 58, width: 30, height: 20 }, { id: 'centered', hint: "That's a solid, safe choice! For a more dynamic composition, notice where the dragon is looking.", x: 35, y: 73.5, width: 30, height: 20 } ] }
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/correct-postures-for-housework-1920s/3856279792_f5eb5d1399_z.jpg',
-                name: 'Housework Postures',
-                goodZones: { white: [], black: [ { x: 22.47, y: 0, width: 43.2, height: 36.7 } ] },
-                perfectZones: { white: [], black: [ { x: 29.2, y: 8.35, width: 30, height: 20 } ] }
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/through-the-first-antarctic-night-1900/48103624963_32ec491012_b.jpg',
-                name: 'Antarctic Iceberg',
-                goodZones: { white: [ { x: 0, y: 5, width: 100, height: 32.4 } ], black: [ { x: 0, y: 5, width: 100, height: 32.4 } ] },
-                perfectZones: { white: [ { x: 38, y: 11.2, width: 30, height: 20 } ], black: [ { x: 38, y: 11.2, width: 30, height: 20 } ] },
-                placementFeedback: "The 'perfect' spot is centered above the iceberg for better compositional balance."
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/flowers-and-pictures-of-the-holy-land/10171710394_a7bd417a9f_o.jpg',
-                name: 'Holy Land Flowers',
-                goodZones: { white: [], black: [ { x: 1.7, y: 2.5, width: 96.6, height: 22.5 } ] },
-                perfectZones: { white: [], black: [ { x: 35, y: 3.75, width: 30, height: 20 } ] }
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/photographs-of-models-of-the-moon-1874/45077382895_af6af4615d_b.jpg',
-                name: 'Moon Model',
-                goodZones: { white: [ { x: 52.1, y: 4.5, width: 42.5, height: 29.775 } ], black: [] },
-                perfectZones: { white: [ { x: 54.5, y: 8.5, width: 30, height: 20 } ], black: [] },
-                placementFeedback: "The 'perfect' spot is shifted to use the largest part of the dark, clear area."
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/herbert-geddes-life-in-japan/Women_preparing_rice_field_in_mud._(19327195784).jpg',
-                name: 'Rice Field Workers',
-                goodZones: { white: [ { x: 38.9, y: 0, width: 59.3, height: 20.2 } ], black: [] },
-                perfectZones: { white: [ { x: 50.5, y: 0.1, width: 30, height: 20 } ], black: [] },
-                placementFeedback: "The 'perfect' spot is shifted to use the largest part of the dark, clear area."
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/shop/cp-2-small.jpg',
-                name: 'Busy Image (No Spot)',
-                goodZones: { white: [], black: [] },
-                perfectZones: { white: [], black: [] },
-                feedback: "There is no good spot.<br>This image is too busy and detailed for text to be legible."
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/watercolours-from-a-16th-century-de-materia-medica/20879595101_be37994770_o.jpg',
-                name: 'Materia Medica',
-                goodZones: { white: [], black: [ { x: 12.25, y: 50.5, width: 35.8, height: 30.5 } ] },
-                perfectZones: { white: [], black: [ { x: 15.15, y: 55.75, width: 30, height: 20 } ] }
-            },
-            {
-                src: 'https://pdr-assets.b-cdn.net/collections/los-angeles-alligator-farm/alligator-farm-14.jpg',
-                name: 'Alligator Farm (No Spot)',
-                goodZones: { white: [], black: [] },
-                perfectZones: { white: [], black: [] },
-                feedback: "There is no good spot.<br>This image is too busy and detailed for text to be legible."
-            }
+            { src: 'https://pdr-assets.b-cdn.net/collections/herbert-geddes-life-in-japan/People_in_boats_on_waterways_through_rice_fields;_snow-covered_mountain_in_background._(19329128803).jpg', name: 'Mountain Rice Fields', goodZones: { white: [{ x: 25, y: 75, width: 75, height: 25 }], black: [{ x: 0.9, y: 0, width: 40.5, height: 38.1 }, { x: 41.4, y: 0, width: 57.1, height: 25 }] }, perfectZones: { white: [{ id: 'water_centered', hint: "This spot is shifted right to align with the clearest part of the water.", x: 40, y: 75, width: 30, height: 20 }], black: [{ id: 'sky_peak_centered', hint: "This spot is centered above the peak of the mountain.", x: 35.75, y: 3, width: 30, height: 20 }, { id: 'sky_left_balanced', hint: "This spot is balanced between the edge and the mountain's peak.", x: 10.3, y: 5.7, width: 30, height: 20 }] } },
+            { src: 'https://pdr-assets.b-cdn.net/collections/nathaniel-hawthorne-s-tanglewood-tales-illustrated-by-virginia-frances-sterrett-1921/4_2fabcd2a0_b.jpg', name: 'Tanglewood Dragon', goodZones: { white: [], black: [{ x: 5.6, y: 67, width: 88.885, height: 33 }, { x: 5.6, y: 53, width: 34.4, height: 14 }] }, perfectZones: { white: [], black: [{ id: 'creative', hint: "Excellent creative composition!", x: 10, y: 58, width: 30, height: 20 }, { id: 'centered', hint: "Solid choice! For more dynamic composition, notice where the dragon is looking.", x: 35, y: 73.5, width: 30, height: 20 }] } },
+            { src: 'https://pdr-assets.b-cdn.net/collections/correct-postures-for-housework-1920s/3856279792_f5eb5d1399_z.jpg', name: 'Housework Postures', goodZones: { white: [], black: [{ x: 22.47, y: 0, width: 43.2, height: 36.7 }] }, perfectZones: { white: [], black: [{ x: 29.2, y: 8.35, width: 30, height: 20 }] } },
+            { src: 'https://pdr-assets.b-cdn.net/collections/through-the-first-antarctic-night-1900/48103624963_32ec491012_b.jpg', name: 'Antarctic Iceberg', goodZones: { white: [{ x: 0, y: 5, width: 100, height: 32.4 }], black: [{ x: 0, y: 5, width: 100, height: 32.4 }] }, perfectZones: { white: [{ x: 38, y: 11.2, width: 30, height: 20 }], black: [{ x: 38, y: 11.2, width: 30, height: 20 }] }, placementFeedback: "The 'perfect' spot is centered above the iceberg for better balance." },
+            { src: 'https://pdr-assets.b-cdn.net/collections/flowers-and-pictures-of-the-holy-land/10171710394_a7bd417a9f_o.jpg', name: 'Holy Land Flowers', goodZones: { white: [], black: [{ x: 1.7, y: 2.5, width: 96.6, height: 22.5 }] }, perfectZones: { white: [], black: [{ x: 35, y: 3.75, width: 30, height: 20 }] } },
+            { src: 'https://pdr-assets.b-cdn.net/collections/photographs-of-models-of-the-moon-1874/45077382895_af6af4615d_b.jpg', name: 'Moon Model', goodZones: { white: [{ x: 52.1, y: 4.5, width: 42.5, height: 29.775 }], black: [] }, perfectZones: { white: [{ x: 54.5, y: 8.5, width: 30, height: 20 }], black: [] }, placementFeedback: "The 'perfect' spot uses the largest part of the dark, clear area." },
+            { src: 'https://pdr-assets.b-cdn.net/collections/herbert-geddes-life-in-japan/Women_preparing_rice_field_in_mud._(19327195784).jpg', name: 'Rice Field Workers', goodZones: { white: [{ x: 38.9, y: 0, width: 59.3, height: 20.2 }], black: [] }, perfectZones: { white: [{ x: 50.5, y: 0.1, width: 30, height: 20 }], black: [] }, placementFeedback: "The 'perfect' spot uses the largest part of the dark, clear area." },
+            { src: 'https://pdr-assets.b-cdn.net/shop/cp-2-small.jpg', name: 'Busy Image (No Spot)', goodZones: { white: [], black: [] }, perfectZones: { white: [], black: [] }, feedback: "There is no good spot. This image is too busy for text." },
+            { src: 'https://pdr-assets.b-cdn.net/collections/watercolours-from-a-16th-century-de-materia-medica/20879595101_be37994770_o.jpg', name: 'Materia Medica', goodZones: { white: [], black: [{ x: 12.25, y: 50.5, width: 35.8, height: 30.5 }] }, perfectZones: { white: [], black: [{ x: 15.15, y: 55.75, width: 30, height: 20 }] } },
+            { src: 'https://pdr-assets.b-cdn.net/collections/los-angeles-alligator-farm/alligator-farm-14.jpg', name: 'Alligator Farm (No Spot)', goodZones: { white: [], black: [] }, perfectZones: { white: [], black: [] }, feedback: "There is no good spot. This image is too busy for text." }
         ];
         
         document.getElementById('startMigrationBtn').addEventListener('click', startMigration);
         
         async function startMigration() {
             if (!firebaseReady) {
-                showToast('Please configure Firebase first', 'error');
+                showToast('Please sign in first', 'error');
                 return;
             }
             
@@ -1289,21 +1030,18 @@
                 try {
                     log(`Downloading: ${imageData.name}...`);
                     
-                    // Fetch the image
                     const response = await fetch(imageData.src);
                     if (!response.ok) throw new Error('Failed to fetch');
                     const blob = await response.blob();
                     
-                    // Upload to Firebase
                     const fileName = `${Date.now()}_${imageData.name.replace(/[^a-z0-9]/gi, '_')}.jpg`;
-                    const storageRef = storage.ref(`game-images/${fileName}`);
-                    await storageRef.put(blob);
-                    const url = await storageRef.getDownloadURL();
+                    const storageRef = ref(storage, `game-images/${fileName}`);
+                    await uploadBytes(storageRef, blob);
+                    const url = await getDownloadURL(storageRef);
                     
-                    log(`Uploaded to Firebase: ${fileName}`);
+                    log(`Uploaded: ${fileName}`);
                     
-                    // Save level to Firestore
-                    await db.collection('levels').add({
+                    await addDoc(collection(db, 'levels'), {
                         name: imageData.name,
                         imageUrl: url,
                         imagePath: `game-images/${fileName}`,
@@ -1311,14 +1049,14 @@
                         placementFeedback: imageData.placementFeedback || '',
                         goodZones: imageData.goodZones,
                         perfectZones: imageData.perfectZones,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
                     });
                     
                     log(`Saved level: ${imageData.name}`);
                     
                 } catch (error) {
-                    log(`Error with ${imageData.name}: ${error.message}`, true);
+                    log(`Error: ${imageData.name} - ${error.message}`, true);
                 }
                 
                 completed++;
@@ -1329,13 +1067,11 @@
             log('Migration complete!');
             showToast('Migration completed!', 'success');
         }
-        
+
         // ============================================
         // INIT
         // ============================================
-        
         initCanvas();
-        initFirebase();
     </script>
 </body>
 </html>
