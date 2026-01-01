@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Sweet Spot - Level Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -22,13 +22,13 @@
         * { box-sizing: border-box; }
         
         body {
-            font-family: 'Space Mono', monospace;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
         }
         
-        h1, h2, h3, .heading { font-family: 'Syne', sans-serif; }
+        h1, h2, h3, .heading { font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif; font-weight: 700; }
         .glow-cyan { text-shadow: 0 0 20px var(--accent-cyan); }
         .glow-magenta { text-shadow: 0 0 20px var(--accent-magenta); }
         
@@ -39,7 +39,7 @@
         }
         
         .btn {
-            font-family: 'Space Mono', monospace;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             padding: 10px 20px;
             border-radius: 8px;
             font-weight: 700;
@@ -78,7 +78,7 @@
             border-radius: 6px;
             padding: 8px 12px;
             color: var(--text-primary);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             font-size: 13px;
             width: 100%;
         }
@@ -231,10 +231,17 @@
                     <div class="panel p-4">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-lg font-bold heading">Image Canvas</h2>
-                            <label class="btn btn-outline cursor-pointer">
-                                Upload Image
-                                <input type="file" id="imageUpload" accept="image/*" class="hidden">
-                            </label>
+                            <div class="flex gap-2">
+                                <label class="btn btn-outline cursor-pointer">
+                                    Upload File
+                                    <input type="file" id="imageUpload" accept="image/*,video/webm" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="imageUrlInput" placeholder="Or paste image URL here..." class="flex-1">
+                            <button id="loadUrlBtn" class="btn btn-cyan">Load URL</button>
                         </div>
                         
                         <div id="canvasContainer" class="relative bg-black/50 rounded-lg min-h-[400px] flex items-center justify-center">
@@ -582,7 +589,7 @@
                 ctx.setLineDash([]);
                 
                 ctx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-                ctx.font = '12px Space Mono';
+                ctx.font = "12px 'Century Gothic', 'Urbanist', sans-serif";
                 ctx.fillText(`${textColor[0].toUpperCase()}${index + 1}`, x + 4, y + 14);
             });
         }
@@ -754,8 +761,128 @@
         });
 
         // ============================================
-        // IMAGE UPLOAD
+        // IMAGE UPLOAD & URL LOADING
         // ============================================
+        
+        // Load from URL
+        document.getElementById('loadUrlBtn').addEventListener('click', loadImageFromUrl);
+        document.getElementById('imageUrlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadImageFromUrl();
+        });
+        
+        async function loadImageFromUrl() {
+            const url = document.getElementById('imageUrlInput').value.trim();
+            if (!url) {
+                showToast('Please enter a URL', 'error');
+                return;
+            }
+            
+            showLoading('Loading image...');
+            
+            try {
+                // Test if URL is accessible
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Could not fetch image');
+                
+                const contentType = response.headers.get('content-type') || '';
+                const blob = await response.blob();
+                
+                // Check if it's a video (webm)
+                if (contentType.includes('video') || url.toLowerCase().endsWith('.webm')) {
+                    await extractFrameFromVideo(blob, url);
+                } else {
+                    // Regular image - upload to Firebase
+                    await uploadImageBlob(blob, url);
+                }
+            } catch (error) {
+                console.error('URL load error:', error);
+                hideLoading();
+                
+                // Try loading directly (for CORS-enabled images)
+                try {
+                    currentLevel.imageUrl = url;
+                    currentLevel.imagePath = '';
+                    loadImageToCanvas(url);
+                    hideLoading();
+                    showToast('Image loaded (not uploaded to Firebase)', 'info');
+                } catch (e) {
+                    showToast('Failed to load image: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Extract frame from WebM video
+        async function extractFrameFromVideo(blob, originalUrl) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.crossOrigin = 'anonymous';
+                video.muted = true;
+                
+                video.onloadeddata = async () => {
+                    // Seek to first frame
+                    video.currentTime = 0;
+                };
+                
+                video.onseeked = async () => {
+                    try {
+                        // Create canvas and draw video frame
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = video.videoWidth;
+                        tempCanvas.height = video.videoHeight;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(video, 0, 0);
+                        
+                        // Convert to blob
+                        tempCanvas.toBlob(async (imageBlob) => {
+                            if (imageBlob) {
+                                await uploadImageBlob(imageBlob, originalUrl.replace('.webm', '.jpg'));
+                                showToast('Extracted frame from video!', 'success');
+                            } else {
+                                throw new Error('Failed to extract frame');
+                            }
+                            resolve();
+                        }, 'image/jpeg', 0.9);
+                        
+                        // Cleanup
+                        URL.revokeObjectURL(video.src);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                video.onerror = () => {
+                    URL.revokeObjectURL(video.src);
+                    reject(new Error('Failed to load video'));
+                };
+                
+                video.src = URL.createObjectURL(blob);
+                video.load();
+            });
+        }
+        
+        // Upload blob to Firebase
+        async function uploadImageBlob(blob, originalName) {
+            if (!firebaseReady) {
+                showToast("Please sign in first", "error");
+                hideLoading();
+                return;
+            }
+            
+            const safeName = originalName.split('/').pop().split('?')[0].replace(/[^a-z0-9.]/gi, '_');
+            const fileName = `${Date.now()}_${safeName}`;
+            const storageRef = ref(storage, `game-images/${fileName}`);
+            await uploadBytes(storageRef, blob);
+            const url = await getDownloadURL(storageRef);
+            
+            currentLevel.imageUrl = url;
+            currentLevel.imagePath = `game-images/${fileName}`;
+            loadImageToCanvas(url);
+            
+            hideLoading();
+            showToast('Image uploaded!', 'success');
+        }
+        
+        // File upload handler
         document.getElementById('imageUpload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -765,20 +892,15 @@
                 return;
             }
             
-            showLoading('Uploading image...');
+            showLoading('Processing...');
             
             try {
-                const fileName = `${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
-                const storageRef = ref(storage, `game-images/${fileName}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-                
-                currentLevel.imageUrl = url;
-                currentLevel.imagePath = `game-images/${fileName}`;
-                loadImageToCanvas(url);
-                
-                hideLoading();
-                showToast('Image uploaded!', 'success');
+                // Check if it's a video file
+                if (file.type.includes('video') || file.name.toLowerCase().endsWith('.webm')) {
+                    await extractFrameFromVideo(file, file.name);
+                } else {
+                    await uploadImageBlob(file, file.name);
+                }
             } catch (error) {
                 console.error('Upload error:', error);
                 hideLoading();
