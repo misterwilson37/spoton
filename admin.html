@@ -318,7 +318,7 @@
                         <!-- Instructions -->
                         <div class="mt-3 p-3 bg-black/30 rounded-lg">
                             <p class="text-xs text-gray-400" id="instructions">
-                                <strong>Select Mode:</strong> Click zones to select. Drag corners/edges to resize. Press Delete to remove.<br>
+                                <strong>Select Mode:</strong> Click zones to select. Drag inside to move. Drag corners/edges to resize. Press Delete to remove.<br>
                                 <strong>Draw Mode:</strong> Click and drag to create new zones.
                             </p>
                         </div>
@@ -871,7 +871,7 @@
             const y = e.clientY - rect.top;
             
             if (editorMode === 'select') {
-                // Check if clicking on a resize handle
+                // Check if clicking on a resize handle first
                 if (selectedSetId && selectedZoneType) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
@@ -880,6 +880,7 @@
                             const zoneRect = percentToPixel(zone);
                             const handles = getHandlePositions(zoneRect);
                             
+                            // Check handles first
                             for (const h of handles) {
                                 if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
                                     dragHandle = h.id;
@@ -887,11 +888,19 @@
                                     return;
                                 }
                             }
+                            
+                            // Check if clicking inside the selected zone (for dragging to move)
+                            if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
+                                y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                                dragHandle = 'move';
+                                drawStart = { x, y, zone: { ...zone } };
+                                return;
+                            }
                         }
                     }
                 }
                 
-                // Check if clicking on a zone
+                // Check if clicking on a zone to select it
                 const clicked = findZoneAt(x, y);
                 if (clicked) {
                     selectedSetId = clicked.setId;
@@ -900,6 +909,16 @@
                     updateZoneSetsList();
                     updateZoneSetEditor();
                     redrawOverlay();
+                    
+                    // Also start dragging immediately
+                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                    if (set) {
+                        const zone = selectedZoneType === 'perfect' ? set.perfectZone : set.goodZones[selectedZoneIndex];
+                        if (zone) {
+                            dragHandle = 'move';
+                            drawStart = { x, y, zone: { ...zone } };
+                        }
+                    }
                 } else {
                     // Deselect
                     selectedSetId = null;
@@ -929,7 +948,7 @@
             const y = e.clientY - rect.top;
             
             if (dragHandle && drawStart) {
-                // Resizing
+                // Resizing or moving
                 const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                 if (!set) return;
                 
@@ -937,23 +956,67 @@
                 if (!zone) return;
                 
                 const original = drawStart.zone;
-                const dx = ((x - drawStart.x) / overlayCanvas.width) * 100;
-                const dy = ((y - drawStart.y) / overlayCanvas.height) * 100;
+                const canvasW = overlayCanvas.width;
+                const canvasH = overlayCanvas.height;
                 
-                // Apply resize based on handle
-                if (dragHandle.includes('w')) {
-                    zone.x = Math.min(original.x + dx, original.x + original.width - 5);
-                    zone.width = original.width - (zone.x - original.x);
-                }
-                if (dragHandle.includes('e')) {
-                    zone.width = Math.max(5, original.width + dx);
-                }
-                if (dragHandle.includes('n')) {
-                    zone.y = Math.min(original.y + dy, original.y + original.height - 5);
-                    zone.height = original.height - (zone.y - original.y);
-                }
-                if (dragHandle.includes('s')) {
-                    zone.height = Math.max(5, original.height + dy);
+                // Convert mouse position to percentage
+                const mouseXPct = (x / canvasW) * 100;
+                const mouseYPct = (y / canvasH) * 100;
+                
+                if (dragHandle === 'move') {
+                    // Moving the entire zone
+                    const dx = mouseXPct - (drawStart.x / canvasW) * 100;
+                    const dy = mouseYPct - (drawStart.y / canvasH) * 100;
+                    
+                    let newX = original.x + dx;
+                    let newY = original.y + dy;
+                    
+                    // Clamp to canvas bounds
+                    newX = Math.max(0, Math.min(100 - original.width, newX));
+                    newY = Math.max(0, Math.min(100 - original.height, newY));
+                    
+                    zone.x = newX;
+                    zone.y = newY;
+                } else {
+                    // Resizing
+                    let newX = zone.x;
+                    let newY = zone.y;
+                    let newW = zone.width;
+                    let newH = zone.height;
+                    
+                    const minSize = 3; // Minimum 3% size
+                    
+                    // East handles (right edge)
+                    if (dragHandle === 'e' || dragHandle === 'ne' || dragHandle === 'se') {
+                        newW = Math.max(minSize, mouseXPct - original.x);
+                    }
+                    // West handles (left edge)
+                    if (dragHandle === 'w' || dragHandle === 'nw' || dragHandle === 'sw') {
+                        const rightEdge = original.x + original.width;
+                        newX = Math.min(mouseXPct, rightEdge - minSize);
+                        newW = rightEdge - newX;
+                    }
+                    // South handles (bottom edge)
+                    if (dragHandle === 's' || dragHandle === 'sw' || dragHandle === 'se') {
+                        newH = Math.max(minSize, mouseYPct - original.y);
+                    }
+                    // North handles (top edge)
+                    if (dragHandle === 'n' || dragHandle === 'nw' || dragHandle === 'ne') {
+                        const bottomEdge = original.y + original.height;
+                        newY = Math.min(mouseYPct, bottomEdge - minSize);
+                        newH = bottomEdge - newY;
+                    }
+                    
+                    // Clamp to canvas bounds (0-100%)
+                    newX = Math.max(0, Math.min(100 - minSize, newX));
+                    newY = Math.max(0, Math.min(100 - minSize, newY));
+                    newW = Math.min(newW, 100 - newX);
+                    newH = Math.min(newH, 100 - newY);
+                    
+                    zone.x = newX;
+                    zone.y = newY;
+                    zone.width = newW;
+                    zone.height = newH;
                 }
                 
                 redrawOverlay();
@@ -981,6 +1044,7 @@
                             const zoneRect = percentToPixel(zone);
                             const handles = getHandlePositions(zoneRect);
                             
+                            // Check resize handles first
                             for (const h of handles) {
                                 if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
                                     const cursors = {
@@ -990,6 +1054,13 @@
                                     interactionCanvas.style.cursor = cursors[h.id];
                                     return;
                                 }
+                            }
+                            
+                            // Check if inside zone (move cursor)
+                            if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
+                                y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                                interactionCanvas.style.cursor = 'move';
+                                return;
                             }
                         }
                     }
