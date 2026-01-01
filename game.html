@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Sweet Spot</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -26,7 +26,7 @@
         * { box-sizing: border-box; }
         
         body {
-            font-family: 'Space Mono', monospace;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
@@ -34,7 +34,8 @@
         }
         
         h1, h2, h3, .heading {
-            font-family: 'Syne', sans-serif;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
+            font-weight: 700;
         }
         
         .glow-cyan { text-shadow: 0 0 30px var(--accent-cyan), 0 0 60px var(--accent-cyan); }
@@ -47,7 +48,7 @@
         }
         
         .btn {
-            font-family: 'Space Mono', monospace;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             padding: 12px 24px;
             border-radius: 8px;
             font-weight: 700;
@@ -122,7 +123,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             user-select: none;
-            font-family: 'Syne', sans-serif;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             font-size: 2rem;
             font-weight: 800;
             line-height: 1.1;
@@ -155,7 +156,7 @@
         
         .score-popup {
             position: absolute;
-            font-family: 'Syne', sans-serif;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             font-size: 3rem;
             font-weight: 800;
             pointer-events: none;
@@ -183,7 +184,7 @@
         }
         
         .stat-value {
-            font-family: 'Syne', sans-serif;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             font-size: 2rem;
             font-weight: 800;
         }
@@ -383,15 +384,24 @@
         // ============================================
         
         async function init() {
+            const statusText = document.querySelector('#loadingScreen p');
+            
             try {
-                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                    throw new Error("Firebase not configured");
+                // Check if config loaded
+                if (typeof firebaseConfig === 'undefined') {
+                    throw new Error("firebase-config.js not loaded. Make sure the file exists.");
                 }
                 
+                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                    throw new Error("Firebase not configured - update firebase-config.js");
+                }
+                
+                statusText.textContent = 'Connecting to Firebase...';
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 storage = firebase.storage();
                 
+                statusText.textContent = 'Loading levels...';
                 await loadLevels();
                 
                 loadingScreen.classList.add('hidden');
@@ -399,29 +409,46 @@
                 
             } catch (error) {
                 console.error("Init error:", error);
-                document.querySelector('#loadingScreen p').textContent = 'Error loading game. Check Firebase config.';
+                
+                // Show specific error message
+                if (error.message.includes("No levels found")) {
+                    statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #00f5d4; text-decoration: underline;">Open Admin Panel</a> and run the migration first.';
+                } else if (error.message.includes("firebase-config.js")) {
+                    statusText.textContent = error.message;
+                } else if (error.code === 'permission-denied') {
+                    statusText.textContent = 'Permission denied. Check Firestore security rules.';
+                } else {
+                    statusText.textContent = `Error: ${error.message}`;
+                }
             }
         }
         
         async function loadLevels() {
-            const snapshot = await db.collection('levels').get();
-            
-            if (snapshot.empty) {
-                throw new Error("No levels found");
+            try {
+                const snapshot = await db.collection('levels').get();
+                
+                if (snapshot.empty) {
+                    throw new Error("No levels found");
+                }
+                
+                gameImages = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        src: data.imageUrl,
+                        name: data.name,
+                        feedback: data.feedback,
+                        placementFeedback: data.placementFeedback,
+                        goodZones: data.goodZones || { white: [], black: [] },
+                        perfectZones: data.perfectZones || { white: [], black: [] }
+                    };
+                });
+                
+                console.log(`Loaded ${gameImages.length} levels`);
+            } catch (error) {
+                console.error("Load levels error:", error);
+                throw error;
             }
-            
-            gameImages = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    src: data.imageUrl,
-                    name: data.name,
-                    feedback: data.feedback,
-                    placementFeedback: data.placementFeedback,
-                    goodZones: data.goodZones || { white: [], black: [] },
-                    perfectZones: data.perfectZones || { white: [], black: [] }
-                };
-            });
         }
         
         // ============================================
