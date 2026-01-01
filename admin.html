@@ -509,6 +509,12 @@
         // Text preview dimensions (approximate)
         const TEXT_WIDTH_PERCENT = 25;
         const TEXT_HEIGHT_PERCENT = 12;
+        
+        // Minimum zone sizes
+        const PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
+        const PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
+        const GOOD_MIN_WIDTH = TEXT_WIDTH_PERCENT + 5; // Must be bigger than perfect
+        const GOOD_MIN_HEIGHT = TEXT_HEIGHT_PERCENT + 5;
 
         // ============================================
         // UI HELPERS
@@ -984,7 +990,9 @@
                     let newW = zone.width;
                     let newH = zone.height;
                     
-                    const minSize = 3; // Minimum 3% size
+                    // Minimum size - larger for perfect zones to fit text, even larger for good zones
+                    const minSize = selectedZoneType === 'perfect' ? PERFECT_MIN_WIDTH : GOOD_MIN_WIDTH;
+                    const minHeight = selectedZoneType === 'perfect' ? PERFECT_MIN_HEIGHT : GOOD_MIN_HEIGHT;
                     
                     // East handles (right edge)
                     if (dragHandle === 'e' || dragHandle === 'ne' || dragHandle === 'se') {
@@ -998,18 +1006,18 @@
                     }
                     // South handles (bottom edge)
                     if (dragHandle === 's' || dragHandle === 'sw' || dragHandle === 'se') {
-                        newH = Math.max(minSize, mouseYPct - original.y);
+                        newH = Math.max(minHeight, mouseYPct - original.y);
                     }
                     // North handles (top edge)
                     if (dragHandle === 'n' || dragHandle === 'nw' || dragHandle === 'ne') {
                         const bottomEdge = original.y + original.height;
-                        newY = Math.min(mouseYPct, bottomEdge - minSize);
+                        newY = Math.min(mouseYPct, bottomEdge - minHeight);
                         newH = bottomEdge - newY;
                     }
                     
                     // Clamp to canvas bounds (0-100%)
                     newX = Math.max(0, Math.min(100 - minSize, newX));
-                    newY = Math.max(0, Math.min(100 - minSize, newY));
+                    newY = Math.max(0, Math.min(100 - minHeight, newY));
                     newW = Math.min(newW, 100 - newX);
                     newH = Math.min(newH, 100 - newY);
                     
@@ -1081,8 +1089,16 @@
                 return;
             }
             
-            // Minimum size check
-            if (tempZone.width < 3 || tempZone.height < 3) {
+            // Minimum size check - good zones must be larger than perfect zones
+            const minW = editorMode === 'drawPerfect' ? PERFECT_MIN_WIDTH : GOOD_MIN_WIDTH;
+            const minH = editorMode === 'drawPerfect' ? PERFECT_MIN_HEIGHT : GOOD_MIN_HEIGHT;
+            
+            if (tempZone.width < minW || tempZone.height < minH) {
+                if (editorMode === 'drawPerfect') {
+                    showToast(`Perfect zone must be at least ${PERFECT_MIN_WIDTH}% × ${PERFECT_MIN_HEIGHT}% to fit text`, 'error');
+                } else {
+                    showToast(`Good zone must be at least ${GOOD_MIN_WIDTH}% × ${GOOD_MIN_HEIGHT}% (larger than perfect zone)`, 'error');
+                }
                 tempZone = null;
                 isDrawing = false;
                 redrawOverlay();
