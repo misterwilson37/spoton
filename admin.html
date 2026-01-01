@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.5.1</title>
+    <title>The Sweet Spot - Level Editor v1.5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -90,6 +90,27 @@
             position: relative;
             display: inline-block;
             line-height: 0;
+        }
+        
+        #canvasWrapper.game-preview-mode {
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        #canvasWrapper.game-preview-mode #imageCanvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            max-width: none;
+        }
+        
+        #canvasWrapper.game-preview-mode #overlayCanvas,
+        #canvasWrapper.game-preview-mode #interactionLayer {
+            width: 100% !important;
+            height: 100% !important;
         }
         
         #imageCanvas {
@@ -318,6 +339,12 @@
                                 </span>
                             </div>
                             
+                            <div class="flex items-center gap-2 ml-4">
+                                <label class="text-xs text-gray-400">View:</label>
+                                <button id="viewFullBtn" class="btn btn-sm btn-outline btn-active">Full Image</button>
+                                <button id="viewGameBtn" class="btn btn-sm btn-outline">Game Preview</button>
+                            </div>
+                            
                             <div class="flex gap-2 ml-auto">
                                 <button id="selectModeBtn" class="btn btn-blue btn-sm btn-active">Select</button>
                                 <button id="drawGoodBtn" class="btn btn-green btn-sm">+ Good Zone</button>
@@ -345,6 +372,14 @@
                             <div>
                                 <label class="text-xs text-gray-400">Level Name</label>
                                 <input type="text" id="levelName" placeholder="e.g., Mountain Lake" class="text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400">Image Display Mode</label>
+                                <div class="flex gap-2 mt-1">
+                                    <button class="btn btn-sm flex-1 fit-mode-btn btn-active" data-fit="contain">Contain (Full)</button>
+                                    <button class="btn btn-sm flex-1 fit-mode-btn" data-fit="cover">Cover (Crop)</button>
+                                </div>
+                                <p class="help-text">Contain shows full image. Cover crops to fill 4:3.</p>
                             </div>
                             <div>
                                 <label class="text-xs text-gray-400">"No Good Spot" Feedback</label>
@@ -482,6 +517,7 @@
             name: '',
             imageUrl: '',
             imagePath: '',
+            imageFit: 'contain', // 'contain' (full image) or 'cover' (crop to 4:3)
             feedback: '', // "No good spot" feedback
             zoneSets: []  // Array of zone sets
         };
@@ -501,6 +537,7 @@
         
         // Editor state
         let editorMode = 'select'; // 'select', 'drawGood', 'drawPerfect'
+        let viewMode = 'full'; // 'full' or 'game'
         let selectedSetId = null;
         let selectedZoneType = null; // 'good' or 'perfect'
         let selectedZoneIndex = null;
@@ -1187,6 +1224,91 @@
         }
 
         // ============================================
+        // VIEW MODE TOGGLE
+        // ============================================
+        document.getElementById('viewFullBtn').addEventListener('click', () => {
+            viewMode = 'full';
+            document.getElementById('viewFullBtn').classList.add('btn-active');
+            document.getElementById('viewGameBtn').classList.remove('btn-active');
+            document.getElementById('canvasWrapper').classList.remove('game-preview-mode');
+            if (loadedImage) loadImageToCanvas(currentLevel.imageUrl);
+        });
+        
+        document.getElementById('viewGameBtn').addEventListener('click', () => {
+            viewMode = 'game';
+            document.getElementById('viewGameBtn').classList.add('btn-active');
+            document.getElementById('viewFullBtn').classList.remove('btn-active');
+            document.getElementById('canvasWrapper').classList.add('game-preview-mode');
+            if (loadedImage) setupGamePreview();
+        });
+        
+        function setupGamePreview() {
+            const wrapper = document.getElementById('canvasWrapper');
+            const containerWidth = document.getElementById('canvasContainer').clientWidth;
+            const previewWidth = Math.min(600, containerWidth - 32);
+            const previewHeight = previewWidth * (3/4); // 4:3 aspect ratio
+            
+            wrapper.style.width = previewWidth + 'px';
+            wrapper.style.height = previewHeight + 'px';
+            
+            // Set canvas sizes to match preview
+            imageCanvas.width = overlayCanvas.width = interactionCanvas.width = previewWidth;
+            imageCanvas.height = overlayCanvas.height = interactionCanvas.height = previewHeight;
+            
+            // Draw image with "cover" behavior
+            const img = loadedImage;
+            const imgAspect = img.width / img.height;
+            const containerAspect = previewWidth / previewHeight;
+            
+            let drawWidth, drawHeight, offsetX, offsetY;
+            
+            if (imgAspect > containerAspect) {
+                // Image is wider - crop sides
+                drawHeight = previewHeight;
+                drawWidth = previewHeight * imgAspect;
+                offsetX = (previewWidth - drawWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Image is taller - crop top/bottom
+                drawWidth = previewWidth;
+                drawHeight = previewWidth / imgAspect;
+                offsetX = 0;
+                offsetY = (previewHeight - drawHeight) / 2;
+            }
+            
+            imageCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+            
+            // Store crop info for zone calculations
+            currentLevel.cropInfo = { offsetX, offsetY, drawWidth, drawHeight, previewWidth, previewHeight };
+            
+            redrawOverlay();
+        }
+
+        // ============================================
+        // IMAGE FIT MODE
+        // ============================================
+        document.querySelectorAll('.fit-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.fit-mode-btn').forEach(b => b.classList.remove('btn-active'));
+                btn.classList.add('btn-active');
+                currentLevel.imageFit = btn.dataset.fit;
+                
+                // Auto-switch view mode to match
+                if (btn.dataset.fit === 'cover') {
+                    document.getElementById('viewGameBtn').click();
+                } else {
+                    document.getElementById('viewFullBtn').click();
+                }
+            });
+        });
+        
+        function updateFitModeButtons() {
+            document.querySelectorAll('.fit-mode-btn').forEach(btn => {
+                btn.classList.toggle('btn-active', btn.dataset.fit === currentLevel.imageFit);
+            });
+        }
+
+        // ============================================
         // MODE BUTTONS
         // ============================================
         document.getElementById('selectModeBtn').addEventListener('click', () => {
@@ -1486,6 +1608,7 @@
                     name: currentLevel.name,
                     imageUrl: currentLevel.imageUrl,
                     imagePath: currentLevel.imagePath,
+                    imageFit: currentLevel.imageFit || 'contain',
                     feedback: currentLevel.feedback,
                     placementFeedback,
                     goodZones,
@@ -1513,11 +1636,14 @@
         function newLevel() {
             currentLevel = {
                 id: null, name: '', imageUrl: '', imagePath: '',
+                imageFit: 'contain',
                 feedback: '', zoneSets: []
             };
             document.getElementById('levelName').value = '';
             document.getElementById('levelFeedback').value = '';
             document.getElementById('zoneSetEditor').classList.add('hidden');
+            updateFitModeButtons();
+            document.getElementById('viewFullBtn').click();
             selectedSetId = null;
             loadedImage = null;
             if (imageCtx) imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
@@ -1541,6 +1667,7 @@
                         name: data.name || '',
                         imageUrl: data.imageUrl,
                         imagePath: data.imagePath || '',
+                        imageFit: data.imageFit || 'contain',
                         feedback: data.feedback || '',
                         zoneSets: data.zoneSets
                     };
@@ -1551,6 +1678,7 @@
                         name: data.name || '',
                         imageUrl: data.imageUrl,
                         imagePath: data.imagePath || '',
+                        imageFit: data.imageFit || 'contain',
                         feedback: data.feedback || '',
                         zoneSets: convertOldFormat(data)
                     };
@@ -1558,6 +1686,14 @@
                 
                 document.getElementById('levelName').value = currentLevel.name;
                 document.getElementById('levelFeedback').value = currentLevel.feedback;
+                updateFitModeButtons();
+                
+                // Switch to appropriate view mode
+                if (currentLevel.imageFit === 'cover') {
+                    document.getElementById('viewGameBtn').click();
+                } else {
+                    document.getElementById('viewFullBtn').click();
+                }
                 
                 loadImageToCanvas(currentLevel.imageUrl);
                 selectedSetId = currentLevel.zoneSets[0]?.id || null;
