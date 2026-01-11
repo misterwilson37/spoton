@@ -258,11 +258,13 @@
         .feedback-bad { color: #f87171; }
         .feedback-hint { color: #94a3b8; font-style: italic; font-size: 0.9rem; }
         
-        /* Confetti animation for perfect scores */
+        /* Confetti animation for great scores */
         .confetti {
             position: fixed;
             width: 10px;
             height: 10px;
+            top: 0;
+            z-index: 100;
             pointer-events: none;
             animation: confettiFall 3s ease-out forwards;
         }
@@ -270,6 +272,28 @@
         @keyframes confettiFall {
             0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        /* Firework animation for perfect scores */
+        .firework-particle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            z-index: 100;
+            pointer-events: none;
+            animation: fireworkBurst 1s ease-out forwards;
+            box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+        }
+        @keyframes fireworkBurst {
+            0% { 
+                transform: translate(0, 0) scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(var(--tx), var(--ty)) scale(0.3); 
+                opacity: 0; 
+            }
         }
     </style>
 </head>
@@ -316,24 +340,24 @@
             </div>
         </header>
         
-        <main class="max-w-4xl mx-auto p-6">
-            <p id="instructionText" class="text-center text-gray-400 mb-4">Change the text color if needed, then click to place the text.</p>
+        <main class="max-w-4xl mx-auto p-4">
+            <p id="instructionText" class="text-center text-gray-400 mb-2 text-sm">Change the text color if needed, then click to place the text.</p>
             
-            <div class="panel p-2 mb-6">
+            <div class="panel p-2 mb-2">
                 <div id="gameContainer" class="rounded-lg overflow-hidden">
                     <p id="textOverlay">Read<br>This Text</p>
                     <div id="feedbackZonesContainer" class="absolute inset-0 pointer-events-none"></div>
                 </div>
             </div>
             
-            <div id="feedbackArea" class="feedback-text mb-6 text-center text-xl font-bold"></div>
+            <div id="feedbackArea" class="feedback-text mb-2 text-center text-lg font-bold"></div>
             
-            <div id="gameControls" class="flex flex-wrap gap-4 justify-center">
+            <div id="gameControls" class="flex flex-wrap gap-3 justify-center">
                 <button id="changeColorBtn" class="btn btn-white">Change to Black</button>
                 <button id="noGoodSpotBtn" class="btn btn-magenta">No Good Spot</button>
             </div>
             
-            <div id="nextControls" class="hidden flex justify-center">
+            <div id="nextControls" class="hidden flex justify-center mt-2">
                 <button id="nextLevelBtn" class="btn btn-cyan">Next Level →</button>
             </div>
         </main>
@@ -577,14 +601,34 @@
             let directionalFeedback = { text: '', targetZone: null };
             
             if (isNoGoodSpotClick) {
-                if (goodZones.length === 0 && perfectZones.length === 0) {
+                // Check if there are good spots in ANY color, not just the current color
+                const allWhiteGood = currentImage.goodZones.white || [];
+                const allBlackGood = currentImage.goodZones.black || [];
+                const allWhitePerfect = currentImage.perfectZones.white || [];
+                const allBlackPerfect = currentImage.perfectZones.black || [];
+                
+                const hasAnyGoodSpot = allWhiteGood.length > 0 || allBlackGood.length > 0 || 
+                                       allWhitePerfect.length > 0 || allBlackPerfect.length > 0;
+                
+                if (!hasAnyGoodSpot) {
                     isCorrect = true;
                     points = 100;
-                    message = '<p class="feedback-good">✓ Correct! No good spots for this color.</p>';
+                    message = '<p class="feedback-good">✓ Correct! No good spots on this image.</p>';
                 } else {
                     isCorrect = false;
                     points = 0;
-                    message = '<p class="feedback-bad">✗ A good spot exists for this color.</p>';
+                    // Tell them which color has a good spot
+                    const hasWhiteSpot = allWhiteGood.length > 0 || allWhitePerfect.length > 0;
+                    const hasBlackSpot = allBlackGood.length > 0 || allBlackPerfect.length > 0;
+                    let colorHint = '';
+                    if (hasWhiteSpot && hasBlackSpot) {
+                        colorHint = 'both white and black text';
+                    } else if (hasWhiteSpot) {
+                        colorHint = 'white text';
+                    } else {
+                        colorHint = 'black text';
+                    }
+                    message = `<p class="feedback-bad">✗ A good spot exists for ${colorHint}.</p>`;
                 }
             } else {
                 const textRect = getTextBoundingBoxAsPercentage(clickPercent);
@@ -645,9 +689,12 @@
                 showScorePopup(clickPercent, points);
             }
             
-            // Perfect score celebration
-            if (points === 100) {
+            // Score celebration
+            if (points >= 90) {
                 spawnConfetti();
+            }
+            if (points === 100) {
+                spawnFireworks();
             }
             
             showFeedback(isCorrect, clickPercent, points, feedbackColor, directionalFeedback, isNoGoodSpotClick);
@@ -680,6 +727,35 @@
                 confetti.style.animationDelay = Math.random() * 0.5 + 's';
                 document.body.appendChild(confetti);
                 setTimeout(() => confetti.remove(), 3500);
+            }
+        }
+        
+        function spawnFireworks() {
+            const colors = ['#00f5d4', '#f72585', '#fee440', '#ff6b6b', '#4ecdc4'];
+            // Spawn 3-4 firework bursts at different positions
+            for (let burst = 0; burst < 4; burst++) {
+                setTimeout(() => {
+                    const centerX = 20 + Math.random() * 60; // 20-80% of screen width
+                    const centerY = 20 + Math.random() * 40; // 20-60% of screen height
+                    
+                    // Each burst has multiple particles
+                    for (let i = 0; i < 20; i++) {
+                        const particle = document.createElement('div');
+                        particle.className = 'firework-particle';
+                        particle.style.left = centerX + 'vw';
+                        particle.style.top = centerY + 'vh';
+                        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        
+                        // Random direction
+                        const angle = (Math.PI * 2 * i) / 20 + (Math.random() - 0.5) * 0.5;
+                        const distance = 80 + Math.random() * 60;
+                        particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                        particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                        
+                        document.body.appendChild(particle);
+                        setTimeout(() => particle.remove(), 1500);
+                    }
+                }, burst * 200);
             }
         }
         
