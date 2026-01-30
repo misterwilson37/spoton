@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor 1.6.0</title>
+    <title>The Sweet Spot - Level Editor v1.6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-dark: #0a0a0f;
-            --bg-panel: #12121a;
-            --accent-cyan: #00f5d4;
-            --accent-magenta: #f72585;
-            --accent-yellow: #fee440;
-            --accent-green: #4ade80;
-            --accent-blue: #3b82f6;
+            --bg-dark: #1a1a1a;
+            --bg-panel: #2a2a2a;
+            --accent-primary: #7BAFD4; /* Carolina Blue */
+            --accent-light: #a8d1f0;   /* Lighter Carolina Blue */
+            --accent-success: #6fbf73; /* Muted green for success */
+            --accent-warning: #f5a623; /* Warning/yellow */
+            --accent-danger: #e74c3c;  /* Danger red */
             --text-primary: #ffffff;
-            --text-muted: #6b7280;
-            --border-color: #2a2a3a;
+            --text-muted: #9ca3af;
+            --border-color: #444444;
+            --grey-medium: #666666;
         }
         
         * { box-sizing: border-box; }
@@ -31,7 +32,7 @@
         }
         
         h1, h2, h3, .heading { font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif; font-weight: 700; }
-        .glow-cyan { text-shadow: 0 0 20px var(--accent-cyan); }
+        .glow-primary { text-shadow: 0 0 20px var(--accent-primary); }
         
         .panel {
             background: var(--bg-panel);
@@ -52,23 +53,23 @@
             border: 2px solid transparent;
         }
         
-        .btn-cyan { background: var(--accent-cyan); color: var(--bg-dark); }
-        .btn-cyan:hover { box-shadow: 0 0 20px var(--accent-cyan); transform: translateY(-1px); }
-        .btn-magenta { background: var(--accent-magenta); color: white; }
-        .btn-magenta:hover { box-shadow: 0 0 20px var(--accent-magenta); }
-        .btn-green { background: var(--accent-green); color: var(--bg-dark); }
-        .btn-green:hover { box-shadow: 0 0 20px var(--accent-green); }
-        .btn-blue { background: var(--accent-blue); color: white; }
-        .btn-blue:hover { box-shadow: 0 0 20px var(--accent-blue); }
+        .btn-cyan { background: var(--accent-primary); color: var(--bg-dark); }
+        .btn-cyan:hover { box-shadow: 0 0 20px var(--accent-primary); transform: translateY(-1px); }
+        .btn-magenta { background: var(--grey-medium); color: white; }
+        .btn-magenta:hover { box-shadow: 0 0 10px var(--grey-medium); }
+        .btn-green { background: var(--accent-success); color: var(--bg-dark); }
+        .btn-green:hover { box-shadow: 0 0 20px var(--accent-success); }
+        .btn-blue { background: var(--accent-primary); color: var(--bg-dark); }
+        .btn-blue:hover { box-shadow: 0 0 20px var(--accent-primary); }
         .btn-outline { background: transparent; border: 2px solid var(--border-color); color: var(--text-primary); }
-        .btn-outline:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
-        .btn-danger { background: #dc2626; color: white; }
+        .btn-outline:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+        .btn-danger { background: var(--accent-danger); color: white; }
         .btn-sm { padding: 6px 12px; font-size: 10px; }
         
         .btn-active { box-shadow: 0 0 15px currentColor; }
         
         input, textarea, select {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.08);
             border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 8px 12px;
@@ -77,7 +78,7 @@
             font-size: 13px;
             width: 100%;
         }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-cyan); }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-primary); }
         
         #cropContainer {
             position: relative;
@@ -140,9 +141,9 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .zone-set-item:hover { border-color: var(--accent-cyan); }
+        .zone-set-item:hover { border-color: var(--accent-primary); }
         .zone-set-item.selected { 
-            border-color: var(--accent-cyan); 
+            border-color: var(--accent-primary); 
             background: rgba(0, 245, 212, 0.1);
         }
         .zone-set-item.white-set { border-left: 4px solid #fff; }
@@ -193,7 +194,7 @@
             width: 50px;
             height: 50px;
             border: 4px solid var(--border-color);
-            border-top-color: var(--accent-cyan);
+            border-top-color: var(--accent-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -206,7 +207,7 @@
             transition: all 0.2s;
             font-weight: 600;
         }
-        .tab-btn.active { border-bottom-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .tab-btn.active { border-bottom-color: var(--accent-primary); color: var(--accent-primary); }
         
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .status-connected { background: #4ade80; }
@@ -219,7 +220,7 @@
         .distance-label {
             position: absolute;
             background: rgba(0,0,0,0.8);
-            color: var(--accent-cyan);
+            color: var(--accent-primary);
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 10px;
@@ -235,7 +236,7 @@
             transition: all 0.2s;
             cursor: pointer;
         }
-        .level-card:hover { border-color: var(--accent-cyan); transform: translateY(-4px); }
+        .level-card:hover { border-color: var(--accent-primary); transform: translateY(-4px); }
         .level-card img { width: 100%; height: 150px; object-fit: cover; }
     </style>
 </head>
@@ -243,7 +244,7 @@
     <!-- Login Overlay -->
     <div id="loginOverlay" class="fixed inset-0 bg-black flex items-center justify-center z-[200]">
         <div class="text-center">
-            <h1 class="text-4xl font-bold heading glow-cyan mb-2">THE SWEET SPOT</h1>
+            <h1 class="text-4xl font-bold heading glow-primary mb-2">THE SWEET SPOT</h1>
             <p class="text-gray-400 mb-8">Level Editor</p>
             <button id="googleSignInBtn" class="btn btn-cyan flex items-center gap-3 mx-auto">
                 <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
@@ -264,7 +265,7 @@
     <header class="border-b border-gray-800 py-3 px-6">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <h1 class="text-xl font-bold heading glow-cyan">THE SWEET SPOT</h1>
+                <h1 class="text-xl font-bold heading glow-primary">THE SWEET SPOT</h1>
                 <span class="text-xs bg-gray-800 px-3 py-1 rounded-full">EDITOR</span>
             </div>
             <div class="flex items-center gap-4">
@@ -695,29 +696,49 @@
         }
         
         // Calculate auto crop (center crop to 4:3)
+        // Returns percentages that, when applied to the image, result in a 4:3 aspect ratio
         function getAutoCrop(imgWidth, imgHeight) {
             const imgAspect = imgWidth / imgHeight;
             const targetAspect = 4 / 3;
             
             if (imgAspect > targetAspect) {
-                // Image is wider - crop sides
-                const cropWidth = (targetAspect / imgAspect) * 100;
+                // Image is wider than 4:3 - crop sides
+                // We want: (cropWidthPct/100 * imgWidth) / (cropHeightPct/100 * imgHeight) = 4/3
+                // With cropHeightPct = 100: cropWidthPct = (4/3) * (imgHeight/imgWidth) * 100
+                const cropWidthPct = (targetAspect / imgAspect) * 100;
                 return {
-                    x: (100 - cropWidth) / 2,
+                    x: (100 - cropWidthPct) / 2,
                     y: 0,
-                    width: cropWidth,
+                    width: cropWidthPct,
                     height: 100
                 };
             } else {
-                // Image is taller - crop top/bottom
-                const cropHeight = (imgAspect / targetAspect) * 100;
+                // Image is taller than 4:3 - crop top/bottom
+                // With cropWidthPct = 100: cropHeightPct = (imgWidth/imgHeight) / (4/3) * 100
+                const cropHeightPct = (imgAspect / targetAspect) * 100;
                 return {
                     x: 0,
-                    y: (100 - cropHeight) / 2,
+                    y: (100 - cropHeightPct) / 2,
                     width: 100,
-                    height: cropHeight
+                    height: cropHeightPct
                 };
             }
+        }
+        
+        // Calculate what percentage height should be for a given width to maintain 4:3
+        function getHeightForWidth(widthPct, imgWidth, imgHeight) {
+            // actualWidth = widthPct/100 * imgWidth
+            // actualHeight = heightPct/100 * imgHeight
+            // actualWidth / actualHeight = 4/3
+            // (widthPct * imgWidth) / (heightPct * imgHeight) = 4/3
+            // heightPct = (widthPct * imgWidth * 3) / (4 * imgHeight)
+            return (widthPct * imgWidth * 3) / (4 * imgHeight);
+        }
+        
+        // Calculate what percentage width should be for a given height to maintain 4:3
+        function getWidthForHeight(heightPct, imgWidth, imgHeight) {
+            // widthPct = (heightPct * imgHeight * 4) / (3 * imgWidth)
+            return (heightPct * imgHeight * 4) / (3 * imgWidth);
         }
         
         function loadImageToCanvas(imageUrl) {
@@ -780,13 +801,13 @@
             cropCtx.restore();
             
             // Draw crop border
-            cropCtx.strokeStyle = '#00f5d4';
+            cropCtx.strokeStyle = '#7BAFD4';
             cropCtx.lineWidth = 2;
             cropCtx.strokeRect(cropX, cropY, cropW, cropH);
             
             // Draw corner handles
             const handleSize = 10;
-            cropCtx.fillStyle = '#00f5d4';
+            cropCtx.fillStyle = '#7BAFD4';
             
             // Corners
             cropCtx.fillRect(cropX - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
@@ -1025,7 +1046,7 @@
             const metrics = overlayCtx.measureText(text);
             overlayCtx.fillRect(x - metrics.width/2 - 4, y - 8, metrics.width + 8, 16);
             
-            overlayCtx.fillStyle = '#00f5d4';
+            overlayCtx.fillStyle = '#7BAFD4';
             overlayCtx.font = "bold 10px 'Century Gothic', sans-serif";
             overlayCtx.textAlign = 'center';
             overlayCtx.textBaseline = 'middle';
@@ -1108,6 +1129,8 @@
             
             const w = cropCanvas.width;
             const h = cropCanvas.height;
+            const imgW = loadedImage.width;
+            const imgH = loadedImage.height;
             const original = cropDragStart.crop;
             
             // Convert to percentages
@@ -1119,56 +1142,71 @@
             let newW = original.width;
             let newH = original.height;
             
-            const minSize = 20; // Minimum 20% of image
+            const minWidthPct = 20; // Minimum 20% of image width
             
             if (cropDragHandle === 'move') {
                 newX = Math.max(0, Math.min(100 - original.width, original.x + dx));
                 newY = Math.max(0, Math.min(100 - original.height, original.y + dy));
             } else {
-                // For corners and edges, maintain 4:3 aspect ratio
-                const aspectRatio = 4 / 3;
+                // For resizing, we need to maintain 4:3 aspect ratio
+                // The key insight: we adjust width and then calculate the corresponding height
                 
-                if (cropDragHandle.includes('e')) {
-                    newW = Math.max(minSize, Math.min(100 - original.x, original.width + dx));
-                    newH = newW / aspectRatio;
+                if (cropDragHandle === 'e' || cropDragHandle === 'ne' || cropDragHandle === 'se') {
+                    // Dragging east edge - adjust width
+                    newW = Math.max(minWidthPct, Math.min(100 - original.x, original.width + dx));
+                    newH = getHeightForWidth(newW, imgW, imgH);
+                    
+                    // Adjust Y for north handles
+                    if (cropDragHandle === 'ne') {
+                        newY = original.y + original.height - newH;
+                    }
                 }
-                if (cropDragHandle.includes('w')) {
+                else if (cropDragHandle === 'w' || cropDragHandle === 'nw' || cropDragHandle === 'sw') {
+                    // Dragging west edge
                     const rightEdge = original.x + original.width;
-                    newX = Math.max(0, Math.min(rightEdge - minSize, original.x + dx));
+                    newX = Math.max(0, Math.min(rightEdge - minWidthPct, original.x + dx));
                     newW = rightEdge - newX;
-                    newH = newW / aspectRatio;
+                    newH = getHeightForWidth(newW, imgW, imgH);
+                    
+                    // Adjust Y for north handles
+                    if (cropDragHandle === 'nw') {
+                        newY = original.y + original.height - newH;
+                    }
                 }
-                if (cropDragHandle.includes('s')) {
-                    newH = Math.max(minSize / aspectRatio, Math.min(100 - original.y, original.height + dy));
-                    newW = newH * aspectRatio;
-                }
-                if (cropDragHandle.includes('n')) {
+                else if (cropDragHandle === 'n') {
+                    // Dragging north edge - adjust height, calculate width
                     const bottomEdge = original.y + original.height;
-                    newY = Math.max(0, Math.min(bottomEdge - minSize / aspectRatio, original.y + dy));
+                    const minHeightPct = getHeightForWidth(minWidthPct, imgW, imgH);
+                    newY = Math.max(0, Math.min(bottomEdge - minHeightPct, original.y + dy));
                     newH = bottomEdge - newY;
-                    newW = newH * aspectRatio;
+                    newW = getWidthForHeight(newH, imgW, imgH);
+                    // Center horizontally
+                    newX = original.x + (original.width - newW) / 2;
+                }
+                else if (cropDragHandle === 's') {
+                    // Dragging south edge
+                    const minHeightPct = getHeightForWidth(minWidthPct, imgW, imgH);
+                    newH = Math.max(minHeightPct, Math.min(100 - original.y, original.height + dy));
+                    newW = getWidthForHeight(newH, imgW, imgH);
+                    // Center horizontally
+                    newX = original.x + (original.width - newW) / 2;
                 }
                 
-                // For diagonal drags, use the dominant axis
-                if (cropDragHandle === 'nw' || cropDragHandle === 'se') {
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        newH = newW / aspectRatio;
-                    } else {
-                        newW = newH * aspectRatio;
-                    }
+                // Clamp to image bounds
+                if (newX < 0) {
+                    newX = 0;
                 }
-                if (cropDragHandle === 'ne' || cropDragHandle === 'sw') {
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        newH = newW / aspectRatio;
-                    } else {
-                        newW = newH * aspectRatio;
-                    }
+                if (newY < 0) {
+                    newY = 0;
                 }
-                
-                // Clamp to bounds
-                if (newX + newW > 100) newW = 100 - newX;
-                if (newY + newH > 100) newH = 100 - newY;
-                newH = newW / aspectRatio; // Re-enforce aspect ratio after clamping
+                if (newX + newW > 100) {
+                    newW = 100 - newX;
+                    newH = getHeightForWidth(newW, imgW, imgH);
+                }
+                if (newY + newH > 100) {
+                    newH = 100 - newY;
+                    newW = getWidthForHeight(newH, imgW, imgH);
+                }
             }
             
             currentLevel.crop = { x: newX, y: newY, width: newW, height: newH };
