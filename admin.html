@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.6.2</title>
+    <title>The Sweet Spot - Level Editor v1.7.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -359,14 +359,16 @@
                                 <button id="selectModeBtn" class="btn btn-blue btn-sm btn-active">Select</button>
                                 <button id="drawGoodBtn" class="btn btn-green btn-sm">+ Good Zone</button>
                                 <button id="drawPerfectBtn" class="btn btn-blue btn-sm">+ Perfect Zone</button>
+                                <button id="autoPerfectBtn" class="btn btn-outline btn-sm" title="Auto-place perfect zone in center of selected good zone">⚡ Auto Perfect</button>
                             </div>
                         </div>
                         
                         <!-- Instructions -->
                         <div class="mt-3 p-3 bg-black/30 rounded-lg">
                             <p class="text-xs text-gray-400" id="instructions">
-                                <strong>Step 1 - Set Crop:</strong> Drag the crop box to select which part of the image players will see (4:3 aspect ratio).<br>
-                                <strong>Step 2 - Draw Zones:</strong> Click zones to select/move/resize. Use buttons to draw new Good or Perfect zones.
+                                <strong>Good Zones:</strong> Click to add polygon points, click near start to close shape.<br>
+                                <strong>Perfect Zone:</strong> Draw rectangle OR select a good zone and click "Auto Perfect" to place it automatically.<br>
+                                <strong>Editing:</strong> Drag vertices to reshape, drag inside to move. Delete key removes selected zone/vertex.
                             </p>
                         </div>
                     </div>
@@ -534,9 +536,12 @@
             color: 'white', // or 'black'
             placementFeedback: '',
             perfectHint: '',
-            goodZones: [{ x, y, width, height }],
-            perfectZone: { x, y, width, height } // Only one perfect zone per set
+            goodZones: [{ points: [{x, y}, {x, y}, ...] }],  // Polygon as array of percentage points
+            perfectZone: { x, y, width, height } // Rectangle only
         }
+        
+        Legacy format (auto-converted on load):
+        goodZones: [{ x, y, width, height }]  // Converted to 4-point polygon
         */
         
         // Editor state
@@ -545,10 +550,12 @@
         let selectedSetId = null;
         let selectedZoneType = null; // 'good' or 'perfect'
         let selectedZoneIndex = null;
+        let selectedVertexIndex = null; // For polygon vertex selection
         let dragHandle = null; // Which handle is being dragged
         let isDrawing = false;
         let drawStart = { x: 0, y: 0 };
         let tempZone = null;
+        let polygonPoints = []; // Points being drawn for new polygon
         
         // Canvas refs
         let overlayCanvas, overlayCtx;
@@ -589,6 +596,170 @@
         function showConnectionStatus(connected, text) {
             document.getElementById('connectionStatus').className = 'status-dot ' + (connected ? 'status-connected' : 'status-disconnected');
             document.getElementById('connectionText').textContent = text;
+        }
+        
+        // ============================================
+        // POLYGON HELPER FUNCTIONS
+        // ============================================
+        
+        // Convert legacy rectangle to polygon format
+        function rectToPolygon(rect) {
+            return {
+                points: [
+                    { x: rect.x, y: rect.y },
+                    { x: rect.x + rect.width, y: rect.y },
+                    { x: rect.x + rect.width, y: rect.y + rect.height },
+                    { x: rect.x, y: rect.y + rect.height }
+                ]
+            };
+        }
+        
+        // Check if a good zone is in legacy rectangle format
+        function isLegacyRect(zone) {
+            return zone.hasOwnProperty('width') && zone.hasOwnProperty('height') && !zone.hasOwnProperty('points');
+        }
+        
+        // Convert zone to polygon if needed
+        function ensurePolygon(zone) {
+            if (isLegacyRect(zone)) {
+                return rectToPolygon(zone);
+            }
+            return zone;
+        }
+        
+        // Point-in-polygon test using ray casting algorithm
+        function pointInPolygon(px, py, polygon) {
+            const points = polygon.points;
+            let inside = false;
+            
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i].x, yi = points[i].y;
+                const xj = points[j].x, yj = points[j].y;
+                
+                if (((yi > py) !== (yj > py)) &&
+                    (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            
+            return inside;
+        }
+        
+        // Calculate polygon centroid (center of mass)
+        function getPolygonCentroid(polygon) {
+            const points = polygon.points;
+            let cx = 0, cy = 0, area = 0;
+            
+            for (let i = 0; i < points.length; i++) {
+                const j = (i + 1) % points.length;
+                const cross = points[i].x * points[j].y - points[j].x * points[i].y;
+                area += cross;
+                cx += (points[i].x + points[j].x) * cross;
+                cy += (points[i].y + points[j].y) * cross;
+            }
+            
+            area /= 2;
+            cx /= (6 * area);
+            cy /= (6 * area);
+            
+            return { x: cx, y: cy };
+        }
+        
+        // Get bounding box of polygon
+        function getPolygonBounds(polygon) {
+            const points = polygon.points;
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+            
+            points.forEach(p => {
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x);
+                maxY = Math.max(maxY, p.y);
+            });
+            
+            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        }
+        
+        // Convert polygon points from percentages to pixels
+        function polygonToPixels(polygon) {
+            return polygon.points.map(p => ({
+                x: (p.x / 100) * overlayCanvas.width,
+                y: (p.y / 100) * overlayCanvas.height
+            }));
+        }
+        
+        // Convert pixel coordinates to percentages
+        function pixelToPercent(x, y) {
+            return {
+                x: Math.round((x / overlayCanvas.width) * 10000) / 100,
+                y: Math.round((y / overlayCanvas.height) * 10000) / 100
+            };
+        }
+        
+        // Find distance from point to polygon edge (for finding innermost point)
+        function distanceToPolygonEdge(px, py, polygon) {
+            const points = polygon.points;
+            let minDist = Infinity;
+            
+            for (let i = 0; i < points.length; i++) {
+                const j = (i + 1) % points.length;
+                const dist = distanceToLineSegment(px, py, points[i].x, points[i].y, points[j].x, points[j].y);
+                minDist = Math.min(minDist, dist);
+            }
+            
+            return minDist;
+        }
+        
+        function distanceToLineSegment(px, py, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lengthSq = dx * dx + dy * dy;
+            
+            if (lengthSq === 0) return Math.hypot(px - x1, py - y1);
+            
+            let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+            t = Math.max(0, Math.min(1, t));
+            
+            const nearX = x1 + t * dx;
+            const nearY = y1 + t * dy;
+            
+            return Math.hypot(px - nearX, py - nearY);
+        }
+        
+        // Find the best position for perfect zone within a polygon
+        function findBestPerfectZonePosition(polygon) {
+            // Start with centroid
+            let bestX = 0, bestY = 0;
+            const centroid = getPolygonCentroid(polygon);
+            
+            // If centroid is inside, use it; otherwise search for better point
+            if (pointInPolygon(centroid.x, centroid.y, polygon)) {
+                bestX = centroid.x;
+                bestY = centroid.y;
+            } else {
+                // Sample points inside polygon and find one farthest from edges
+                const bounds = getPolygonBounds(polygon);
+                let maxDist = -1;
+                
+                for (let i = 0; i < 20; i++) {
+                    for (let j = 0; j < 20; j++) {
+                        const x = bounds.x + (bounds.width * (i + 0.5) / 20);
+                        const y = bounds.y + (bounds.height * (j + 0.5) / 20);
+                        
+                        if (pointInPolygon(x, y, polygon)) {
+                            const dist = distanceToPolygonEdge(x, y, polygon);
+                            if (dist > maxDist) {
+                                maxDist = dist;
+                                bestX = x;
+                                bestY = y;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return { x: bestX, y: bestY };
         }
         
         function updateModeIndicator() {
@@ -910,7 +1081,7 @@
             redrawOverlay();
         }
         
-        function redrawOverlay() {
+        function redrawOverlay(mouseX, mouseY) {
             if (!loadedImage) return;
             
             // Re-check container size in case of resize
@@ -952,9 +1123,14 @@
                 }
             });
             
-            // Draw temp zone while drawing
-            if (tempZone) {
-                const color = editorMode === 'drawGood' ? 'rgba(74, 222, 128, 0.5)' : 'rgba(59, 130, 246, 0.5)';
+            // Draw polygon being created
+            if (editorMode === 'drawGood' && polygonPoints.length > 0) {
+                drawTempPolygon(polygonPoints, mouseX, mouseY);
+            }
+            
+            // Draw temp rectangle while drawing perfect zone
+            if (tempZone && editorMode === 'drawPerfect') {
+                const color = 'rgba(59, 130, 246, 0.5)';
                 overlayCtx.fillStyle = color;
                 overlayCtx.strokeStyle = '#fff';
                 overlayCtx.lineWidth = 2;
@@ -965,7 +1141,6 @@
         }
         
         function drawZone(zone, type, textColor, isSelected) {
-            const rect = percentToPixel(zone);
             const color = type === 'good' ? 'rgba(74, 222, 128,' : 'rgba(59, 130, 246,';
             
             overlayCtx.fillStyle = color + (isSelected ? '0.5)' : '0.3)');
@@ -973,19 +1148,74 @@
             overlayCtx.lineWidth = isSelected ? 3 : 2;
             overlayCtx.setLineDash(isSelected ? [] : [5, 5]);
             
-            overlayCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
-            overlayCtx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-            overlayCtx.setLineDash([]);
-            
-            // Draw resize handles if selected
-            if (isSelected) {
-                drawResizeHandles(rect);
+            if (type === 'good' && zone.points) {
+                // Draw polygon
+                const pixelPoints = polygonToPixels(zone);
+                
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
+                for (let i = 1; i < pixelPoints.length; i++) {
+                    overlayCtx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
+                }
+                overlayCtx.closePath();
+                overlayCtx.fill();
+                overlayCtx.stroke();
+                
+                // Draw vertex handles if selected
+                if (isSelected) {
+                    drawPolygonVertices(pixelPoints);
+                }
+                
+                // Label at first point
+                overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
+                overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
+                overlayCtx.fillText('GOOD', pixelPoints[0].x + 4, pixelPoints[0].y + 14);
+            } else {
+                // Draw rectangle (for perfect zones and legacy good zones)
+                const rect = percentToPixel(zone);
+                
+                overlayCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
+                overlayCtx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+                
+                // Draw resize handles if selected
+                if (isSelected) {
+                    drawResizeHandles(rect);
+                }
+                
+                // Label
+                overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
+                overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
+                overlayCtx.fillText(type === 'good' ? 'GOOD' : 'PERFECT', rect.x + 4, rect.y + 14);
             }
             
-            // Label
-            overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-            overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
-            overlayCtx.fillText(type === 'good' ? 'GOOD' : 'PERFECT', rect.x + 4, rect.y + 14);
+            overlayCtx.setLineDash([]);
+        }
+        
+        function drawPolygonVertices(pixelPoints) {
+            const handleSize = 10;
+            
+            pixelPoints.forEach((p, idx) => {
+                // Highlight selected vertex
+                const isVertexSelected = selectedVertexIndex === idx;
+                
+                overlayCtx.fillStyle = isVertexSelected ? '#7BAFD4' : '#fff';
+                overlayCtx.strokeStyle = '#000';
+                overlayCtx.lineWidth = 2;
+                
+                overlayCtx.beginPath();
+                overlayCtx.arc(p.x, p.y, handleSize/2, 0, Math.PI * 2);
+                overlayCtx.fill();
+                overlayCtx.stroke();
+                
+                // Draw vertex number
+                overlayCtx.fillStyle = '#000';
+                overlayCtx.font = "bold 9px sans-serif";
+                overlayCtx.textAlign = 'center';
+                overlayCtx.textBaseline = 'middle';
+                overlayCtx.fillText(String(idx + 1), p.x, p.y);
+                overlayCtx.textAlign = 'left';
+                overlayCtx.textBaseline = 'alphabetic';
+            });
         }
         
         function drawResizeHandles(rect) {
@@ -1013,6 +1243,64 @@
                 { id: 'sw', x: rect.x, y: rect.y + rect.h },
                 { id: 'w', x: rect.x, y: rect.y + rect.h/2 }
             ];
+        }
+        
+        // Draw polygon being created
+        function drawTempPolygon(points, mouseX, mouseY) {
+            if (points.length === 0) return;
+            
+            const pixelPoints = points.map(p => ({
+                x: (p.x / 100) * overlayCanvas.width,
+                y: (p.y / 100) * overlayCanvas.height
+            }));
+            
+            overlayCtx.strokeStyle = '#7BAFD4';
+            overlayCtx.lineWidth = 2;
+            overlayCtx.setLineDash([]);
+            
+            // Draw completed segments
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
+            for (let i = 1; i < pixelPoints.length; i++) {
+                overlayCtx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
+            }
+            
+            // Line to current mouse position
+            if (mouseX !== undefined) {
+                overlayCtx.lineTo(mouseX, mouseY);
+                
+                // Dashed line back to start if near closing
+                const startDist = Math.hypot(mouseX - pixelPoints[0].x, mouseY - pixelPoints[0].y);
+                if (startDist < 20 && points.length >= 3) {
+                    overlayCtx.setLineDash([5, 5]);
+                    overlayCtx.lineTo(pixelPoints[0].x, pixelPoints[0].y);
+                }
+            }
+            
+            overlayCtx.stroke();
+            overlayCtx.setLineDash([]);
+            
+            // Draw vertices
+            pixelPoints.forEach((p, idx) => {
+                overlayCtx.fillStyle = idx === 0 && points.length >= 3 ? '#7BAFD4' : '#fff';
+                overlayCtx.strokeStyle = '#000';
+                overlayCtx.lineWidth = 2;
+                overlayCtx.beginPath();
+                overlayCtx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                overlayCtx.fill();
+                overlayCtx.stroke();
+            });
+            
+            // Instruction text
+            overlayCtx.fillStyle = 'rgba(0,0,0,0.7)';
+            overlayCtx.fillRect(10, overlayCanvas.height - 35, 280, 25);
+            overlayCtx.fillStyle = '#fff';
+            overlayCtx.font = "12px 'Century Gothic', sans-serif";
+            if (points.length < 3) {
+                overlayCtx.fillText(`Click to add points (${points.length}/3 minimum)`, 15, overlayCanvas.height - 18);
+            } else {
+                overlayCtx.fillText('Click near start point to close, or keep adding', 15, overlayCanvas.height - 18);
+            }
         }
         
         function drawTextPreview(zone, textColor) {
@@ -1306,33 +1594,102 @@
             const rect = interactionCanvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
+            const pct = pixelToPercent(x, y);
+            
+            if (editorMode === 'drawGood') {
+                // Polygon drawing mode - add point on click
+                if (!selectedSetId) {
+                    showToast('Select or create a Zone Set first', 'error');
+                    return;
+                }
+                
+                // Check if clicking near start point to close polygon
+                if (polygonPoints.length >= 3) {
+                    const startPx = {
+                        x: (polygonPoints[0].x / 100) * overlayCanvas.width,
+                        y: (polygonPoints[0].y / 100) * overlayCanvas.height
+                    };
+                    if (Math.hypot(x - startPx.x, y - startPx.y) < 20) {
+                        // Close the polygon
+                        finishPolygon();
+                        return;
+                    }
+                }
+                
+                // Add point
+                polygonPoints.push({ x: pct.x, y: pct.y });
+                redrawOverlay(x, y);
+                return;
+            }
+            
+            if (editorMode === 'drawPerfect') {
+                // Rectangle drawing mode for perfect zones
+                if (!selectedSetId) {
+                    showToast('Select or create a Zone Set first', 'error');
+                    return;
+                }
+                isDrawing = true;
+                drawStart = { x, y };
+                tempZone = null;
+                return;
+            }
             
             if (editorMode === 'select') {
-                // Check if clicking on a resize handle first
-                if (selectedSetId && selectedZoneType) {
+                // Check if clicking on a polygon vertex first
+                if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
-                        const zone = selectedZoneType === 'perfect' ? set.perfectZone : set.goodZones[selectedZoneIndex];
-                        if (zone) {
-                            const zoneRect = percentToPixel(zone);
-                            const handles = getHandlePositions(zoneRect);
-                            
-                            // Check handles first
-                            for (const h of handles) {
-                                if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
-                                    dragHandle = h.id;
-                                    drawStart = { x, y, zone: { ...zone } };
+                        const zone = set.goodZones[selectedZoneIndex];
+                        if (zone && zone.points) {
+                            const pixelPoints = polygonToPixels(zone);
+                            for (let i = 0; i < pixelPoints.length; i++) {
+                                if (Math.hypot(x - pixelPoints[i].x, y - pixelPoints[i].y) < 10) {
+                                    selectedVertexIndex = i;
+                                    dragHandle = 'vertex';
+                                    drawStart = { x, y, points: zone.points.map(p => ({...p})) };
+                                    redrawOverlay();
                                     return;
                                 }
                             }
-                            
-                            // Check if clicking inside the selected zone (for dragging to move)
-                            if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
-                                y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
-                                dragHandle = 'move';
+                        }
+                    }
+                }
+                
+                // Check if clicking on rectangle handles (for perfect zones)
+                if (selectedSetId && selectedZoneType === 'perfect') {
+                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                    if (set && set.perfectZone) {
+                        const zone = set.perfectZone;
+                        const zoneRect = percentToPixel(zone);
+                        const handles = getHandlePositions(zoneRect);
+                        
+                        for (const h of handles) {
+                            if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
+                                dragHandle = h.id;
                                 drawStart = { x, y, zone: { ...zone } };
                                 return;
                             }
+                        }
+                        
+                        // Check if inside for move
+                        if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
+                            y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                            dragHandle = 'move';
+                            drawStart = { x, y, zone: { ...zone } };
+                            return;
+                        }
+                    }
+                }
+                
+                // Check if clicking inside a polygon (for move)
+                if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
+                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                    if (set) {
+                        const zone = set.goodZones[selectedZoneIndex];
+                        if (zone && zone.points && pointInPolygon(pct.x, pct.y, zone)) {
+                            dragHandle = 'movePolygon';
+                            drawStart = { x, y, points: zone.points.map(p => ({...p})) };
+                            return;
                         }
                     }
                 }
@@ -1343,38 +1700,42 @@
                     selectedSetId = clicked.setId;
                     selectedZoneType = clicked.type;
                     selectedZoneIndex = clicked.index;
+                    selectedVertexIndex = null;
                     updateZoneSetsList();
                     updateZoneSetEditor();
                     redrawOverlay();
-                    
-                    // Also start dragging immediately
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set) {
-                        const zone = selectedZoneType === 'perfect' ? set.perfectZone : set.goodZones[selectedZoneIndex];
-                        if (zone) {
-                            dragHandle = 'move';
-                            drawStart = { x, y, zone: { ...zone } };
-                        }
-                    }
                 } else {
                     // Deselect
                     selectedSetId = null;
                     selectedZoneType = null;
                     selectedZoneIndex = null;
+                    selectedVertexIndex = null;
                     document.getElementById('zoneSetEditor').classList.add('hidden');
                     redrawOverlay();
                 }
-            } else {
-                // Draw mode
-                if (!selectedSetId) {
-                    showToast('Select or create a Zone Set first', 'error');
-                    return;
-                }
-                
-                isDrawing = true;
-                drawStart = { x, y };
-                tempZone = null;
             }
+        }
+        
+        function finishPolygon() {
+            if (polygonPoints.length < 3) {
+                showToast('Need at least 3 points for a polygon', 'error');
+                polygonPoints = [];
+                redrawOverlay();
+                return;
+            }
+            
+            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+            if (set) {
+                set.goodZones.push({ points: [...polygonPoints] });
+                selectedZoneType = 'good';
+                selectedZoneIndex = set.goodZones.length - 1;
+                updateSetZonesList();
+            }
+            
+            polygonPoints = [];
+            editorMode = 'select';
+            updateModeIndicator();
+            redrawOverlay();
         }
         
         function handleMouseMove(e) {
@@ -1383,89 +1744,99 @@
             const rect = interactionCanvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
+            const pct = pixelToPercent(x, y);
             
-            if (dragHandle && drawStart) {
-                // Resizing or moving
+            // Drawing polygon - update preview
+            if (editorMode === 'drawGood' && polygonPoints.length > 0) {
+                redrawOverlay(x, y);
+                return;
+            }
+            
+            // Dragging vertex
+            if (dragHandle === 'vertex' && drawStart && selectedVertexIndex !== null) {
+                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                if (set && set.goodZones[selectedZoneIndex]) {
+                    set.goodZones[selectedZoneIndex].points[selectedVertexIndex] = { 
+                        x: Math.max(0, Math.min(100, pct.x)), 
+                        y: Math.max(0, Math.min(100, pct.y)) 
+                    };
+                    redrawOverlay();
+                }
+                return;
+            }
+            
+            // Moving entire polygon
+            if (dragHandle === 'movePolygon' && drawStart) {
+                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                if (set && set.goodZones[selectedZoneIndex]) {
+                    const dx = pct.x - pixelToPercent(drawStart.x, 0).x;
+                    const dy = pct.y - pixelToPercent(0, drawStart.y).y;
+                    
+                    set.goodZones[selectedZoneIndex].points = drawStart.points.map(p => ({
+                        x: Math.max(0, Math.min(100, p.x + dx)),
+                        y: Math.max(0, Math.min(100, p.y + dy))
+                    }));
+                    redrawOverlay();
+                }
+                return;
+            }
+            
+            // Moving/resizing rectangle (perfect zones)
+            if (dragHandle && drawStart && dragHandle !== 'vertex' && dragHandle !== 'movePolygon') {
                 const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                 if (!set) return;
                 
-                const zone = selectedZoneType === 'perfect' ? set.perfectZone : set.goodZones[selectedZoneIndex];
+                const zone = set.perfectZone;
                 if (!zone) return;
                 
                 const original = drawStart.zone;
                 const canvasW = overlayCanvas.width;
                 const canvasH = overlayCanvas.height;
-                
-                // Convert mouse position to percentage
                 const mouseXPct = (x / canvasW) * 100;
                 const mouseYPct = (y / canvasH) * 100;
                 
                 if (dragHandle === 'move') {
-                    // Moving the entire zone
                     const dx = mouseXPct - (drawStart.x / canvasW) * 100;
                     const dy = mouseYPct - (drawStart.y / canvasH) * 100;
                     
-                    let newX = original.x + dx;
-                    let newY = original.y + dy;
-                    
-                    // Clamp to canvas bounds
-                    newX = Math.max(0, Math.min(100 - original.width, newX));
-                    newY = Math.max(0, Math.min(100 - original.height, newY));
-                    
-                    zone.x = newX;
-                    zone.y = newY;
+                    zone.x = Math.max(0, Math.min(100 - original.width, original.x + dx));
+                    zone.y = Math.max(0, Math.min(100 - original.height, original.y + dy));
                 } else {
                     // Resizing
-                    let newX = zone.x;
-                    let newY = zone.y;
-                    let newW = zone.width;
-                    let newH = zone.height;
+                    let newX = zone.x, newY = zone.y, newW = zone.width, newH = zone.height;
+                    const minSize = PERFECT_MIN_WIDTH;
+                    const minHeight = PERFECT_MIN_HEIGHT;
                     
-                    // Minimum size - larger for perfect zones to fit text, even larger for good zones
-                    const minSize = selectedZoneType === 'perfect' ? PERFECT_MIN_WIDTH : GOOD_MIN_WIDTH;
-                    const minHeight = selectedZoneType === 'perfect' ? PERFECT_MIN_HEIGHT : GOOD_MIN_HEIGHT;
-                    
-                    // East handles (right edge)
-                    if (dragHandle === 'e' || dragHandle === 'ne' || dragHandle === 'se') {
-                        newW = Math.max(minSize, mouseXPct - original.x);
-                    }
-                    // West handles (left edge)
-                    if (dragHandle === 'w' || dragHandle === 'nw' || dragHandle === 'sw') {
+                    if (dragHandle.includes('e')) newW = Math.max(minSize, mouseXPct - original.x);
+                    if (dragHandle.includes('w')) {
                         const rightEdge = original.x + original.width;
                         newX = Math.min(mouseXPct, rightEdge - minSize);
                         newW = rightEdge - newX;
                     }
-                    // South handles (bottom edge)
-                    if (dragHandle === 's' || dragHandle === 'sw' || dragHandle === 'se') {
-                        newH = Math.max(minHeight, mouseYPct - original.y);
-                    }
-                    // North handles (top edge)
-                    if (dragHandle === 'n' || dragHandle === 'nw' || dragHandle === 'ne') {
+                    if (dragHandle.includes('s')) newH = Math.max(minHeight, mouseYPct - original.y);
+                    if (dragHandle.includes('n')) {
                         const bottomEdge = original.y + original.height;
                         newY = Math.min(mouseYPct, bottomEdge - minHeight);
                         newH = bottomEdge - newY;
                     }
                     
-                    // Clamp to canvas bounds (0-100%)
-                    newX = Math.max(0, Math.min(100 - minSize, newX));
-                    newY = Math.max(0, Math.min(100 - minHeight, newY));
-                    newW = Math.min(newW, 100 - newX);
-                    newH = Math.min(newH, 100 - newY);
-                    
-                    zone.x = newX;
-                    zone.y = newY;
-                    zone.width = newW;
-                    zone.height = newH;
+                    zone.x = Math.max(0, newX);
+                    zone.y = Math.max(0, newY);
+                    zone.width = Math.min(newW, 100 - zone.x);
+                    zone.height = Math.min(newH, 100 - zone.y);
                 }
                 
                 redrawOverlay();
                 updateSetZonesList();
-            } else if (isDrawing) {
-                // Drawing new zone
+                return;
+            }
+            
+            // Drawing rectangle (perfect zone)
+            if (isDrawing && editorMode === 'drawPerfect') {
                 const w = x - drawStart.x;
                 const h = y - drawStart.y;
                 
-                tempZone = pixelToPercent(
+                tempZone = pixelToPercentRect(
                     w > 0 ? drawStart.x : x,
                     h > 0 ? drawStart.y : y,
                     Math.abs(w),
@@ -1473,82 +1844,100 @@
                 );
                 
                 redrawOverlay();
-            } else if (editorMode === 'select') {
-                // Update cursor based on hover
-                if (selectedSetId && selectedZoneType) {
+                return;
+            }
+            
+            // Update cursor in select mode
+            if (editorMode === 'select') {
+                let cursor = 'default';
+                
+                // Check polygon vertices
+                if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set) {
-                        const zone = selectedZoneType === 'perfect' ? set.perfectZone : set.goodZones[selectedZoneIndex];
-                        if (zone) {
-                            const zoneRect = percentToPixel(zone);
-                            const handles = getHandlePositions(zoneRect);
-                            
-                            // Check resize handles first
-                            for (const h of handles) {
-                                if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
-                                    const cursors = {
-                                        'nw': 'nw-resize', 'ne': 'ne-resize', 'sw': 'sw-resize', 'se': 'se-resize',
-                                        'n': 'n-resize', 's': 's-resize', 'e': 'e-resize', 'w': 'w-resize'
-                                    };
-                                    interactionCanvas.style.cursor = cursors[h.id];
-                                    return;
-                                }
+                    if (set && set.goodZones[selectedZoneIndex]?.points) {
+                        const pixelPoints = polygonToPixels(set.goodZones[selectedZoneIndex]);
+                        for (const p of pixelPoints) {
+                            if (Math.hypot(x - p.x, y - p.y) < 10) {
+                                cursor = 'pointer';
+                                break;
                             }
-                            
-                            // Check if inside zone (move cursor)
-                            if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
-                                y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
-                                interactionCanvas.style.cursor = 'move';
-                                return;
-                            }
+                        }
+                        // Inside polygon = move
+                        if (cursor === 'default' && pointInPolygon(pct.x, pct.y, set.goodZones[selectedZoneIndex])) {
+                            cursor = 'move';
                         }
                     }
                 }
-                interactionCanvas.style.cursor = 'default';
+                
+                // Check rectangle handles
+                if (selectedSetId && selectedZoneType === 'perfect') {
+                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                    if (set?.perfectZone) {
+                        const zoneRect = percentToPixel(set.perfectZone);
+                        const handles = getHandlePositions(zoneRect);
+                        
+                        for (const h of handles) {
+                            if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
+                                const cursors = {
+                                    'nw': 'nw-resize', 'ne': 'ne-resize', 'sw': 'sw-resize', 'se': 'se-resize',
+                                    'n': 'n-resize', 's': 's-resize', 'e': 'e-resize', 'w': 'w-resize'
+                                };
+                                cursor = cursors[h.id];
+                                break;
+                            }
+                        }
+                        
+                        if (cursor === 'default' && 
+                            x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
+                            y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                            cursor = 'move';
+                        }
+                    }
+                }
+                
+                interactionCanvas.style.cursor = cursor;
             }
+        }
+        
+        function pixelToPercentRect(x, y, w, h) {
+            return {
+                x: Math.round((x / overlayCanvas.width) * 10000) / 100,
+                y: Math.round((y / overlayCanvas.height) * 10000) / 100,
+                width: Math.round((w / overlayCanvas.width) * 10000) / 100,
+                height: Math.round((h / overlayCanvas.height) * 10000) / 100
+            };
         }
         
         function handleMouseUp(e) {
             if (dragHandle) {
                 dragHandle = null;
                 drawStart = null;
+                selectedVertexIndex = null;
                 return;
             }
+            
+            // For polygon drawing, we don't finish on mouseUp - only on clicking near start
+            if (editorMode === 'drawGood') return;
             
             if (!isDrawing || !tempZone) {
                 isDrawing = false;
                 return;
             }
             
-            // Minimum size check - good zones must be larger than perfect zones
-            const minW = editorMode === 'drawPerfect' ? PERFECT_MIN_WIDTH : GOOD_MIN_WIDTH;
-            const minH = editorMode === 'drawPerfect' ? PERFECT_MIN_HEIGHT : GOOD_MIN_HEIGHT;
-            
-            if (tempZone.width < minW || tempZone.height < minH) {
-                if (editorMode === 'drawPerfect') {
-                    showToast(`Perfect zone must be at least ${PERFECT_MIN_WIDTH}% × ${PERFECT_MIN_HEIGHT}% to fit text`, 'error');
-                } else {
-                    showToast(`Good zone must be at least ${GOOD_MIN_WIDTH}% × ${GOOD_MIN_HEIGHT}% (larger than perfect zone)`, 'error');
-                }
+            // Rectangle for perfect zone
+            if (tempZone.width < PERFECT_MIN_WIDTH || tempZone.height < PERFECT_MIN_HEIGHT) {
+                showToast(`Perfect zone must be at least ${PERFECT_MIN_WIDTH}% × ${PERFECT_MIN_HEIGHT}% to fit text`, 'error');
                 tempZone = null;
                 isDrawing = false;
                 redrawOverlay();
                 return;
             }
             
-            // Add zone to set
             const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
             if (set) {
-                if (editorMode === 'drawGood') {
-                    set.goodZones.push({ ...tempZone });
-                    selectedZoneType = 'good';
-                    selectedZoneIndex = set.goodZones.length - 1;
-                } else if (editorMode === 'drawPerfect') {
-                    set.perfectZone = { ...tempZone };
-                    selectedZoneType = 'perfect';
-                    selectedZoneIndex = null;
-                }
-                
+                set.perfectZone = { ...tempZone };
+                selectedZoneType = 'perfect';
+                selectedZoneIndex = null;
                 updateSetZonesList();
             }
             
@@ -1567,7 +1956,26 @@
             if (isTyping) return;
             
             if (e.key === 'Delete' || e.key === 'Backspace') {
-                e.preventDefault(); // Prevent browser back navigation
+                e.preventDefault();
+                
+                // Delete selected vertex
+                if (selectedVertexIndex !== null && selectedSetId && selectedZoneType === 'good') {
+                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                    if (set && set.goodZones[selectedZoneIndex]?.points) {
+                        const zone = set.goodZones[selectedZoneIndex];
+                        if (zone.points.length > 3) {
+                            zone.points.splice(selectedVertexIndex, 1);
+                            selectedVertexIndex = null;
+                            updateSetZonesList();
+                            redrawOverlay();
+                        } else {
+                            showToast('Polygon must have at least 3 points', 'error');
+                        }
+                        return;
+                    }
+                }
+                
+                // Delete selected zone
                 if (selectedSetId && selectedZoneType) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
@@ -1578,24 +1986,32 @@
                         }
                         selectedZoneType = null;
                         selectedZoneIndex = null;
+                        selectedVertexIndex = null;
                         updateSetZonesList();
                         redrawOverlay();
                     }
                 }
             } else if (e.key === 'Escape') {
+                // Cancel polygon drawing
+                if (polygonPoints.length > 0) {
+                    polygonPoints = [];
+                }
                 editorMode = 'select';
                 tempZone = null;
+                selectedVertexIndex = null;
                 updateModeIndicator();
                 redrawOverlay();
             }
         }
         
         function findZoneAt(x, y) {
+            const pct = pixelToPercent(x, y);
+            
             // Check zones in reverse order (top-most first)
             for (let i = currentLevel.zoneSets.length - 1; i >= 0; i--) {
                 const set = currentLevel.zoneSets[i];
                 
-                // Check perfect zone first
+                // Check perfect zone first (always rectangle)
                 if (set.perfectZone) {
                     const rect = percentToPixel(set.perfectZone);
                     if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
@@ -1603,11 +2019,21 @@
                     }
                 }
                 
-                // Check good zones
+                // Check good zones (polygons or legacy rectangles)
                 for (let j = set.goodZones.length - 1; j >= 0; j--) {
-                    const rect = percentToPixel(set.goodZones[j]);
-                    if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
-                        return { setId: set.id, type: 'good', index: j };
+                    const zone = set.goodZones[j];
+                    
+                    if (zone.points) {
+                        // Polygon
+                        if (pointInPolygon(pct.x, pct.y, zone)) {
+                            return { setId: set.id, type: 'good', index: j };
+                        }
+                    } else {
+                        // Legacy rectangle
+                        const rect = percentToPixel(zone);
+                        if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
+                            return { setId: set.id, type: 'good', index: j };
+                        }
                     }
                 }
             }
@@ -1703,7 +2129,57 @@
                 return;
             }
             editorMode = 'drawPerfect';
+            polygonPoints = []; // Clear any in-progress polygon
             updateModeIndicator();
+        });
+        
+        document.getElementById('autoPerfectBtn').addEventListener('click', () => {
+            if (!selectedSetId) {
+                showToast('Select or create a Zone Set first', 'error');
+                return;
+            }
+            
+            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+            if (!set || set.goodZones.length === 0) {
+                showToast('Draw a Good Zone first, then use Auto Perfect', 'error');
+                return;
+            }
+            
+            // Use selected good zone, or the first good zone if none selected
+            let goodZone;
+            if (selectedZoneType === 'good' && selectedZoneIndex !== null) {
+                goodZone = set.goodZones[selectedZoneIndex];
+            } else {
+                goodZone = set.goodZones[0];
+            }
+            
+            if (!goodZone) return;
+            
+            // Ensure it's a polygon
+            const polygon = ensurePolygon(goodZone);
+            
+            // Find the best center point
+            const center = findBestPerfectZonePosition(polygon);
+            
+            // Create perfect zone at minimum size, centered on that point
+            const perfectZone = {
+                x: center.x - PERFECT_MIN_WIDTH / 2,
+                y: center.y - PERFECT_MIN_HEIGHT / 2,
+                width: PERFECT_MIN_WIDTH,
+                height: PERFECT_MIN_HEIGHT
+            };
+            
+            // Clamp to bounds
+            perfectZone.x = Math.max(0, Math.min(100 - PERFECT_MIN_WIDTH, perfectZone.x));
+            perfectZone.y = Math.max(0, Math.min(100 - PERFECT_MIN_HEIGHT, perfectZone.y));
+            
+            set.perfectZone = perfectZone;
+            selectedZoneType = 'perfect';
+            selectedZoneIndex = null;
+            
+            updateSetZonesList();
+            redrawOverlay();
+            showToast('Perfect zone placed!', 'success');
         });
 
         // ============================================
