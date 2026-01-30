@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.6.2</title>
+    <title>The Sweet Spot v1.7.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -410,6 +410,54 @@
         // INITIALIZATION
         // ============================================
         
+        // Point-in-polygon test using ray casting algorithm
+        function pointInPolygon(px, py, polygon) {
+            if (!polygon.points) return false;
+            const points = polygon.points;
+            let inside = false;
+            
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i].x, yi = points[i].y;
+                const xj = points[j].x, yj = points[j].y;
+                
+                if (((yi > py) !== (yj > py)) &&
+                    (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            
+            return inside;
+        }
+        
+        // Check if a zone is in polygon format
+        function isPolygonZone(zone) {
+            return zone && zone.points && Array.isArray(zone.points);
+        }
+        
+        // Check if a point is inside a zone (polygon or rectangle)
+        function pointInZone(px, py, zone) {
+            if (isPolygonZone(zone)) {
+                return pointInPolygon(px, py, zone);
+            } else {
+                // Legacy rectangle format
+                return px >= zone.x && px <= zone.x + zone.width &&
+                       py >= zone.y && py <= zone.y + zone.height;
+            }
+        }
+        
+        // Check if any part of the text rectangle overlaps with a zone
+        function textOverlapsZone(textRect, zone) {
+            if (isPolygonZone(zone)) {
+                // For polygons, check if text center is inside
+                const centerX = textRect.x + textRect.width / 2;
+                const centerY = textRect.y + textRect.height / 2;
+                return pointInPolygon(centerX, centerY, zone);
+            } else {
+                // For rectangles, use overlap percentage
+                return calculateOverlapPercentage(textRect, zone) > 0;
+            }
+        }
+        
         async function init() {
             const statusText = document.querySelector('#loadingScreen p');
             
@@ -655,7 +703,7 @@
                 }
             } else {
                 const textRect = getTextBoundingBoxAsPercentage(clickPercent);
-                const isClickInGood = goodZones.some(z => calculateOverlapPercentage(textRect, z) > 0);
+                const isClickInGood = goodZones.some(z => textOverlapsZone(textRect, z));
                 
                 const { zone: closestPerfectZone } = getClosestPerfectZone(clickPercent, perfectZones);
                 const isClickInPerfect = closestPerfectZone ? calculateOverlapPercentage(textRect, closestPerfectZone) > 0 : false;
@@ -795,13 +843,35 @@
             
             // Draw good zones
             goodZones.forEach(zone => {
-                const zoneEl = document.createElement('div');
-                zoneEl.className = 'feedback-zone';
-                zoneEl.style.left = `${zone.x}%`;
-                zoneEl.style.top = `${zone.y}%`;
-                zoneEl.style.width = `${zone.width}%`;
-                zoneEl.style.height = `${zone.height}%`;
-                feedbackZonesContainer.appendChild(zoneEl);
+                if (isPolygonZone(zone)) {
+                    // Draw polygon using SVG
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.style.position = 'absolute';
+                    svg.style.left = '0';
+                    svg.style.top = '0';
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                    svg.style.pointerEvents = 'none';
+                    
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const pointsStr = zone.points.map(p => `${p.x}%,${p.y}%`).join(' ');
+                    polygon.setAttribute('points', pointsStr);
+                    polygon.setAttribute('fill', 'rgba(76, 175, 80, 0.4)');
+                    polygon.setAttribute('stroke', 'rgba(255, 255, 255, 0.9)');
+                    polygon.setAttribute('stroke-width', '2');
+                    
+                    svg.appendChild(polygon);
+                    feedbackZonesContainer.appendChild(svg);
+                } else {
+                    // Rectangle
+                    const zoneEl = document.createElement('div');
+                    zoneEl.className = 'feedback-zone';
+                    zoneEl.style.left = `${zone.x}%`;
+                    zoneEl.style.top = `${zone.y}%`;
+                    zoneEl.style.width = `${zone.width}%`;
+                    zoneEl.style.height = `${zone.height}%`;
+                    feedbackZonesContainer.appendChild(zoneEl);
+                }
             });
             
             // Draw perfect zones
