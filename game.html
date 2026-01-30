@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot</title>
+    <title>The Sweet Spot v1.6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -14,13 +14,14 @@
     
     <style>
         :root {
-            --bg-dark: #0a0a0f;
-            --bg-panel: #12121a;
-            --accent-cyan: #00f5d4;
-            --accent-magenta: #f72585;
-            --accent-yellow: #fee440;
+            --bg-dark: #1a1a1a;
+            --bg-panel: #2a2a2a;
+            --accent-primary: #7BAFD4; /* Carolina Blue */
+            --accent-light: #a8d1f0;
+            --accent-grey: #666666;
+            --accent-success: #6fbf73;
             --text-primary: #ffffff;
-            --border-color: #2a2a3a;
+            --border-color: #444444;
         }
         
         * { box-sizing: border-box; }
@@ -38,8 +39,8 @@
             font-weight: 700;
         }
         
-        .glow-cyan { text-shadow: 0 0 30px var(--accent-cyan), 0 0 60px var(--accent-cyan); }
-        .glow-magenta { text-shadow: 0 0 20px var(--accent-magenta); }
+        .glow-primary { text-shadow: 0 0 30px var(--accent-primary), 0 0 60px var(--accent-primary); }
+        .glow-grey { text-shadow: 0 0 20px var(--accent-grey); }
         
         .panel {
             background: var(--bg-panel);
@@ -61,20 +62,20 @@
         }
         
         .btn-cyan {
-            background: var(--accent-cyan);
+            background: var(--accent-primary);
             color: var(--bg-dark);
         }
         .btn-cyan:hover {
-            box-shadow: 0 0 30px var(--accent-cyan);
+            box-shadow: 0 0 30px var(--accent-primary);
             transform: translateY(-2px);
         }
         
         .btn-magenta {
-            background: var(--accent-magenta);
+            background: var(--accent-grey);
             color: white;
         }
         .btn-magenta:hover {
-            box-shadow: 0 0 30px var(--accent-magenta);
+            box-shadow: 0 0 20px var(--accent-grey);
             transform: translateY(-2px);
         }
         
@@ -84,8 +85,8 @@
             color: var(--text-primary);
         }
         .btn-outline:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
         }
         
         .btn-white {
@@ -205,7 +206,7 @@
             width: 60px;
             height: 60px;
             border: 4px solid var(--border-color);
-            border-top-color: var(--accent-cyan);
+            border-top-color: var(--accent-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -246,8 +247,8 @@
             justify-content: center;
         }
         
-        .feedback-good { color: #4ade80; }
-        .feedback-bad { color: #f87171; }
+        .feedback-good { color: #7BAFD4; }
+        .feedback-bad { color: #e74c3c; }
         .feedback-hint { color: #94a3b8; font-style: italic; font-size: 0.9rem; }
         
         /* Confetti animation for great scores */
@@ -298,7 +299,7 @@
     
     <!-- Start Screen -->
     <div id="startScreen" class="start-screen hidden">
-        <h1 class="text-5xl md:text-7xl font-bold heading glow-cyan mb-4">THE SWEET SPOT</h1>
+        <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">THE SWEET SPOT</h1>
         <p class="text-gray-400 mb-8 max-w-md text-center">Find the perfect placement for text on images. Choose the right color and position for maximum readability.</p>
         <button id="startGameBtn" class="btn btn-cyan text-lg px-12 py-4">Start Game</button>
         <a href="admin.html" class="text-gray-500 mt-6 text-sm hover:text-cyan-400 transition-colors">Level Editor →</a>
@@ -306,7 +307,7 @@
     
     <!-- Game Over Screen -->
     <div id="gameOverScreen" class="game-over-screen hidden">
-        <h2 class="text-4xl md:text-6xl font-bold heading glow-magenta mb-4">GAME OVER</h2>
+        <h2 class="text-4xl md:text-6xl font-bold heading glow-grey mb-4">GAME OVER</h2>
         <p class="text-gray-400 mb-2">Final Score</p>
         <p id="finalScore" class="text-6xl font-bold heading text-white mb-8">0</p>
         <div class="flex gap-4">
@@ -318,7 +319,7 @@
     <div id="gameScreen" class="hidden">
         <header class="border-b border-gray-800 py-4 px-6">
             <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <h1 class="text-xl font-bold heading glow-cyan">THE SWEET SPOT</h1>
+                <h1 class="text-xl font-bold heading glow-primary">THE SWEET SPOT</h1>
                 <div class="flex items-center gap-6">
                     <div class="stat-box py-2 px-4">
                         <span class="stat-label">Level</span>
@@ -438,7 +439,7 @@
                 
                 // Show specific error message
                 if (error.message.includes("No levels found")) {
-                    statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #00f5d4; text-decoration: underline;">Open Admin Panel</a> and run the migration first.';
+                    statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #7BAFD4; text-decoration: underline;">Open Admin Panel</a> and run the migration first.';
                 } else if (error.message.includes("firebase-config.js")) {
                     statusText.textContent = error.message;
                 } else if (error.code === 'permission-denied') {
@@ -734,13 +735,13 @@
             popup.textContent = `+${points}`;
             popup.style.left = `${clickPercent.x}%`;
             popup.style.top = `${clickPercent.y}%`;
-            popup.style.color = points === 100 ? '#00f5d4' : points >= 80 ? '#4ade80' : '#fbbf24';
+            popup.style.color = points === 100 ? '#7BAFD4' : points >= 80 ? '#a8d1f0' : '#fbbf24';
             gameContainer.appendChild(popup);
             setTimeout(() => popup.remove(), 1500);
         }
         
         function spawnConfetti() {
-            const colors = ['#00f5d4', '#f72585', '#fee440', '#4ade80', '#3b82f6'];
+            const colors = ['#7BAFD4', '#ffffff', '#a8d1f0', '#888888', '#666666'];
             for (let i = 0; i < 50; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
@@ -753,7 +754,7 @@
         }
         
         function spawnFireworks() {
-            const colors = ['#00f5d4', '#f72585', '#fee440', '#ff6b6b', '#4ecdc4'];
+            const colors = ['#7BAFD4', '#ffffff', '#a8d1f0', '#888888', '#666666'];
             // Spawn 3-4 firework bursts at different positions
             for (let burst = 0; burst < 4; burst++) {
                 setTimeout(() => {
