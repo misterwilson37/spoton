@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot 1.5.4 - Level Editor</title>
+    <title>The Sweet Spot - Level Editor 1.6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -79,50 +79,44 @@
         }
         input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-cyan); }
         
-        #canvasContainer {
+        #cropContainer {
             position: relative;
             background: #1a1a2e;
             border-radius: 8px;
             overflow: hidden;
         }
         
-        #canvasWrapper {
-            position: relative;
-            display: inline-block;
-            line-height: 0;
-        }
-        
-        #canvasWrapper.game-preview-mode {
-            aspect-ratio: 4/3;
-            overflow: hidden;
-            width: 100%;
-            max-width: 600px;
-        }
-        
-        #canvasWrapper.game-preview-mode #imageCanvas {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            max-width: none;
-        }
-        
-        #canvasWrapper.game-preview-mode #overlayCanvas,
-        #canvasWrapper.game-preview-mode #interactionLayer {
-            width: 100% !important;
-            height: 100% !important;
-        }
-        
-        #imageCanvas {
+        #cropCanvas {
             display: block;
             max-width: 100%;
+            max-height: 500px;
+            margin: 0 auto;
+        }
+        
+        #zoneContainer {
+            position: relative;
+            background: #1a1a2e;
             border-radius: 8px;
+            overflow: hidden;
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        #canvasWrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
         
         #overlayCanvas {
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
             border-radius: 8px;
         }
@@ -131,6 +125,8 @@
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             cursor: crosshair;
             border-radius: 8px;
         }
@@ -320,29 +316,42 @@
                             <button id="loadUrlBtn" class="btn btn-cyan btn-sm">Load</button>
                         </div>
                         
-                        <!-- Canvas Area -->
-                        <div id="canvasContainer" class="min-h-[400px] flex items-center justify-center bg-black/30 rounded-lg">
-                            <div id="canvasWrapper" style="position: relative; display: inline-block;">
-                                <canvas id="imageCanvas"></canvas>
+                        <!-- View Toggle -->
+                        <div class="flex gap-2 mb-3 p-2 bg-black/30 rounded-lg">
+                            <button id="cropViewBtn" class="btn btn-sm btn-cyan btn-active flex-1">1. Set Crop Area</button>
+                            <button id="zoneViewBtn" class="btn btn-sm btn-outline flex-1">2. Draw Zones</button>
+                        </div>
+                        
+                        <!-- Canvas Area for Crop View (shows full image with crop overlay) -->
+                        <div id="cropContainer" class="relative bg-black/30 rounded-lg overflow-hidden" style="min-height: 300px;">
+                            <canvas id="cropCanvas"></canvas>
+                            <p id="cropPlaceholder" class="text-gray-500 absolute inset-0 flex items-center justify-center">Upload an image to set crop area</p>
+                        </div>
+                        
+                        <!-- Canvas Area for Zone View (shows cropped region only) -->
+                        <div id="zoneContainer" class="hidden relative bg-black/30 rounded-lg overflow-hidden" style="aspect-ratio: 4/3; max-width: 600px; margin: 0 auto;">
+                            <div id="canvasWrapper" style="position: absolute; inset: 0;">
                                 <canvas id="overlayCanvas"></canvas>
                                 <canvas id="interactionLayer"></canvas>
                             </div>
-                            <p id="canvasPlaceholder" class="text-gray-500 absolute">Upload an image to begin</p>
+                            <p id="zonePlaceholder" class="text-gray-500 absolute inset-0 flex items-center justify-center hidden">Set crop area first</p>
                         </div>
                         
-                        <!-- Mode & Tools -->
-                        <div class="mt-3 flex flex-wrap gap-3 items-center">
+                        <!-- Crop Mode Tools -->
+                        <div id="cropTools" class="mt-3 flex flex-wrap gap-3 items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-400">Drag the crop box corners to resize, or drag inside to move</span>
+                            </div>
+                            <button id="resetCropBtn" class="btn btn-outline btn-sm ml-auto">Reset to Auto</button>
+                        </div>
+                        
+                        <!-- Zone Mode Tools (hidden when in crop view) -->
+                        <div id="zoneTools" class="mt-3 flex flex-wrap gap-3 items-center hidden">
                             <div class="flex items-center gap-2">
                                 <span class="mode-indicator" id="modeIndicator">
                                     <span class="mode-dot"></span>
                                     <span id="modeText">Select Mode</span>
                                 </span>
-                            </div>
-                            
-                            <div class="flex items-center gap-2 ml-4">
-                                <label class="text-xs text-gray-400">View:</label>
-                                <button id="viewFullBtn" class="btn btn-sm btn-outline btn-active">Full Image</button>
-                                <button id="viewGameBtn" class="btn btn-sm btn-outline">Game Preview</button>
                             </div>
                             
                             <div class="flex gap-2 ml-auto">
@@ -355,8 +364,8 @@
                         <!-- Instructions -->
                         <div class="mt-3 p-3 bg-black/30 rounded-lg">
                             <p class="text-xs text-gray-400" id="instructions">
-                                <strong>Select Mode:</strong> Click zones to select. Drag inside to move. Drag corners/edges to resize. Press Delete to remove.<br>
-                                <strong>Draw Mode:</strong> Click and drag to create new zones.
+                                <strong>Step 1 - Set Crop:</strong> Drag the crop box to select which part of the image players will see (4:3 aspect ratio).<br>
+                                <strong>Step 2 - Draw Zones:</strong> Click zones to select/move/resize. Use buttons to draw new Good or Perfect zones.
                             </p>
                         </div>
                     </div>
@@ -372,14 +381,6 @@
                             <div>
                                 <label class="text-xs text-gray-400">Level Name</label>
                                 <input type="text" id="levelName" placeholder="e.g., Mountain Lake" class="text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">Image Display Mode</label>
-                                <div class="flex gap-2 mt-1">
-                                    <button class="btn btn-sm flex-1 fit-mode-btn btn-active" data-fit="contain">Contain (Full)</button>
-                                    <button class="btn btn-sm flex-1 fit-mode-btn" data-fit="cover">Cover (Crop)</button>
-                                </div>
-                                <p class="help-text">Contain shows full image. Cover crops to fill 4:3.</p>
                             </div>
                             <div>
                                 <label class="text-xs text-gray-400">"No Good Spot" Feedback</label>
@@ -517,7 +518,9 @@
             name: '',
             imageUrl: '',
             imagePath: '',
-            imageFit: 'contain', // 'contain' (full image) or 'cover' (crop to 4:3)
+            // Crop rectangle as percentages of original image (null = auto-fit to 4:3)
+            // { x: 0, y: 0, width: 100, height: 75 } would show top 75% of image
+            crop: null,
             feedback: '', // "No good spot" feedback
             zoneSets: []  // Array of zone sets
         };
@@ -537,7 +540,7 @@
         
         // Editor state
         let editorMode = 'select'; // 'select', 'drawGood', 'drawPerfect'
-        let viewMode = 'full'; // 'full' or 'game'
+        let editorView = 'crop'; // 'crop' or 'zones'
         let selectedSetId = null;
         let selectedZoneType = null; // 'good' or 'perfect'
         let selectedZoneIndex = null;
@@ -547,7 +550,6 @@
         let tempZone = null;
         
         // Canvas refs
-        let imageCanvas, imageCtx;
         let overlayCanvas, overlayCtx;
         let interactionCanvas;
         let loadedImage = null;
@@ -611,7 +613,11 @@
             document.getElementById('drawPerfectBtn').classList.toggle('btn-active', editorMode === 'drawPerfect');
             
             // Update cursor
-            interactionCanvas.style.cursor = editorMode === 'select' ? 'default' : 'crosshair';
+            if (editorMode === 'select') {
+                interactionCanvas.style.cursor = 'default';
+            } else {
+                interactionCanvas.style.cursor = 'crosshair';
+            }
         }
 
         // ============================================
@@ -663,9 +669,19 @@
         // ============================================
         // CANVAS SETUP
         // ============================================
+        let cropCanvas, cropCtx;
+        
         function initCanvases() {
-            imageCanvas = document.getElementById('imageCanvas');
-            imageCtx = imageCanvas.getContext('2d');
+            // Crop view canvas
+            cropCanvas = document.getElementById('cropCanvas');
+            cropCtx = cropCanvas.getContext('2d');
+            
+            cropCanvas.addEventListener('mousedown', handleCropMouseDown);
+            cropCanvas.addEventListener('mousemove', handleCropMouseMove);
+            cropCanvas.addEventListener('mouseup', handleCropMouseUp);
+            cropCanvas.addEventListener('mouseleave', handleCropMouseUp);
+            
+            // Zone view canvases
             overlayCanvas = document.getElementById('overlayCanvas');
             overlayCtx = overlayCanvas.getContext('2d');
             interactionCanvas = document.getElementById('interactionLayer');
@@ -678,36 +694,159 @@
             window.addEventListener('keydown', handleKeyDown);
         }
         
+        // Calculate auto crop (center crop to 4:3)
+        function getAutoCrop(imgWidth, imgHeight) {
+            const imgAspect = imgWidth / imgHeight;
+            const targetAspect = 4 / 3;
+            
+            if (imgAspect > targetAspect) {
+                // Image is wider - crop sides
+                const cropWidth = (targetAspect / imgAspect) * 100;
+                return {
+                    x: (100 - cropWidth) / 2,
+                    y: 0,
+                    width: cropWidth,
+                    height: 100
+                };
+            } else {
+                // Image is taller - crop top/bottom
+                const cropHeight = (imgAspect / targetAspect) * 100;
+                return {
+                    x: 0,
+                    y: (100 - cropHeight) / 2,
+                    width: 100,
+                    height: cropHeight
+                };
+            }
+        }
+        
         function loadImageToCanvas(imageUrl) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             img.onload = () => {
                 loadedImage = img;
-                const container = document.getElementById('canvasContainer');
-                const maxWidth = container.clientWidth;
-                const maxHeight = 500;
                 
-                canvasScale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+                // If no crop is set, calculate auto crop
+                if (!currentLevel.crop) {
+                    currentLevel.crop = getAutoCrop(img.width, img.height);
+                }
                 
-                const w = img.width * canvasScale;
-                const h = img.height * canvasScale;
+                document.getElementById('cropPlaceholder').classList.add('hidden');
+                document.getElementById('zonePlaceholder').classList.add('hidden');
                 
-                imageCanvas.width = overlayCanvas.width = interactionCanvas.width = w;
-                imageCanvas.height = overlayCanvas.height = interactionCanvas.height = h;
-                
-                imageCtx.drawImage(img, 0, 0, w, h);
-                document.getElementById('canvasPlaceholder').classList.add('hidden');
-                
-                redrawOverlay();
+                drawCropView();
+                updateZoneView();
             };
             
             img.onerror = () => showToast("Failed to load image", "error");
             img.src = imageUrl;
         }
         
+        function drawCropView() {
+            if (!loadedImage) return;
+            
+            const container = document.getElementById('cropContainer');
+            const maxWidth = container.clientWidth;
+            const maxHeight = 500;
+            
+            const scale = Math.min(maxWidth / loadedImage.width, maxHeight / loadedImage.height, 1);
+            const w = loadedImage.width * scale;
+            const h = loadedImage.height * scale;
+            
+            cropCanvas.width = w;
+            cropCanvas.height = h;
+            
+            // Draw the full image
+            cropCtx.drawImage(loadedImage, 0, 0, w, h);
+            
+            // Darken the entire image
+            cropCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            cropCtx.fillRect(0, 0, w, h);
+            
+            // Draw the crop region (clear/bright)
+            const crop = currentLevel.crop;
+            const cropX = (crop.x / 100) * w;
+            const cropY = (crop.y / 100) * h;
+            const cropW = (crop.width / 100) * w;
+            const cropH = (crop.height / 100) * h;
+            
+            // Clear the crop region and redraw that part of the image
+            cropCtx.save();
+            cropCtx.beginPath();
+            cropCtx.rect(cropX, cropY, cropW, cropH);
+            cropCtx.clip();
+            cropCtx.drawImage(loadedImage, 0, 0, w, h);
+            cropCtx.restore();
+            
+            // Draw crop border
+            cropCtx.strokeStyle = '#00f5d4';
+            cropCtx.lineWidth = 2;
+            cropCtx.strokeRect(cropX, cropY, cropW, cropH);
+            
+            // Draw corner handles
+            const handleSize = 10;
+            cropCtx.fillStyle = '#00f5d4';
+            
+            // Corners
+            cropCtx.fillRect(cropX - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
+            cropCtx.fillRect(cropX + cropW - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
+            cropCtx.fillRect(cropX - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
+            cropCtx.fillRect(cropX + cropW - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
+            
+            // Edge handles
+            cropCtx.fillRect(cropX + cropW/2 - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
+            cropCtx.fillRect(cropX + cropW/2 - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
+            cropCtx.fillRect(cropX - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
+            cropCtx.fillRect(cropX + cropW - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
+            
+            // Draw aspect ratio label
+            cropCtx.fillStyle = 'rgba(0, 245, 212, 0.9)';
+            cropCtx.font = "bold 14px 'Century Gothic', sans-serif";
+            cropCtx.fillText('4:3', cropX + 8, cropY + 20);
+        }
+        
+        function updateZoneView() {
+            if (!loadedImage || !currentLevel.crop) return;
+            
+            const container = document.getElementById('zoneContainer');
+            const crop = currentLevel.crop;
+            
+            // Create a cropped version of the image as a data URL
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            const srcX = (crop.x / 100) * loadedImage.width;
+            const srcY = (crop.y / 100) * loadedImage.height;
+            const srcW = (crop.width / 100) * loadedImage.width;
+            const srcH = (crop.height / 100) * loadedImage.height;
+            
+            tempCanvas.width = srcW;
+            tempCanvas.height = srcH;
+            tempCtx.drawImage(loadedImage, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+            
+            // Set as background
+            container.style.backgroundImage = `url('${tempCanvas.toDataURL()}')`;
+            
+            // Size the overlay canvases
+            const rect = container.getBoundingClientRect();
+            overlayCanvas.width = interactionCanvas.width = rect.width;
+            overlayCanvas.height = interactionCanvas.height = rect.height;
+            
+            redrawOverlay();
+        }
+        
         function redrawOverlay() {
             if (!loadedImage) return;
+            
+            // Re-check container size in case of resize
+            const container = document.getElementById('zoneContainer');
+            const rect = container.getBoundingClientRect();
+            
+            if (overlayCanvas.width !== rect.width || overlayCanvas.height !== rect.height) {
+                overlayCanvas.width = interactionCanvas.width = rect.width;
+                overlayCanvas.height = interactionCanvas.height = rect.height;
+            }
             
             const w = overlayCanvas.width;
             const h = overlayCanvas.height;
@@ -893,6 +1032,155 @@
             overlayCtx.fillText(text, x, y);
             overlayCtx.textAlign = 'left';
             overlayCtx.textBaseline = 'alphabetic';
+        }
+        
+        // ============================================
+        // CROP MOUSE HANDLERS
+        // ============================================
+        let cropDragHandle = null;
+        let cropDragStart = null;
+        
+        function getCropHandleAt(x, y) {
+            if (!loadedImage || !currentLevel.crop) return null;
+            
+            const w = cropCanvas.width;
+            const h = cropCanvas.height;
+            const crop = currentLevel.crop;
+            
+            const cropX = (crop.x / 100) * w;
+            const cropY = (crop.y / 100) * h;
+            const cropW = (crop.width / 100) * w;
+            const cropH = (crop.height / 100) * h;
+            
+            const handleSize = 12;
+            
+            // Check corners first
+            if (Math.abs(x - cropX) < handleSize && Math.abs(y - cropY) < handleSize) return 'nw';
+            if (Math.abs(x - (cropX + cropW)) < handleSize && Math.abs(y - cropY) < handleSize) return 'ne';
+            if (Math.abs(x - cropX) < handleSize && Math.abs(y - (cropY + cropH)) < handleSize) return 'sw';
+            if (Math.abs(x - (cropX + cropW)) < handleSize && Math.abs(y - (cropY + cropH)) < handleSize) return 'se';
+            
+            // Check edges
+            if (Math.abs(x - (cropX + cropW/2)) < handleSize && Math.abs(y - cropY) < handleSize) return 'n';
+            if (Math.abs(x - (cropX + cropW/2)) < handleSize && Math.abs(y - (cropY + cropH)) < handleSize) return 's';
+            if (Math.abs(x - cropX) < handleSize && Math.abs(y - (cropY + cropH/2)) < handleSize) return 'w';
+            if (Math.abs(x - (cropX + cropW)) < handleSize && Math.abs(y - (cropY + cropH/2)) < handleSize) return 'e';
+            
+            // Check if inside (for move)
+            if (x >= cropX && x <= cropX + cropW && y >= cropY && y <= cropY + cropH) return 'move';
+            
+            return null;
+        }
+        
+        function handleCropMouseDown(e) {
+            if (!loadedImage) return;
+            
+            const rect = cropCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            cropDragHandle = getCropHandleAt(x, y);
+            if (cropDragHandle) {
+                cropDragStart = {
+                    x, y,
+                    crop: { ...currentLevel.crop }
+                };
+                cropCanvas.style.cursor = cropDragHandle === 'move' ? 'grabbing' : 'crosshair';
+            }
+        }
+        
+        function handleCropMouseMove(e) {
+            const rect = cropCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (!cropDragStart) {
+                // Just update cursor
+                const handle = getCropHandleAt(x, y);
+                if (handle === 'move') cropCanvas.style.cursor = 'grab';
+                else if (handle === 'nw' || handle === 'se') cropCanvas.style.cursor = 'nwse-resize';
+                else if (handle === 'ne' || handle === 'sw') cropCanvas.style.cursor = 'nesw-resize';
+                else if (handle === 'n' || handle === 's') cropCanvas.style.cursor = 'ns-resize';
+                else if (handle === 'e' || handle === 'w') cropCanvas.style.cursor = 'ew-resize';
+                else cropCanvas.style.cursor = 'default';
+                return;
+            }
+            
+            const w = cropCanvas.width;
+            const h = cropCanvas.height;
+            const original = cropDragStart.crop;
+            
+            // Convert to percentages
+            const dx = ((x - cropDragStart.x) / w) * 100;
+            const dy = ((y - cropDragStart.y) / h) * 100;
+            
+            let newX = original.x;
+            let newY = original.y;
+            let newW = original.width;
+            let newH = original.height;
+            
+            const minSize = 20; // Minimum 20% of image
+            
+            if (cropDragHandle === 'move') {
+                newX = Math.max(0, Math.min(100 - original.width, original.x + dx));
+                newY = Math.max(0, Math.min(100 - original.height, original.y + dy));
+            } else {
+                // For corners and edges, maintain 4:3 aspect ratio
+                const aspectRatio = 4 / 3;
+                
+                if (cropDragHandle.includes('e')) {
+                    newW = Math.max(minSize, Math.min(100 - original.x, original.width + dx));
+                    newH = newW / aspectRatio;
+                }
+                if (cropDragHandle.includes('w')) {
+                    const rightEdge = original.x + original.width;
+                    newX = Math.max(0, Math.min(rightEdge - minSize, original.x + dx));
+                    newW = rightEdge - newX;
+                    newH = newW / aspectRatio;
+                }
+                if (cropDragHandle.includes('s')) {
+                    newH = Math.max(minSize / aspectRatio, Math.min(100 - original.y, original.height + dy));
+                    newW = newH * aspectRatio;
+                }
+                if (cropDragHandle.includes('n')) {
+                    const bottomEdge = original.y + original.height;
+                    newY = Math.max(0, Math.min(bottomEdge - minSize / aspectRatio, original.y + dy));
+                    newH = bottomEdge - newY;
+                    newW = newH * aspectRatio;
+                }
+                
+                // For diagonal drags, use the dominant axis
+                if (cropDragHandle === 'nw' || cropDragHandle === 'se') {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        newH = newW / aspectRatio;
+                    } else {
+                        newW = newH * aspectRatio;
+                    }
+                }
+                if (cropDragHandle === 'ne' || cropDragHandle === 'sw') {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        newH = newW / aspectRatio;
+                    } else {
+                        newW = newH * aspectRatio;
+                    }
+                }
+                
+                // Clamp to bounds
+                if (newX + newW > 100) newW = 100 - newX;
+                if (newY + newH > 100) newH = 100 - newY;
+                newH = newW / aspectRatio; // Re-enforce aspect ratio after clamping
+            }
+            
+            currentLevel.crop = { x: newX, y: newY, width: newW, height: newH };
+            drawCropView();
+        }
+        
+        function handleCropMouseUp() {
+            if (cropDragStart) {
+                cropDragStart = null;
+                cropDragHandle = null;
+                updateZoneView(); // Update the zone view with new crop
+            }
         }
         
         function percentToPixel(zone) {
@@ -1224,90 +1512,71 @@
         }
 
         // ============================================
-        // VIEW MODE TOGGLE
+        // VIEW TOGGLE
         // ============================================
-        document.getElementById('viewFullBtn').addEventListener('click', () => {
-            viewMode = 'full';
-            document.getElementById('viewFullBtn').classList.add('btn-active');
-            document.getElementById('viewGameBtn').classList.remove('btn-active');
-            document.getElementById('canvasWrapper').classList.remove('game-preview-mode');
-            if (loadedImage) loadImageToCanvas(currentLevel.imageUrl);
-        });
-        
-        document.getElementById('viewGameBtn').addEventListener('click', () => {
-            viewMode = 'game';
-            document.getElementById('viewGameBtn').classList.add('btn-active');
-            document.getElementById('viewFullBtn').classList.remove('btn-active');
-            document.getElementById('canvasWrapper').classList.add('game-preview-mode');
-            if (loadedImage) setupGamePreview();
-        });
-        
-        function setupGamePreview() {
-            const wrapper = document.getElementById('canvasWrapper');
-            const containerWidth = document.getElementById('canvasContainer').clientWidth;
-            const previewWidth = Math.min(600, containerWidth - 32);
-            const previewHeight = previewWidth * (3/4); // 4:3 aspect ratio
+        function switchToView(view) {
+            editorView = view;
             
-            wrapper.style.width = previewWidth + 'px';
-            wrapper.style.height = previewHeight + 'px';
+            const cropBtn = document.getElementById('cropViewBtn');
+            const zoneBtn = document.getElementById('zoneViewBtn');
+            const cropContainer = document.getElementById('cropContainer');
+            const zoneContainer = document.getElementById('zoneContainer');
+            const cropTools = document.getElementById('cropTools');
+            const zoneTools = document.getElementById('zoneTools');
             
-            // Set canvas sizes to match preview
-            imageCanvas.width = overlayCanvas.width = interactionCanvas.width = previewWidth;
-            imageCanvas.height = overlayCanvas.height = interactionCanvas.height = previewHeight;
-            
-            // Draw image with "cover" behavior
-            const img = loadedImage;
-            const imgAspect = img.width / img.height;
-            const containerAspect = previewWidth / previewHeight;
-            
-            let drawWidth, drawHeight, offsetX, offsetY;
-            
-            if (imgAspect > containerAspect) {
-                // Image is wider - crop sides
-                drawHeight = previewHeight;
-                drawWidth = previewHeight * imgAspect;
-                offsetX = (previewWidth - drawWidth) / 2;
-                offsetY = 0;
+            if (view === 'crop') {
+                cropBtn.classList.add('btn-cyan');
+                cropBtn.classList.remove('btn-outline');
+                zoneBtn.classList.remove('btn-cyan');
+                zoneBtn.classList.add('btn-outline');
+                cropContainer.classList.remove('hidden');
+                zoneContainer.classList.add('hidden');
+                cropTools.classList.remove('hidden');
+                zoneTools.classList.add('hidden');
+                drawCropView();
             } else {
-                // Image is taller - crop top/bottom
-                drawWidth = previewWidth;
-                drawHeight = previewWidth / imgAspect;
-                offsetX = 0;
-                offsetY = (previewHeight - drawHeight) / 2;
+                zoneBtn.classList.add('btn-cyan');
+                zoneBtn.classList.remove('btn-outline');
+                cropBtn.classList.remove('btn-cyan');
+                cropBtn.classList.add('btn-outline');
+                cropContainer.classList.add('hidden');
+                zoneContainer.classList.remove('hidden');
+                cropTools.classList.add('hidden');
+                zoneTools.classList.remove('hidden');
+                updateZoneView();
             }
-            
-            imageCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-            
-            // Store crop info for zone calculations
-            currentLevel.cropInfo = { offsetX, offsetY, drawWidth, drawHeight, previewWidth, previewHeight };
-            
-            redrawOverlay();
         }
-
-        // ============================================
-        // IMAGE FIT MODE
-        // ============================================
-        document.querySelectorAll('.fit-mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.fit-mode-btn').forEach(b => b.classList.remove('btn-active'));
-                btn.classList.add('btn-active');
-                currentLevel.imageFit = btn.dataset.fit;
-                
-                // Auto-switch view mode to match
-                if (btn.dataset.fit === 'cover') {
-                    document.getElementById('viewGameBtn').click();
-                } else {
-                    document.getElementById('viewFullBtn').click();
+        
+        document.getElementById('cropViewBtn').addEventListener('click', () => {
+            if (!loadedImage) {
+                showToast('Upload an image first', 'error');
+                return;
+            }
+            // Warn if there are existing zones
+            const hasZones = currentLevel.zoneSets.some(s => s.goodZones.length > 0 || s.perfectZone);
+            if (hasZones && editorView !== 'crop') {
+                if (!confirm('Warning: Changing the crop will misalign existing zones. Continue?')) {
+                    return;
                 }
-            });
+            }
+            switchToView('crop');
         });
         
-        function updateFitModeButtons() {
-            document.querySelectorAll('.fit-mode-btn').forEach(btn => {
-                btn.classList.toggle('btn-active', btn.dataset.fit === currentLevel.imageFit);
-            });
-        }
-
+        document.getElementById('zoneViewBtn').addEventListener('click', () => {
+            if (!loadedImage) {
+                showToast('Upload an image first', 'error');
+                return;
+            }
+            switchToView('zones');
+        });
+        
+        document.getElementById('resetCropBtn').addEventListener('click', () => {
+            if (!loadedImage) return;
+            currentLevel.crop = getAutoCrop(loadedImage.width, loadedImage.height);
+            drawCropView();
+            updateZoneView();
+        });
+        
         // ============================================
         // MODE BUTTONS
         // ============================================
@@ -1608,7 +1877,7 @@
                     name: currentLevel.name,
                     imageUrl: currentLevel.imageUrl,
                     imagePath: currentLevel.imagePath,
-                    imageFit: currentLevel.imageFit || 'contain',
+                    crop: currentLevel.crop,
                     feedback: currentLevel.feedback,
                     placementFeedback,
                     goodZones,
@@ -1636,19 +1905,25 @@
         function newLevel() {
             currentLevel = {
                 id: null, name: '', imageUrl: '', imagePath: '',
-                imageFit: 'contain',
-                feedback: '', zoneSets: []
+                crop: null, feedback: '', zoneSets: []
             };
             document.getElementById('levelName').value = '';
             document.getElementById('levelFeedback').value = '';
             document.getElementById('zoneSetEditor').classList.add('hidden');
-            updateFitModeButtons();
-            document.getElementById('viewFullBtn').click();
             selectedSetId = null;
             loadedImage = null;
-            if (imageCtx) imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+            
+            // Clear both views
+            cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            document.getElementById('cropPlaceholder').classList.remove('hidden');
+            
+            const zoneContainer = document.getElementById('zoneContainer');
+            zoneContainer.style.backgroundImage = '';
             if (overlayCtx) overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            document.getElementById('canvasPlaceholder').classList.remove('hidden');
+            document.getElementById('zonePlaceholder').classList.remove('hidden');
+            
+            // Switch to crop view
+            switchToView('crop');
             updateZoneSetsList();
         }
         
@@ -1667,7 +1942,7 @@
                         name: data.name || '',
                         imageUrl: data.imageUrl,
                         imagePath: data.imagePath || '',
-                        imageFit: data.imageFit || 'contain',
+                        crop: data.crop || null, // Will be auto-calculated on image load if null
                         feedback: data.feedback || '',
                         zoneSets: data.zoneSets
                     };
@@ -1678,7 +1953,7 @@
                         name: data.name || '',
                         imageUrl: data.imageUrl,
                         imagePath: data.imagePath || '',
-                        imageFit: data.imageFit || 'contain',
+                        crop: data.crop || null,
                         feedback: data.feedback || '',
                         zoneSets: convertOldFormat(data)
                     };
@@ -1686,25 +1961,24 @@
                 
                 document.getElementById('levelName').value = currentLevel.name;
                 document.getElementById('levelFeedback').value = currentLevel.feedback;
-                updateFitModeButtons();
-                
-                // Switch to appropriate view mode
-                if (currentLevel.imageFit === 'cover') {
-                    document.getElementById('viewGameBtn').click();
-                } else {
-                    document.getElementById('viewFullBtn').click();
-                }
                 
                 loadImageToCanvas(currentLevel.imageUrl);
                 selectedSetId = currentLevel.zoneSets[0]?.id || null;
                 updateZoneSetsList();
                 updateZoneSetEditor();
                 
-                // Switch to editor
+                // Switch to editor and zones view (since level is already configured)
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
                 document.querySelector('[data-tab="editor"]').classList.add('active');
                 document.getElementById('editorTab').classList.remove('hidden');
+                
+                // If level has zones, go to zone view; otherwise stay in crop view
+                const hasZones = currentLevel.zoneSets.some(s => s.goodZones.length > 0 || s.perfectZone);
+                if (hasZones) {
+                    // Small delay to ensure image is loaded
+                    setTimeout(() => switchToView('zones'), 100);
+                }
                 
                 hideLoading();
             } catch (err) {
