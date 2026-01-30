@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.6.1</title>
+    <title>The Sweet Spot - Level Editor v1.6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -701,44 +701,83 @@
             const imgAspect = imgWidth / imgHeight;
             const targetAspect = 4 / 3;
             
+            let crop;
             if (imgAspect > targetAspect) {
-                // Image is wider than 4:3 - crop sides
-                // We want: (cropWidthPct/100 * imgWidth) / (cropHeightPct/100 * imgHeight) = 4/3
-                // With cropHeightPct = 100: cropWidthPct = (4/3) * (imgHeight/imgWidth) * 100
-                const cropWidthPct = (targetAspect / imgAspect) * 100;
-                return {
+                // Image is wider than 4:3 - crop sides, use full height
+                // If height = 100%, width needs to be: (4/3) * imgHeight / imgWidth * 100
+                const cropWidthPct = (targetAspect * imgHeight / imgWidth) * 100;
+                crop = {
                     x: (100 - cropWidthPct) / 2,
                     y: 0,
                     width: cropWidthPct,
                     height: 100
                 };
             } else {
-                // Image is taller than 4:3 - crop top/bottom
-                // With cropWidthPct = 100: cropHeightPct = (imgWidth/imgHeight) / (4/3) * 100
-                const cropHeightPct = (imgAspect / targetAspect) * 100;
-                return {
+                // Image is taller than 4:3 - crop top/bottom, use full width
+                // If width = 100%, height needs to be: imgWidth / (4/3) / imgHeight * 100
+                const cropHeightPct = (imgWidth / targetAspect / imgHeight) * 100;
+                crop = {
                     x: 0,
                     y: (100 - cropHeightPct) / 2,
                     width: 100,
                     height: cropHeightPct
                 };
             }
+            
+            console.log(`Auto crop for ${imgWidth}×${imgHeight}: ${JSON.stringify(crop)}`);
+            console.log(`Verifying: ${crop.width}% of ${imgWidth} = ${crop.width/100*imgWidth}, ${crop.height}% of ${imgHeight} = ${crop.height/100*imgHeight}`);
+            console.log(`Aspect: ${(crop.width/100*imgWidth) / (crop.height/100*imgHeight)}`);
+            
+            return crop;
         }
         
-        // Calculate what percentage height should be for a given width to maintain 4:3
+        // Verify and fix crop to ensure 4:3 aspect ratio
+        function verifyCrop(crop, imgWidth, imgHeight) {
+            const actualWidth = (crop.width / 100) * imgWidth;
+            const actualHeight = (crop.height / 100) * imgHeight;
+            const actualRatio = actualWidth / actualHeight;
+            
+            // If not close to 4:3, recalculate
+            if (Math.abs(actualRatio - 4/3) > 0.01) {
+                console.warn(`Crop ratio ${actualRatio} is not 4:3, recalculating...`);
+                // Keep width, adjust height
+                const correctHeight = actualWidth / (4/3);
+                const correctHeightPct = (correctHeight / imgHeight) * 100;
+                
+                // Make sure it fits
+                if (correctHeightPct <= 100 && crop.y + correctHeightPct <= 100) {
+                    crop.height = correctHeightPct;
+                } else {
+                    // Keep height, adjust width
+                    const correctWidth = actualHeight * (4/3);
+                    const correctWidthPct = (correctWidth / imgWidth) * 100;
+                    if (correctWidthPct <= 100) {
+                        crop.width = correctWidthPct;
+                        crop.x = Math.max(0, Math.min(crop.x, 100 - correctWidthPct));
+                    }
+                }
+            }
+            return crop;
+        }
+        
+        // Calculate height percentage for given width to maintain 4:3
         function getHeightForWidth(widthPct, imgWidth, imgHeight) {
-            // actualWidth = widthPct/100 * imgWidth
-            // actualHeight = heightPct/100 * imgHeight
-            // actualWidth / actualHeight = 4/3
-            // (widthPct * imgWidth) / (heightPct * imgHeight) = 4/3
-            // heightPct = (widthPct * imgWidth * 3) / (4 * imgHeight)
-            return (widthPct * imgWidth * 3) / (4 * imgHeight);
+            // Actual width = widthPct/100 * imgWidth
+            // For 4:3: actualHeight = actualWidth * 3/4
+            // heightPct = actualHeight / imgHeight * 100
+            const actualWidth = (widthPct / 100) * imgWidth;
+            const actualHeight = actualWidth * 3 / 4;
+            return (actualHeight / imgHeight) * 100;
         }
         
-        // Calculate what percentage width should be for a given height to maintain 4:3
+        // Calculate width percentage for given height to maintain 4:3  
         function getWidthForHeight(heightPct, imgWidth, imgHeight) {
-            // widthPct = (heightPct * imgHeight * 4) / (3 * imgWidth)
-            return (heightPct * imgHeight * 4) / (3 * imgWidth);
+            // Actual height = heightPct/100 * imgHeight
+            // For 4:3: actualWidth = actualHeight * 4/3
+            // widthPct = actualWidth / imgWidth * 100
+            const actualHeight = (heightPct / 100) * imgHeight;
+            const actualWidth = actualHeight * 4 / 3;
+            return (actualWidth / imgWidth) * 100;
         }
         
         function loadImageToCanvas(imageUrl) {
@@ -748,9 +787,12 @@
             img.onload = () => {
                 loadedImage = img;
                 
-                // If no crop is set, calculate auto crop
+                // If no crop is set, or if existing crop doesn't match 4:3, recalculate
                 if (!currentLevel.crop) {
                     currentLevel.crop = getAutoCrop(img.width, img.height);
+                } else {
+                    // Verify existing crop is actually 4:3
+                    currentLevel.crop = verifyCrop(currentLevel.crop, img.width, img.height);
                 }
                 
                 document.getElementById('cropPlaceholder').classList.add('hidden');
@@ -821,10 +863,21 @@
             cropCtx.fillRect(cropX - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
             cropCtx.fillRect(cropX + cropW - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
             
-            // Draw aspect ratio label
-            cropCtx.fillStyle = 'rgba(0, 245, 212, 0.9)';
+            // Draw aspect ratio label - show ACTUAL ratio for debugging
+            const actualCropWidth = (crop.width / 100) * loadedImage.width;
+            const actualCropHeight = (crop.height / 100) * loadedImage.height;
+            const actualRatio = actualCropWidth / actualCropHeight;
+            const ratioText = `${actualRatio.toFixed(2)} (target: 1.33)`;
+            
+            cropCtx.fillStyle = actualRatio > 1.30 && actualRatio < 1.36 ? 'rgba(123, 175, 212, 0.9)' : 'rgba(231, 76, 60, 0.9)';
             cropCtx.font = "bold 14px 'Century Gothic', sans-serif";
-            cropCtx.fillText('4:3', cropX + 8, cropY + 20);
+            cropCtx.fillText(ratioText, cropX + 8, cropY + 20);
+            
+            // Also show image dimensions
+            cropCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            cropCtx.font = "12px 'Century Gothic', sans-serif";
+            cropCtx.fillText(`Image: ${loadedImage.width}×${loadedImage.height}`, cropX + 8, cropY + 38);
+            cropCtx.fillText(`Crop: ${Math.round(actualCropWidth)}×${Math.round(actualCropHeight)}`, cropX + 8, cropY + 54);
         }
         
         function updateZoneView() {
@@ -967,19 +1020,24 @@
             const centerX = rect.x + rect.w / 2;
             const centerY = rect.y + rect.h / 2;
             
+            // Title-sized text - scale based on zone height
+            const fontSize = Math.max(24, Math.min(rect.h * 0.35, 48));
+            
             overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-            overlayCtx.font = "bold 16px 'Century Gothic', sans-serif";
+            overlayCtx.font = `bold ${fontSize}px 'Century Gothic', sans-serif`;
             overlayCtx.textAlign = 'center';
             overlayCtx.textBaseline = 'middle';
             
             // Draw shadow
-            overlayCtx.shadowColor = textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
-            overlayCtx.shadowBlur = 4;
-            overlayCtx.shadowOffsetX = 1;
-            overlayCtx.shadowOffsetY = 1;
+            overlayCtx.shadowColor = textColor === 'white' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)';
+            overlayCtx.shadowBlur = 6;
+            overlayCtx.shadowOffsetX = 2;
+            overlayCtx.shadowOffsetY = 2;
             
-            overlayCtx.fillText('Read', centerX, centerY - 10);
-            overlayCtx.fillText('This Text', centerX, centerY + 10);
+            // Two lines of title text
+            const lineHeight = fontSize * 1.15;
+            overlayCtx.fillText('Read', centerX, centerY - lineHeight/2);
+            overlayCtx.fillText('This Text', centerX, centerY + lineHeight/2);
             
             overlayCtx.shadowColor = 'transparent';
             overlayCtx.textAlign = 'left';
@@ -1502,7 +1560,14 @@
         }
         
         function handleKeyDown(e) {
+            // Don't handle keyboard shortcuts when typing in input fields
+            const activeEl = document.activeElement;
+            const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+            
+            if (isTyping) return;
+            
             if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault(); // Prevent browser back navigation
                 if (selectedSetId && selectedZoneType) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
