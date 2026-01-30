@@ -115,14 +115,6 @@
             position: relative;
         }
         
-        #gameContainer.fit-cover {
-            background-size: cover;
-        }
-        
-        #gameContainer.fit-contain {
-            background-size: contain;
-        }
-        
         #gameContainer.game-active {
             cursor: none;
         }
@@ -471,9 +463,9 @@
                         id: doc.id,
                         src: data.imageUrl,
                         name: data.name,
+                        crop: data.crop || null, // Crop settings
                         feedback: data.feedback,
                         placementFeedback: data.placementFeedback,
-                        imageFit: data.imageFit || 'contain',
                         goodZones: data.goodZones || { white: [], black: [] },
                         perfectZones: data.perfectZones || { white: [], black: [] }
                     };
@@ -542,11 +534,41 @@
             updateTextColorButton();
             
             const currentImage = gameImages[currentImageIndex];
-            gameContainer.style.backgroundImage = `url('${currentImage.src}')`;
             
-            // Apply image fit mode
-            gameContainer.classList.remove('fit-cover', 'fit-contain');
-            gameContainer.classList.add(`fit-${currentImage.imageFit || 'contain'}`);
+            // Apply crop if specified
+            if (currentImage.crop) {
+                applyCroppedImage(currentImage.src, currentImage.crop);
+            } else {
+                // No crop - show full image
+                gameContainer.style.backgroundImage = `url('${currentImage.src}')`;
+            }
+        }
+        
+        function applyCroppedImage(imageUrl, crop) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Calculate crop in pixels
+                const srcX = (crop.x / 100) * img.width;
+                const srcY = (crop.y / 100) * img.height;
+                const srcW = (crop.width / 100) * img.width;
+                const srcH = (crop.height / 100) * img.height;
+                
+                canvas.width = srcW;
+                canvas.height = srcH;
+                ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+                
+                gameContainer.style.backgroundImage = `url('${canvas.toDataURL()}')`;
+            };
+            img.onerror = () => {
+                // Fallback to uncropped
+                gameContainer.style.backgroundImage = `url('${imageUrl}')`;
+            };
+            img.src = imageUrl;
+        }
         }
         
         function updateTextColorButton() {
