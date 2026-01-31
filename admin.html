@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.4</title>
+    <title>The Sweet Spot - Level Editor v1.7.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -1101,31 +1101,42 @@
             const h = overlayCanvas.height;
             overlayCtx.clearRect(0, 0, w, h);
             
-            // Draw all zone sets
+            // Draw non-selected sets first (faded)
             currentLevel.zoneSets.forEach(set => {
-                const isSelected = set.id === selectedSetId;
-                const baseAlpha = isSelected ? 0.5 : 0.3;
+                if (set.id === selectedSetId) return; // Skip selected set for now
                 
-                // Draw good zones
+                // Draw faded good zones
                 set.goodZones.forEach((zone, idx) => {
-                    drawZone(zone, 'good', set.color, isSelected && selectedZoneType === 'good' && selectedZoneIndex === idx);
+                    drawZone(zone, 'good', set.color, false, true); // true = faded
+                });
+                
+                // Draw faded perfect zone
+                if (set.perfectZone) {
+                    drawZone(set.perfectZone, 'perfect', set.color, false, true);
+                }
+            });
+            
+            // Draw selected set on top (full opacity)
+            const selectedSet = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+            if (selectedSet) {
+                // Draw good zones
+                selectedSet.goodZones.forEach((zone, idx) => {
+                    drawZone(zone, 'good', selectedSet.color, selectedZoneType === 'good' && selectedZoneIndex === idx, false);
                 });
                 
                 // Draw perfect zone
-                if (set.perfectZone) {
-                    drawZone(set.perfectZone, 'perfect', set.color, isSelected && selectedZoneType === 'perfect');
+                if (selectedSet.perfectZone) {
+                    drawZone(selectedSet.perfectZone, 'perfect', selectedSet.color, selectedZoneType === 'perfect', false);
                     
                     // Draw text preview in perfect zone
-                    if (isSelected || true) { // Always show text preview
-                        drawTextPreview(set.perfectZone, set.color);
-                    }
+                    drawTextPreview(selectedSet.perfectZone, selectedSet.color);
                     
                     // Draw distance guides if selected
-                    if (isSelected && selectedZoneType === 'perfect' && set.goodZones.length > 0) {
-                        drawDistanceGuides(set.perfectZone, set.goodZones);
+                    if (selectedZoneType === 'perfect' && selectedSet.goodZones.length > 0) {
+                        drawDistanceGuides(selectedSet.perfectZone, selectedSet.goodZones);
                     }
                 }
-            });
+            }
             
             // Draw polygon being created
             if (editorMode === 'drawGood' && polygonPoints.length > 0) {
@@ -1144,12 +1155,31 @@
             }
         }
         
-        function drawZone(zone, type, textColor, isSelected) {
-            const color = type === 'good' ? 'rgba(74, 222, 128,' : 'rgba(59, 130, 246,';
+        function drawZone(zone, type, textColor, isSelected, isFaded = false) {
+            const baseColor = type === 'good' ? 'rgba(74, 222, 128,' : 'rgba(59, 130, 246,';
             
-            overlayCtx.fillStyle = color + (isSelected ? '0.5)' : '0.3)');
-            overlayCtx.strokeStyle = isSelected ? '#fff' : (textColor === 'white' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)');
-            overlayCtx.lineWidth = isSelected ? 3 : 2;
+            // Faded zones are much more transparent
+            let fillAlpha, strokeAlpha;
+            if (isFaded) {
+                fillAlpha = '0.1)';
+                strokeAlpha = '0.3)';
+            } else if (isSelected) {
+                fillAlpha = '0.5)';
+                strokeAlpha = '1)';
+            } else {
+                fillAlpha = '0.3)';
+                strokeAlpha = '0.7)';
+            }
+            
+            overlayCtx.fillStyle = baseColor + fillAlpha;
+            
+            if (isFaded) {
+                overlayCtx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+            } else {
+                overlayCtx.strokeStyle = isSelected ? '#fff' : (textColor === 'white' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)');
+            }
+            
+            overlayCtx.lineWidth = isSelected ? 3 : (isFaded ? 1 : 2);
             overlayCtx.setLineDash(isSelected ? [] : [5, 5]);
             
             if (type === 'good' && zone.points) {
@@ -1165,15 +1195,17 @@
                 overlayCtx.fill();
                 overlayCtx.stroke();
                 
-                // Draw vertex handles if selected
-                if (isSelected) {
+                // Draw vertex handles if selected (not faded)
+                if (isSelected && !isFaded) {
                     drawPolygonVertices(pixelPoints);
                 }
                 
-                // Label at first point
-                overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-                overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
-                overlayCtx.fillText('GOOD', pixelPoints[0].x + 4, pixelPoints[0].y + 14);
+                // Label at first point (skip for faded)
+                if (!isFaded) {
+                    overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
+                    overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
+                    overlayCtx.fillText('GOOD', pixelPoints[0].x + 4, pixelPoints[0].y + 14);
+                }
             } else {
                 // Draw rectangle (for perfect zones and legacy good zones)
                 const rect = percentToPixel(zone);
@@ -1181,15 +1213,17 @@
                 overlayCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
                 overlayCtx.strokeRect(rect.x, rect.y, rect.w, rect.h);
                 
-                // Draw resize handles if selected
-                if (isSelected) {
+                // Draw resize handles if selected (not faded)
+                if (isSelected && !isFaded) {
                     drawResizeHandles(rect);
                 }
                 
-                // Label
-                overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-                overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
-                overlayCtx.fillText(type === 'good' ? 'GOOD' : 'PERFECT', rect.x + 4, rect.y + 14);
+                // Label (skip for faded)
+                if (!isFaded) {
+                    overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
+                    overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
+                    overlayCtx.fillText(type === 'good' ? 'GOOD' : 'PERFECT', rect.x + 4, rect.y + 14);
+                }
             }
             
             overlayCtx.setLineDash([]);
@@ -2006,36 +2040,38 @@
         function findZoneAt(x, y) {
             const pct = pixelToPercent(x, y);
             
-            // Check zones in reverse order (top-most first)
-            for (let i = currentLevel.zoneSets.length - 1; i >= 0; i--) {
-                const set = currentLevel.zoneSets[i];
-                
-                // Check perfect zone first (always rectangle)
-                if (set.perfectZone) {
-                    const rect = percentToPixel(set.perfectZone);
-                    if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
-                        return { setId: set.id, type: 'perfect', index: null };
-                    }
+            // Only find zones in the selected set
+            if (!selectedSetId) return null;
+            
+            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+            if (!set) return null;
+            
+            // Check perfect zone first (always rectangle)
+            if (set.perfectZone) {
+                const rect = percentToPixel(set.perfectZone);
+                if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
+                    return { setId: set.id, type: 'perfect', index: null };
                 }
+            }
+            
+            // Check good zones (polygons or legacy rectangles)
+            for (let j = set.goodZones.length - 1; j >= 0; j--) {
+                const zone = set.goodZones[j];
                 
-                // Check good zones (polygons or legacy rectangles)
-                for (let j = set.goodZones.length - 1; j >= 0; j--) {
-                    const zone = set.goodZones[j];
-                    
-                    if (zone.points) {
-                        // Polygon
-                        if (pointInPolygon(pct.x, pct.y, zone)) {
-                            return { setId: set.id, type: 'good', index: j };
-                        }
-                    } else {
-                        // Legacy rectangle
-                        const rect = percentToPixel(zone);
-                        if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
-                            return { setId: set.id, type: 'good', index: j };
-                        }
+                if (zone.points) {
+                    // Polygon
+                    if (pointInPolygon(pct.x, pct.y, zone)) {
+                        return { setId: set.id, type: 'good', index: j };
+                    }
+                } else {
+                    // Legacy rectangle
+                    const rect = percentToPixel(zone);
+                    if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
+                        return { setId: set.id, type: 'good', index: j };
                     }
                 }
             }
+            
             return null;
         }
 
@@ -2212,6 +2248,10 @@
                             <strong class="text-sm">${set.name || 'Unnamed Set'}</strong>
                             <span class="text-xs text-gray-400 ml-2">(${set.color})</span>
                         </div>
+                        <div class="flex gap-1">
+                            <button class="duplicate-set-btn text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded" title="Duplicate this set">⧉</button>
+                            <button class="delete-set-btn text-xs px-2 py-1 bg-red-900 hover:bg-red-800 rounded" title="Delete this set">×</button>
+                        </div>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
                         ${set.goodZones.length} good zone${set.goodZones.length !== 1 ? 's' : ''}, 
@@ -2222,13 +2262,55 @@
             
             // Add click handlers
             container.querySelectorAll('.zone-set-item').forEach(item => {
-                item.addEventListener('click', () => {
+                item.addEventListener('click', (e) => {
+                    // Don't select if clicking a button
+                    if (e.target.closest('button')) return;
+                    
                     selectedSetId = item.dataset.setId;
                     selectedZoneType = null;
                     selectedZoneIndex = null;
+                    selectedVertexIndex = null;
                     updateZoneSetsList();
                     updateZoneSetEditor();
                     redrawOverlay();
+                });
+                
+                // Duplicate button
+                item.querySelector('.duplicate-set-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const setId = item.dataset.setId;
+                    const originalSet = currentLevel.zoneSets.find(s => s.id === setId);
+                    if (originalSet) {
+                        const newSet = JSON.parse(JSON.stringify(originalSet)); // Deep clone
+                        newSet.id = 'set_' + Date.now();
+                        newSet.name = (originalSet.name || 'Unnamed') + ' (copy)';
+                        currentLevel.zoneSets.push(newSet);
+                        selectedSetId = newSet.id;
+                        selectedZoneType = null;
+                        selectedZoneIndex = null;
+                        updateZoneSetsList();
+                        updateZoneSetEditor();
+                        redrawOverlay();
+                        showToast('Set duplicated!', 'success');
+                    }
+                });
+                
+                // Delete button
+                item.querySelector('.delete-set-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const setId = item.dataset.setId;
+                    if (confirm('Delete this zone set?')) {
+                        currentLevel.zoneSets = currentLevel.zoneSets.filter(s => s.id !== setId);
+                        if (selectedSetId === setId) {
+                            selectedSetId = currentLevel.zoneSets.length > 0 ? currentLevel.zoneSets[0].id : null;
+                            selectedZoneType = null;
+                            selectedZoneIndex = null;
+                        }
+                        updateZoneSetsList();
+                        updateZoneSetEditor();
+                        redrawOverlay();
+                        showToast('Set deleted', 'info');
+                    }
                 });
             });
         }
