@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.3</title>
+    <title>The Sweet Spot v1.8.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         :root {
             --bg-dark: #1a1a1a;
             --bg-panel: #2a2a2a;
             --accent-primary: #7BAFD4; /* Carolina Blue */
-            --accent-light: #a8d1f0;   /* Lighter Carolina Blue */
-            --accent-success: #6fbf73; /* Muted green for success */
-            --accent-warning: #f5a623; /* Warning/yellow */
-            --accent-danger: #e74c3c;  /* Danger red */
+            --accent-light: #a8d1f0;
+            --accent-grey: #666666;
+            --accent-success: #6fbf73;
             --text-primary: #ffffff;
-            --text-muted: #9ca3af;
             --border-color: #444444;
-            --grey-medium: #666666;
         }
         
         * { box-sizing: border-box; }
@@ -29,650 +31,388 @@
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
+            cursor: default;
         }
         
-        h1, h2, h3, .heading { font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif; font-weight: 700; }
-        .glow-primary { text-shadow: 0 0 20px var(--accent-primary); }
+        h1, h2, h3, .heading {
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
+            font-weight: 700;
+        }
+        
+        .glow-primary { text-shadow: 0 0 30px var(--accent-primary), 0 0 60px var(--accent-primary); }
+        .glow-grey { text-shadow: 0 0 20px var(--accent-grey); }
         
         .panel {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 16px;
         }
         
         .btn {
             font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 8px;
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 11px;
+            font-size: 13px;
             letter-spacing: 1px;
             transition: all 0.2s ease;
             cursor: pointer;
-            border: 2px solid transparent;
+            border: none;
         }
         
-        .btn-cyan { background: var(--accent-primary); color: var(--bg-dark); }
-        .btn-cyan:hover { box-shadow: 0 0 20px var(--accent-primary); transform: translateY(-1px); }
-        .btn-magenta { background: var(--grey-medium); color: white; }
-        .btn-magenta:hover { box-shadow: 0 0 10px var(--grey-medium); }
-        .btn-green { background: var(--accent-success); color: var(--bg-dark); }
-        .btn-green:hover { box-shadow: 0 0 20px var(--accent-success); }
-        .btn-blue { background: var(--accent-primary); color: var(--bg-dark); }
-        .btn-blue:hover { box-shadow: 0 0 20px var(--accent-primary); }
-        .btn-outline { background: transparent; border: 2px solid var(--border-color); color: var(--text-primary); }
-        .btn-outline:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
-        .btn-danger { background: var(--accent-danger); color: white; }
-        .btn-sm { padding: 6px 12px; font-size: 10px; }
+        .btn-cyan {
+            background: var(--accent-primary);
+            color: var(--bg-dark);
+        }
+        .btn-cyan:hover {
+            box-shadow: 0 0 30px var(--accent-primary);
+            transform: translateY(-2px);
+        }
         
-        .btn-active { box-shadow: 0 0 15px currentColor; }
+        .btn-magenta {
+            background: var(--accent-grey);
+            color: white;
+        }
+        .btn-magenta:hover {
+            box-shadow: 0 0 20px var(--accent-grey);
+            transform: translateY(-2px);
+        }
         
-        input, textarea, select {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 12px;
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--border-color);
             color: var(--text-primary);
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            font-size: 13px;
-            width: 100%;
         }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-primary); }
+        .btn-outline:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
         
-        #cropContainer {
-            position: relative;
+        .btn-white {
+            background: white;
+            color: var(--bg-dark);
+            border: 2px solid white;
+        }
+        .btn-white:hover {
+            background: #e2e8f0;
+        }
+        
+        .btn-dark {
             background: #1a1a2e;
-            border-radius: 8px;
-            overflow: hidden;
+            color: white;
+            border: 2px solid #333;
+        }
+        .btn-dark:hover {
+            background: #2a2a3e;
         }
         
-        #cropCanvas {
-            display: block;
-            max-width: 100%;
-            max-height: 500px;
-            margin: 0 auto;
-        }
-        
-        #zoneContainer {
-            position: relative;
-            background: #1a1a2e;
-            border-radius: 8px;
-            overflow: hidden;
-            background-size: 100% 100%;
+        #gameContainer {
+            background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
+            background-color: #1a1a2e;
+            aspect-ratio: 4/3;
+            position: relative;
         }
         
-        #canvasWrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        #gameContainer.game-active {
+            cursor: none;
         }
         
-        #overlayCanvas {
+        #textOverlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            transform: translate(-50%, -50%);
             pointer-events: none;
-            border-radius: 8px;
+            user-select: none;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            text-align: center;
+            transition: opacity 0.15s ease;
         }
         
-        #interactionLayer {
+        .feedback-zone {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-            border-radius: 8px;
+            background-color: rgba(76, 175, 80, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-sizing: border-box;
+            pointer-events: none;
         }
         
-        .zone-set-item {
-            background: rgba(255,255,255,0.03);
+        .perfect-zone-feedback {
+            position: absolute;
+            background-color: rgba(59, 130, 246, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        
+        .feedback-shadow {
+            position: absolute;
+            border: 2px dashed;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        
+        .score-popup {
+            position: absolute;
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            pointer-events: none;
+            animation: scoreFloat 1.5s ease-out forwards;
+        }
+        
+        @keyframes scoreFloat {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -70%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -150%) scale(1); opacity: 0; }
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .zone-set-item:hover { border-color: var(--accent-primary); }
-        .zone-set-item.selected { 
-            border-color: var(--accent-primary); 
-            background: rgba(0, 245, 212, 0.1);
-        }
-        .zone-set-item.white-set { border-left: 4px solid #fff; }
-        .zone-set-item.black-set { border-left: 4px solid #666; }
-        
-        .mode-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        .mode-draw { background: rgba(74, 222, 128, 0.2); color: var(--accent-green); }
-        .mode-edit { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
+            border-radius: 12px;
             padding: 16px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        }
-        .toast-success { background: #059669; }
-        .toast-error { background: #dc2626; }
-        .toast-info { background: #3b82f6; }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
         }
         
-        .loading-overlay {
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #6b7280;
+        }
+        
+        .stat-value {
+            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+        }
+        
+        .loading-screen {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
+            background: var(--bg-dark);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 999;
+            z-index: 100;
         }
         
         .spinner {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border: 4px solid var(--border-color);
             border-top-color: var(--accent-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
         
-        .tab-btn {
-            padding: 12px 24px;
-            border-bottom: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 600;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .tab-btn.active { border-bottom-color: var(--accent-primary); color: var(--accent-primary); }
         
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .status-connected { background: #4ade80; }
-        .status-disconnected { background: #dc2626; }
+        .start-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 90;
+        }
+        
+        .game-over-screen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 90;
+        }
         
         .hidden { display: none !important; }
         
-        .help-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .feedback-text {
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
         
-        .distance-label {
-            position: absolute;
-            background: rgba(0,0,0,0.8);
-            color: var(--accent-primary);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
+        .feedback-good { color: #7BAFD4; }
+        .feedback-bad { color: #e74c3c; }
+        .feedback-hint { color: #94a3b8; font-style: italic; font-size: 0.9rem; }
+        
+        /* Confetti animation for great scores */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: 0;
+            z-index: 100;
             pointer-events: none;
+            animation: confettiFall 3s ease-out forwards;
         }
         
-        .level-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.2s;
-            cursor: pointer;
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
-        .level-card:hover { border-color: var(--accent-primary); transform: translateY(-4px); }
-        .level-card img { width: 100%; height: 150px; object-fit: cover; }
+        
+        /* Firework animation for perfect scores */
+        .firework-particle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            z-index: 100;
+            pointer-events: none;
+            animation: fireworkBurst 1s ease-out forwards;
+            box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+        }
+        @keyframes fireworkBurst {
+            0% { 
+                transform: translate(0, 0) scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(var(--tx), var(--ty)) scale(0.3); 
+                opacity: 0; 
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Login Overlay -->
-    <div id="loginOverlay" class="fixed inset-0 bg-black flex items-center justify-center z-[200]">
-        <div class="text-center">
-            <h1 class="text-4xl font-bold heading glow-primary mb-2">THE SWEET SPOT</h1>
-            <p class="text-gray-400 mb-8">Level Editor</p>
-            <button id="googleSignInBtn" class="btn btn-cyan flex items-center gap-3 mx-auto">
-                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                Sign in with Google
-            </button>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner mb-6"></div>
+        <p class="text-gray-400">Loading levels...</p>
+    </div>
+    
+    <!-- Start Screen -->
+    <div id="startScreen" class="start-screen hidden">
+        <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">THE SWEET SPOT</h1>
+        <p class="text-gray-400 mb-8 max-w-md text-center">Find the perfect placement for text on images. Choose the right color and position for maximum readability.</p>
+        <button id="startGameBtn" class="btn btn-cyan text-lg px-12 py-4">Start Game</button>
+        <a href="admin.html" class="text-gray-500 mt-6 text-sm hover:text-cyan-400 transition-colors">Level Editor →</a>
+    </div>
+    
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="game-over-screen hidden">
+        <h2 class="text-4xl md:text-6xl font-bold heading glow-grey mb-4">GAME OVER</h2>
+        <p class="text-gray-400 mb-2">Final Score</p>
+        <p id="finalScore" class="text-6xl font-bold heading text-white mb-8">0</p>
+        <div class="flex gap-4">
+            <button id="playAgainBtn" class="btn btn-cyan">Play Again</button>
         </div>
     </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay hidden">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <p id="loadingText">Loading...</p>
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="border-b border-gray-800 py-3 px-6">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-4">
+    
+    <!-- Main Game -->
+    <div id="gameScreen" class="hidden">
+        <header class="border-b border-gray-800 py-4 px-6">
+            <div class="max-w-4xl mx-auto flex items-center justify-between">
                 <h1 class="text-xl font-bold heading glow-primary">THE SWEET SPOT</h1>
-                <span class="text-xs bg-gray-800 px-3 py-1 rounded-full">EDITOR</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 text-sm">
-                    <span class="status-dot" id="connectionStatus"></span>
-                    <span id="connectionText" class="text-xs">Checking...</span>
+                <div class="flex items-center gap-6">
+                    <div class="stat-box py-2 px-4">
+                        <span class="stat-label">Level</span>
+                        <span class="stat-value text-lg ml-2"><span id="currentLevel">1</span>/<span id="totalLevels">10</span></span>
+                    </div>
+                    <div class="stat-box py-2 px-4">
+                        <span class="stat-label">Score</span>
+                        <span class="stat-value text-lg ml-2 text-cyan-400" id="totalScore">0</span>
+                    </div>
                 </div>
-                <div id="userInfo" class="hidden items-center gap-3">
-                    <span id="userName" class="text-sm text-gray-400"></span>
-                    <button id="signOutBtn" class="text-xs text-gray-500 hover:text-red-400">Sign Out</button>
-                </div>
-                <a href="game.html" class="btn btn-outline btn-sm">Play Game →</a>
             </div>
-        </div>
-    </header>
-
-    <!-- Tabs -->
-    <div class="border-b border-gray-800">
-        <div class="max-w-7xl mx-auto flex">
-            <button class="tab-btn active" data-tab="editor">Level Editor</button>
-            <button class="tab-btn" data-tab="levels">All Levels</button>
-            <button class="tab-btn" data-tab="migrate">Migration</button>
-        </div>
+        </header>
+        
+        <main class="max-w-4xl mx-auto p-4">
+            <p id="instructionText" class="text-center text-gray-400 mb-2 text-sm">Change the text color if needed, then click to place the text.</p>
+            
+            <div class="panel p-2 mb-2">
+                <div id="gameContainer" class="rounded-lg overflow-hidden">
+                    <p id="textOverlay">Read<br>This Text</p>
+                    <div id="feedbackZonesContainer" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+            </div>
+            
+            <div id="feedbackArea" class="feedback-text mb-2 text-center text-lg font-bold"></div>
+            
+            <div id="gameControls" class="flex flex-wrap gap-3 justify-center">
+                <button id="changeColorBtn" class="btn btn-white">Change to Black</button>
+                <button id="noGoodSpotBtn" class="btn btn-magenta">No Good Spot</button>
+            </div>
+            
+            <div id="nextControls" class="hidden flex justify-center mt-2">
+                <button id="nextLevelBtn" class="btn btn-cyan">Next Level →</button>
+            </div>
+        </main>
     </div>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto p-4">
-        
-        <!-- Editor Tab -->
-        <div id="editorTab" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                
-                <!-- Left Panel: Canvas (8 cols) -->
-                <div class="lg:col-span-8">
-                    <div class="panel p-4">
-                        <!-- Image Controls -->
-                        <div class="flex items-center justify-between mb-3">
-                            <h2 class="text-lg font-bold heading">Image Canvas</h2>
-                            <div class="flex gap-2">
-                                <label class="btn btn-outline btn-sm cursor-pointer">
-                                    Upload
-                                    <input type="file" id="imageUpload" accept="image/*,video/webm" class="hidden">
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="flex gap-2 mb-3">
-                            <input type="text" id="imageUrlInput" placeholder="Or paste image URL..." class="flex-1 text-sm">
-                            <button id="loadUrlBtn" class="btn btn-cyan btn-sm">Load</button>
-                        </div>
-                        
-                        <!-- View Toggle -->
-                        <div class="flex gap-2 mb-3 p-2 bg-black/30 rounded-lg">
-                            <button id="cropViewBtn" class="btn btn-sm btn-cyan btn-active flex-1">1. Set Crop Area</button>
-                            <button id="zoneViewBtn" class="btn btn-sm btn-outline flex-1">2. Draw Zones</button>
-                        </div>
-                        
-                        <!-- Canvas Area for Crop View (shows full image with crop overlay) -->
-                        <div id="cropContainer" class="relative bg-black/30 rounded-lg overflow-hidden" style="min-height: 300px;">
-                            <canvas id="cropCanvas"></canvas>
-                            <p id="cropPlaceholder" class="text-gray-500 absolute inset-0 flex items-center justify-center">Upload an image to set crop area</p>
-                        </div>
-                        
-                        <!-- Canvas Area for Zone View (shows cropped region only) -->
-                        <div id="zoneContainer" class="hidden relative bg-black/30 rounded-lg overflow-hidden" style="aspect-ratio: 4/3; max-width: 600px; margin: 0 auto;">
-                            <div id="canvasWrapper" style="position: absolute; inset: 0;">
-                                <canvas id="overlayCanvas"></canvas>
-                                <canvas id="interactionLayer"></canvas>
-                            </div>
-                            <p id="zonePlaceholder" class="text-gray-500 absolute inset-0 flex items-center justify-center hidden">Set crop area first</p>
-                        </div>
-                        
-                        <!-- Crop Mode Tools -->
-                        <div id="cropTools" class="mt-3 flex flex-wrap gap-3 items-center">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm text-gray-400">Drag the crop box corners to resize, or drag inside to move</span>
-                            </div>
-                            <button id="resetCropBtn" class="btn btn-outline btn-sm ml-auto">Reset to Auto</button>
-                        </div>
-                        
-                        <!-- Zone Mode Tools (hidden when in crop view) -->
-                        <div id="zoneTools" class="mt-3 flex flex-wrap gap-3 items-center hidden">
-                            <div class="flex items-center gap-2">
-                                <span class="mode-indicator" id="modeIndicator">
-                                    <span class="mode-dot"></span>
-                                    <span id="modeText">Select Mode</span>
-                                </span>
-                            </div>
-                            
-                            <div class="flex gap-2 ml-auto">
-                                <button id="toggleZonesBtn" class="btn btn-outline btn-sm" title="Toggle zone visibility">👁 Zones</button>
-                                <button id="selectModeBtn" class="btn btn-blue btn-sm btn-active">Select</button>
-                                <button id="drawGoodBtn" class="btn btn-green btn-sm">+ Good Zone</button>
-                                <button id="drawPerfectBtn" class="btn btn-blue btn-sm">+ Perfect Zone</button>
-                                <button id="autoPerfectBtn" class="btn btn-outline btn-sm" title="Auto-place perfect zone in center of selected good zone">⚡ Auto Perfect</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Instructions -->
-                        <div class="mt-3 p-3 bg-black/30 rounded-lg">
-                            <p class="text-xs text-gray-400" id="instructions">
-                                <strong>Good Zones:</strong> Click to add polygon points, click near start to close shape.<br>
-                                <strong>Perfect Zone:</strong> Draw rectangle OR select a good zone and click "Auto Perfect" to place it automatically.<br>
-                                <strong>Editing:</strong> Drag vertices to reshape, drag inside to move. Delete key removes selected zone/vertex.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Right Panel: Zone Sets (4 cols) -->
-                <div class="lg:col-span-4 space-y-4">
-                    
-                    <!-- Level Info -->
-                    <div class="panel p-4">
-                        <h3 class="font-bold heading mb-3 text-sm">Level Info</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="text-xs text-gray-400">Level Name</label>
-                                <input type="text" id="levelName" placeholder="e.g., Mountain Lake" class="text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">"No Good Spot" Feedback</label>
-                                <textarea id="levelFeedback" rows="2" placeholder="Shown when image has no good spots..." class="text-sm"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Zone Sets -->
-                    <div class="panel p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-bold heading text-sm">Zone Sets</h3>
-                            <button id="addZoneSetBtn" class="btn btn-cyan btn-sm">+ New Set</button>
-                        </div>
-                        
-                        <div id="zoneSetsList" class="space-y-2 max-h-[250px] overflow-y-auto">
-                            <p class="text-gray-500 text-sm text-center py-4">No zone sets yet</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Selected Zone Set Editor -->
-                    <div id="zoneSetEditor" class="panel p-4 hidden">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-bold heading text-sm">Edit Zone Set</h3>
-                            <button id="deleteZoneSetBtn" class="btn btn-danger btn-sm">Delete Set</button>
-                        </div>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="text-xs text-gray-400">Set Name</label>
-                                <input type="text" id="zoneSetName" placeholder="e.g., Above Water" class="text-sm">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">Text Color</label>
-                                <div class="flex gap-2 mt-1">
-                                    <button class="btn btn-sm flex-1 color-btn" data-color="white" style="background:#fff;color:#000;">White</button>
-                                    <button class="btn btn-sm flex-1 color-btn" data-color="black" style="background:#333;color:#fff;">Black</button>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">Placement Feedback</label>
-                                <textarea id="zoneSetFeedback" rows="2" placeholder="Shown after player places text..." class="text-sm"></textarea>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">Perfect Zone Hint</label>
-                                <textarea id="perfectZoneHint" rows="2" placeholder="Hint for near-perfect placements..." class="text-sm"></textarea>
-                            </div>
-                            
-                            <div class="pt-2 border-t border-gray-700">
-                                <p class="text-xs text-gray-400 mb-2">Zones in this set:</p>
-                                <div id="setZonesList" class="text-xs space-y-1">
-                                    <p class="text-gray-500">No zones yet</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Actions -->
-                    <div class="panel p-4 space-y-2">
-                        <button id="saveLevelBtn" class="btn btn-cyan w-full">Save Level</button>
-                        <button id="newLevelBtn" class="btn btn-outline w-full">New Level</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Levels Tab -->
-        <div id="levelsTab" class="tab-content hidden">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold heading">All Levels</h2>
-                <button id="refreshLevelsBtn" class="btn btn-outline btn-sm">Refresh</button>
-            </div>
-            <div id="levelsList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                <p class="text-gray-500 col-span-full text-center py-12">Loading...</p>
-            </div>
-        </div>
-        
-        <!-- Migration Tab -->
-        <div id="migrateTab" class="tab-content hidden">
-            <div class="max-w-2xl mx-auto panel p-6">
-                <h2 class="text-xl font-bold heading mb-2">Migrate Original Images</h2>
-                <p class="text-gray-400 mb-6">Download original game images and upload them to Firebase.</p>
-                
-                <div id="migrationProgress" class="hidden mb-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm">Progress</span>
-                        <span id="migrationCount" class="text-sm">0 / 10</span>
-                    </div>
-                    <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <div id="migrationBar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all" style="width: 0%"></div>
-                    </div>
-                    <div id="migrationLog" class="mt-4 bg-black/50 rounded-lg p-4 max-h-[300px] overflow-y-auto font-mono text-xs space-y-1"></div>
-                </div>
-                
-                <button id="startMigrationBtn" class="btn btn-magenta">Start Migration</button>
-            </div>
-        </div>
-    </main>
-
-    <script type="module">
+    <script src="firebase-config.js"></script>
+    <script>
         // ============================================
-        // FIREBASE IMPORTS
-        // ============================================
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
-
-        // ============================================
-        // FIREBASE CONFIG & INIT
-        // ============================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyDfo45UBu-pR8nqMQhVlS_QgyYZ2kzBdvM",
-            authDomain: "ellisbell-c185c.firebaseapp.com",
-            projectId: "ellisbell-c185c",
-            storageBucket: "ellisbell-c185c.firebasestorage.app",
-            appId: "1:441560045695:web:94e51a006663404b8f474a"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        
-        let currentUser = null;
-        let firebaseReady = false;
-
-        // ============================================
-        // STATE
+        // FIREBASE & STATE
         // ============================================
         
-        // Level data structure
-        let currentLevel = {
-            id: null,
-            name: '',
-            imageUrl: '',
-            imagePath: '',
-            // Crop rectangle as percentages of original image (null = auto-fit to 4:3)
-            // { x: 0, y: 0, width: 100, height: 75 } would show top 75% of image
-            crop: null,
-            feedback: '', // "No good spot" feedback
-            zoneSets: []  // Array of zone sets
+        let db, storage;
+        let allLevels = []; // All loaded levels from Firebase
+        let gameImages = []; // Levels for current game (shuffled subset)
+        
+        let score = 0;
+        let currentImageIndex = 0;
+        let gameActive = false;
+        let currentTextColor = 'white';
+        
+        const colors = {
+            white: { hex: '#FFFFFF', shadow: '2px 2px 6px rgba(0,0,0,0.8)' },
+            black: { hex: '#000000', shadow: '2px 2px 6px rgba(255,255,255,0.8)' }
         };
         
-        /*
-        Zone Set structure:
-        {
-            id: 'set_1',
-            name: 'Above Water',
-            color: 'white', // or 'black'
-            placementFeedback: '',
-            perfectHint: '',
-            goodZones: [{ points: [{x, y}, {x, y}, ...] }],  // Polygon as array of percentage points
-            perfectZone: { x, y, width, height } // Rectangle only
-        }
-        
-        Legacy format (auto-converted on load):
-        goodZones: [{ x, y, width, height }]  // Converted to 4-point polygon
-        */
-        
-        // Editor state
-        let editorMode = 'select'; // 'select', 'drawGood', 'drawPerfect'
-        let editorView = 'crop'; // 'crop' or 'zones'
-        let selectedSetId = null;
-        let selectedZoneType = null; // 'good' or 'perfect'
-        let selectedZoneIndex = null;
-        let selectedVertexIndex = null; // For polygon vertex selection
-        let dragHandle = null; // Which handle is being dragged
-        let isDrawing = false;
-        let drawStart = { x: 0, y: 0 };
-        let tempZone = null;
-        let polygonPoints = []; // Points being drawn for new polygon
-        let zonesVisible = true; // Toggle for zone visibility
-        
-        // Undo history
-        let undoHistory = [];
-        const MAX_UNDO_HISTORY = 50;
-        
-        // Canvas refs
-        let overlayCanvas, overlayCtx;
-        let interactionCanvas;
-        let loadedImage = null;
-        let canvasScale = 1;
-        
-        // Text preview dimensions - must match actual game text (3.5rem)
-        // These are approximate - the actual size depends on canvas/screen size
-        // The preview now draws a tight bounding box so you can see the actual fit
-        const TEXT_WIDTH_PERCENT = 28;  // Approximate game text width
-        const TEXT_HEIGHT_PERCENT = 18; // Approximate game text height
-        
-        // Minimum zone sizes
-        const PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
-        const PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
-        const GOOD_MIN_WIDTH = TEXT_WIDTH_PERCENT + 5; // Must be bigger than perfect
-        const GOOD_MIN_HEIGHT = TEXT_HEIGHT_PERCENT + 5;
-
-        // ============================================
-        // UI HELPERS
-        // ============================================
-        function showLoading(text = 'Loading...') {
-            document.getElementById('loadingText').textContent = text;
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-        }
-        
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.add('hidden');
-        }
-        
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-        
-        function showConnectionStatus(connected, text) {
-            document.getElementById('connectionStatus').className = 'status-dot ' + (connected ? 'status-connected' : 'status-disconnected');
-            document.getElementById('connectionText').textContent = text;
-        }
+        let textBoundingBox = {};
         
         // ============================================
-        // POLYGON HELPER FUNCTIONS
+        // DOM ELEMENTS
         // ============================================
         
-        // Convert legacy rectangle to polygon format
-        function rectToPolygon(rect) {
-            return {
-                points: [
-                    { x: rect.x, y: rect.y },
-                    { x: rect.x + rect.width, y: rect.y },
-                    { x: rect.x + rect.width, y: rect.y + rect.height },
-                    { x: rect.x, y: rect.y + rect.height }
-                ]
-            };
-        }
+        const loadingScreen = document.getElementById('loadingScreen');
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
         
-        // Check if a good zone is in legacy rectangle format
-        function isLegacyRect(zone) {
-            return zone.hasOwnProperty('width') && zone.hasOwnProperty('height') && !zone.hasOwnProperty('points');
-        }
+        const gameContainer = document.getElementById('gameContainer');
+        const textOverlay = document.getElementById('textOverlay');
+        const instructionText = document.getElementById('instructionText');
+        const feedbackArea = document.getElementById('feedbackArea');
+        const feedbackZonesContainer = document.getElementById('feedbackZonesContainer');
         
-        // Convert zone to polygon if needed
-        function ensurePolygon(zone) {
-            if (isLegacyRect(zone)) {
-                return rectToPolygon(zone);
-            }
-            return zone;
-        }
+        const currentLevelEl = document.getElementById('currentLevel');
+        const totalLevelsEl = document.getElementById('totalLevels');
+        const totalScoreEl = document.getElementById('totalScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        
+        const gameControls = document.getElementById('gameControls');
+        const nextControls = document.getElementById('nextControls');
+        const changeColorBtn = document.getElementById('changeColorBtn');
+        const noGoodSpotBtn = document.getElementById('noGoodSpotBtn');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
         
         // ============================================
-        // UNDO SYSTEM
+        // INITIALIZATION
         // ============================================
-        function saveUndoState(description = '') {
-            // Deep clone current zone sets
-            const state = {
-                zoneSets: JSON.parse(JSON.stringify(currentLevel.zoneSets)),
-                selectedSetId,
-                selectedZoneType,
-                selectedZoneIndex,
-                description
-            };
-            undoHistory.push(state);
-            if (undoHistory.length > MAX_UNDO_HISTORY) {
-                undoHistory.shift();
-            }
-        }
-        
-        function undo() {
-            if (undoHistory.length === 0) {
-                showToast('Nothing to undo', 'info');
-                return;
-            }
-            
-            const state = undoHistory.pop();
-            currentLevel.zoneSets = state.zoneSets;
-            selectedSetId = state.selectedSetId;
-            selectedZoneType = state.selectedZoneType;
-            selectedZoneIndex = state.selectedZoneIndex;
-            
-            updateZoneSetsList();
-            updateZoneSetEditor();
-            redrawOverlay();
-            showToast('Undone' + (state.description ? ': ' + state.description : ''), 'info');
-        }
         
         // Point-in-polygon test using ray casting algorithm
         function pointInPolygon(px, py, polygon) {
+            if (!polygon.points) return false;
             const points = polygon.points;
             let inside = false;
             
@@ -689,2461 +429,636 @@
             return inside;
         }
         
-        // Calculate polygon centroid (center of mass)
-        function getPolygonCentroid(polygon) {
-            const points = polygon.points;
-            let cx = 0, cy = 0, area = 0;
-            
-            for (let i = 0; i < points.length; i++) {
-                const j = (i + 1) % points.length;
-                const cross = points[i].x * points[j].y - points[j].x * points[i].y;
-                area += cross;
-                cx += (points[i].x + points[j].x) * cross;
-                cy += (points[i].y + points[j].y) * cross;
-            }
-            
-            area /= 2;
-            cx /= (6 * area);
-            cy /= (6 * area);
-            
-            return { x: cx, y: cy };
+        // Check if a zone is in polygon format
+        function isPolygonZone(zone) {
+            return zone && zone.points && Array.isArray(zone.points);
         }
         
-        // Get bounding box of polygon
-        function getPolygonBounds(polygon) {
-            const points = polygon.points;
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
-            
-            points.forEach(p => {
-                minX = Math.min(minX, p.x);
-                minY = Math.min(minY, p.y);
-                maxX = Math.max(maxX, p.x);
-                maxY = Math.max(maxY, p.y);
-            });
-            
-            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-        }
-        
-        // Convert polygon points from percentages to pixels
-        function polygonToPixels(polygon) {
-            return polygon.points.map(p => ({
-                x: (p.x / 100) * overlayCanvas.width,
-                y: (p.y / 100) * overlayCanvas.height
-            }));
-        }
-        
-        // Convert pixel coordinates to percentages
-        function pixelToPercent(x, y) {
-            return {
-                x: Math.round((x / overlayCanvas.width) * 10000) / 100,
-                y: Math.round((y / overlayCanvas.height) * 10000) / 100
-            };
-        }
-        
-        // Find distance from point to polygon edge (for finding innermost point)
-        function distanceToPolygonEdge(px, py, polygon) {
-            const points = polygon.points;
-            let minDist = Infinity;
-            
-            for (let i = 0; i < points.length; i++) {
-                const j = (i + 1) % points.length;
-                const dist = distanceToLineSegment(px, py, points[i].x, points[i].y, points[j].x, points[j].y);
-                minDist = Math.min(minDist, dist);
-            }
-            
-            return minDist;
-        }
-        
-        function distanceToLineSegment(px, py, x1, y1, x2, y2) {
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const lengthSq = dx * dx + dy * dy;
-            
-            if (lengthSq === 0) return Math.hypot(px - x1, py - y1);
-            
-            let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
-            t = Math.max(0, Math.min(1, t));
-            
-            const nearX = x1 + t * dx;
-            const nearY = y1 + t * dy;
-            
-            return Math.hypot(px - nearX, py - nearY);
-        }
-        
-        // Find the best position for perfect zone within a polygon
-        function findBestPerfectZonePosition(polygon) {
-            const halfW = PERFECT_MIN_WIDTH / 2;
-            const halfH = PERFECT_MIN_HEIGHT / 2;
-            
-            // Check if a rectangle centered at (cx, cy) fits entirely inside the polygon
-            function rectangleFitsAt(cx, cy) {
-                const corners = [
-                    { x: cx - halfW, y: cy - halfH }, // top-left
-                    { x: cx + halfW, y: cy - halfH }, // top-right
-                    { x: cx - halfW, y: cy + halfH }, // bottom-left
-                    { x: cx + halfW, y: cy + halfH }  // bottom-right
-                ];
-                return corners.every(c => pointInPolygon(c.x, c.y, polygon));
-            }
-            
-            // Get minimum distance from rectangle edges to polygon edges
-            function getMinEdgeDistance(cx, cy) {
-                const corners = [
-                    { x: cx - halfW, y: cy - halfH },
-                    { x: cx + halfW, y: cy - halfH },
-                    { x: cx - halfW, y: cy + halfH },
-                    { x: cx + halfW, y: cy + halfH }
-                ];
-                let minDist = Infinity;
-                for (const corner of corners) {
-                    const dist = distanceToPolygonEdge(corner.x, corner.y, polygon);
-                    if (dist < minDist) minDist = dist;
-                }
-                return minDist;
-            }
-            
-            // First try centroid - this is usually the best visual position
-            const centroid = getPolygonCentroid(polygon);
-            if (rectangleFitsAt(centroid.x, centroid.y)) {
-                // Centroid works! Use it.
-                return { x: centroid.x, y: centroid.y, fits: true };
-            }
-            
-            // Centroid doesn't fit - search for best alternative
-            const bounds = getPolygonBounds(polygon);
-            let bestX = null, bestY = null;
-            let bestScore = -Infinity;
-            
-            // Sample grid to find best position where rectangle fits
-            const gridSize = 30;
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
-                    const x = bounds.x + (bounds.width * (i + 0.5) / gridSize);
-                    const y = bounds.y + (bounds.height * (j + 0.5) / gridSize);
-                    
-                    if (rectangleFitsAt(x, y)) {
-                        const score = getMinEdgeDistance(x, y);
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestX = x;
-                            bestY = y;
-                        }
-                    }
-                }
-            }
-            
-            // If no valid position found, return centroid anyway (will be flagged)
-            if (bestX === null) {
-                console.warn('No position found where perfect zone fits inside polygon');
-                return { x: centroid.x, y: centroid.y, fits: false };
-            }
-            
-            return { x: bestX, y: bestY, fits: true };
-        }
-        
-        function updateModeIndicator() {
-            const indicator = document.getElementById('modeIndicator');
-            const text = document.getElementById('modeText');
-            
-            indicator.className = 'mode-indicator';
-            
-            if (editorMode === 'select') {
-                indicator.classList.add('mode-edit');
-                text.textContent = 'Select Mode';
-            } else if (editorMode === 'drawGood') {
-                indicator.classList.add('mode-draw');
-                text.textContent = 'Drawing Good Zone';
-            } else if (editorMode === 'drawPerfect') {
-                indicator.classList.add('mode-draw');
-                text.textContent = 'Drawing Perfect Zone';
-            }
-            
-            // Update button states
-            document.getElementById('selectModeBtn').classList.toggle('btn-active', editorMode === 'select');
-            document.getElementById('drawGoodBtn').classList.toggle('btn-active', editorMode === 'drawGood');
-            document.getElementById('drawPerfectBtn').classList.toggle('btn-active', editorMode === 'drawPerfect');
-            
-            // Update cursor
-            if (editorMode === 'select') {
-                interactionCanvas.style.cursor = 'default';
+        // Check if a point is inside a zone (polygon or rectangle)
+        function pointInZone(px, py, zone) {
+            if (isPolygonZone(zone)) {
+                return pointInPolygon(px, py, zone);
             } else {
-                interactionCanvas.style.cursor = 'crosshair';
+                // Legacy rectangle format
+                return px >= zone.x && px <= zone.x + zone.width &&
+                       py >= zone.y && py <= zone.y + zone.height;
             }
         }
-
-        // ============================================
-        // AUTHENTICATION
-        // ============================================
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                firebaseReady = true;
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('userInfo').classList.remove('hidden');
-                document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('userName').textContent = user.displayName || user.email || 'User';
-                showConnectionStatus(true, "Connected");
-            } else {
-                currentUser = null;
-                firebaseReady = false;
-                document.getElementById('loginOverlay').classList.remove('hidden');
-                document.getElementById('userInfo').classList.add('hidden');
-                showConnectionStatus(false, "Not signed in");
-            }
-        });
         
-        document.getElementById('googleSignInBtn').addEventListener('click', async () => {
-            console.log('Sign in button clicked');
+        // Check if the ENTIRE text rectangle is inside a zone
+        // For polygons: all 4 corners must be inside
+        // For rectangles: use overlap percentage (100% = fully inside)
+        function textFullyInsideZone(textRect, zone) {
+            if (isPolygonZone(zone)) {
+                // Check all 4 corners of the text rectangle
+                const corners = [
+                    { x: textRect.x, y: textRect.y },                                    // top-left
+                    { x: textRect.x + textRect.width, y: textRect.y },                   // top-right
+                    { x: textRect.x, y: textRect.y + textRect.height },                  // bottom-left
+                    { x: textRect.x + textRect.width, y: textRect.y + textRect.height }  // bottom-right
+                ];
+                return corners.every(corner => pointInPolygon(corner.x, corner.y, zone));
+            } else {
+                // For rectangles, check if text is fully contained
+                return textRect.x >= zone.x &&
+                       textRect.y >= zone.y &&
+                       textRect.x + textRect.width <= zone.x + zone.width &&
+                       textRect.y + textRect.height <= zone.y + zone.height;
+            }
+        }
+        
+        // Check if any part of the text rectangle overlaps with a zone (for partial credit feedback)
+        function textOverlapsZone(textRect, zone) {
+            if (isPolygonZone(zone)) {
+                // For polygons, check if text center is inside
+                const centerX = textRect.x + textRect.width / 2;
+                const centerY = textRect.y + textRect.height / 2;
+                return pointInPolygon(centerX, centerY, zone);
+            } else {
+                // For rectangles, use overlap percentage
+                return calculateOverlapPercentage(textRect, zone) > 0;
+            }
+        }
+        
+        async function init() {
+            const statusText = document.querySelector('#loadingScreen p');
+            
             try {
-                console.log('Attempting signInWithPopup...');
-                const result = await signInWithPopup(auth, new GoogleAuthProvider());
-                console.log('Sign in successful:', result.user.email);
-            } catch (error) {
-                console.error('Sign in error:', error);
-                if (error.code !== 'auth/popup-closed-by-user') {
-                    showToast("Sign in failed: " + error.message, "error");
+                // Check if config loaded
+                if (typeof firebaseConfig === 'undefined') {
+                    throw new Error("firebase-config.js not loaded. Make sure the file exists.");
                 }
-            }
-        });
-        
-        document.getElementById('signOutBtn').addEventListener('click', () => firebaseSignOut(auth));
-
-        // ============================================
-        // TAB NAVIGATION
-        // ============================================
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab + 'Tab').classList.remove('hidden');
-                if (btn.dataset.tab === 'levels') loadLevelsList();
-                if (btn.dataset.tab === 'editor') newLevel(); // Start fresh when going to editor
-            });
-        });
-
-        // ============================================
-        // CANVAS SETUP
-        // ============================================
-        let cropCanvas, cropCtx;
-        
-        function initCanvases() {
-            // Crop view canvas
-            cropCanvas = document.getElementById('cropCanvas');
-            cropCtx = cropCanvas.getContext('2d');
-            
-            cropCanvas.addEventListener('mousedown', handleCropMouseDown);
-            cropCanvas.addEventListener('mousemove', handleCropMouseMove);
-            cropCanvas.addEventListener('mouseup', handleCropMouseUp);
-            cropCanvas.addEventListener('mouseleave', handleCropMouseUp);
-            
-            // Zone view canvases
-            overlayCanvas = document.getElementById('overlayCanvas');
-            overlayCtx = overlayCanvas.getContext('2d');
-            interactionCanvas = document.getElementById('interactionLayer');
-            
-            interactionCanvas.addEventListener('mousedown', handleMouseDown);
-            interactionCanvas.addEventListener('mousemove', handleMouseMove);
-            interactionCanvas.addEventListener('mouseup', handleMouseUp);
-            interactionCanvas.addEventListener('mouseleave', handleMouseUp);
-            
-            window.addEventListener('keydown', handleKeyDown);
-        }
-        
-        // Calculate auto crop (center crop to 4:3)
-        // Returns percentages that, when applied to the image, result in a 4:3 aspect ratio
-        function getAutoCrop(imgWidth, imgHeight) {
-            const imgAspect = imgWidth / imgHeight;
-            const targetAspect = 4 / 3;
-            
-            let crop;
-            if (imgAspect > targetAspect) {
-                // Image is wider than 4:3 - crop sides, use full height
-                // If height = 100%, width needs to be: (4/3) * imgHeight / imgWidth * 100
-                const cropWidthPct = (targetAspect * imgHeight / imgWidth) * 100;
-                crop = {
-                    x: (100 - cropWidthPct) / 2,
-                    y: 0,
-                    width: cropWidthPct,
-                    height: 100
-                };
-            } else {
-                // Image is taller than 4:3 - crop top/bottom, use full width
-                // If width = 100%, height needs to be: imgWidth / (4/3) / imgHeight * 100
-                const cropHeightPct = (imgWidth / targetAspect / imgHeight) * 100;
-                crop = {
-                    x: 0,
-                    y: (100 - cropHeightPct) / 2,
-                    width: 100,
-                    height: cropHeightPct
-                };
-            }
-            
-            console.log(`Auto crop for ${imgWidth}×${imgHeight}: ${JSON.stringify(crop)}`);
-            console.log(`Verifying: ${crop.width}% of ${imgWidth} = ${crop.width/100*imgWidth}, ${crop.height}% of ${imgHeight} = ${crop.height/100*imgHeight}`);
-            console.log(`Aspect: ${(crop.width/100*imgWidth) / (crop.height/100*imgHeight)}`);
-            
-            return crop;
-        }
-        
-        // Verify and fix crop to ensure 4:3 aspect ratio
-        function verifyCrop(crop, imgWidth, imgHeight) {
-            const actualWidth = (crop.width / 100) * imgWidth;
-            const actualHeight = (crop.height / 100) * imgHeight;
-            const actualRatio = actualWidth / actualHeight;
-            
-            // If not close to 4:3, recalculate
-            if (Math.abs(actualRatio - 4/3) > 0.01) {
-                console.warn(`Crop ratio ${actualRatio} is not 4:3, recalculating...`);
-                // Keep width, adjust height
-                const correctHeight = actualWidth / (4/3);
-                const correctHeightPct = (correctHeight / imgHeight) * 100;
                 
-                // Make sure it fits
-                if (correctHeightPct <= 100 && crop.y + correctHeightPct <= 100) {
-                    crop.height = correctHeightPct;
+                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                    throw new Error("Firebase not configured - update firebase-config.js");
+                }
+                
+                statusText.textContent = 'Connecting to Firebase...';
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                storage = firebase.storage();
+                
+                statusText.textContent = 'Loading levels...';
+                await loadLevels();
+                
+                loadingScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error("Init error:", error);
+                
+                // Show specific error message
+                if (error.message.includes("No levels found")) {
+                    statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #7BAFD4; text-decoration: underline;">Open Admin Panel</a> and run the migration first.';
+                } else if (error.message.includes("firebase-config.js")) {
+                    statusText.textContent = error.message;
+                } else if (error.code === 'permission-denied') {
+                    statusText.textContent = 'Permission denied. Check Firestore security rules.';
                 } else {
-                    // Keep height, adjust width
-                    const correctWidth = actualHeight * (4/3);
-                    const correctWidthPct = (correctWidth / imgWidth) * 100;
-                    if (correctWidthPct <= 100) {
-                        crop.width = correctWidthPct;
-                        crop.x = Math.max(0, Math.min(crop.x, 100 - correctWidthPct));
-                    }
+                    statusText.textContent = `Error: ${error.message}`;
                 }
             }
-            return crop;
         }
         
-        // Calculate height percentage for given width to maintain 4:3
-        function getHeightForWidth(widthPct, imgWidth, imgHeight) {
-            // Actual width = widthPct/100 * imgWidth
-            // For 4:3: actualHeight = actualWidth * 3/4
-            // heightPct = actualHeight / imgHeight * 100
-            const actualWidth = (widthPct / 100) * imgWidth;
-            const actualHeight = actualWidth * 3 / 4;
-            return (actualHeight / imgHeight) * 100;
+        async function loadLevels() {
+            try {
+                const snapshot = await db.collection('levels').get();
+                
+                if (snapshot.empty) {
+                    throw new Error("No levels found");
+                }
+                
+                allLevels = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        src: data.imageUrl,
+                        name: data.name,
+                        crop: data.crop || null, // Crop settings
+                        feedback: data.feedback,
+                        placementFeedback: data.placementFeedback,
+                        goodZones: data.goodZones || { white: [], black: [] },
+                        perfectZones: data.perfectZones || { white: [], black: [] }
+                    };
+                });
+                
+                console.log(`Loaded ${allLevels.length} levels`);
+            } catch (error) {
+                console.error("Load levels error:", error);
+                throw error;
+            }
         }
         
-        // Calculate width percentage for given height to maintain 4:3  
-        function getWidthForHeight(heightPct, imgWidth, imgHeight) {
-            // Actual height = heightPct/100 * imgHeight
-            // For 4:3: actualWidth = actualHeight * 4/3
-            // widthPct = actualWidth / imgWidth * 100
-            const actualHeight = (heightPct / 100) * imgHeight;
-            const actualWidth = actualHeight * 4 / 3;
-            return (actualWidth / imgWidth) * 100;
+        // ============================================
+        // GAME LOGIC
+        // ============================================
+        
+        function startGame() {
+            score = 0;
+            currentImageIndex = 0;
+            
+            // Copy all levels and shuffle
+            gameImages = [...allLevels];
+            for (let i = gameImages.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [gameImages[i], gameImages[j]] = [gameImages[j], gameImages[i]];
+            }
+            
+            // Pick only 10 random levels (or fewer if not enough)
+            const MAX_LEVELS = 10;
+            if (gameImages.length > MAX_LEVELS) {
+                gameImages = gameImages.slice(0, MAX_LEVELS);
+            }
+            
+            totalScoreEl.textContent = score;
+            totalLevelsEl.textContent = gameImages.length;
+            
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            // Measure text overlay
+            textOverlay.style.opacity = '1';
+            textOverlay.style.display = 'block';
+            textBoundingBox = textOverlay.getBoundingClientRect();
+            textOverlay.style.display = 'none';
+            
+            loadRound();
         }
         
-        function loadImageToCanvas(imageUrl) {
+        function loadRound() {
+            gameActive = true;
+            feedbackArea.innerHTML = '';
+            feedbackZonesContainer.innerHTML = '';
+            
+            gameControls.classList.remove('hidden');
+            nextControls.classList.add('hidden');
+            gameContainer.classList.add('game-active');
+            
+            textOverlay.style.display = 'block';
+            textOverlay.style.opacity = '0';
+            
+            instructionText.textContent = "Change the text color if needed, then click to place the text.";
+            currentLevelEl.textContent = currentImageIndex + 1;
+            
+            currentTextColor = 'white';
+            updateTextColorButton();
+            
+            const currentImage = gameImages[currentImageIndex];
+            
+            // Apply crop if specified
+            if (currentImage.crop) {
+                applyCroppedImage(currentImage.src, currentImage.crop);
+            } else {
+                // No crop - show full image
+                gameContainer.style.backgroundImage = `url('${currentImage.src}')`;
+            }
+        }
+        
+        function applyCroppedImage(imageUrl, crop) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            
             img.onload = () => {
-                loadedImage = img;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
                 
-                // If no crop is set, or if existing crop doesn't match 4:3, recalculate
-                if (!currentLevel.crop) {
-                    currentLevel.crop = getAutoCrop(img.width, img.height);
-                } else {
-                    // Verify existing crop is actually 4:3
-                    currentLevel.crop = verifyCrop(currentLevel.crop, img.width, img.height);
-                }
+                // Calculate crop in pixels
+                const srcX = (crop.x / 100) * img.width;
+                const srcY = (crop.y / 100) * img.height;
+                const srcW = (crop.width / 100) * img.width;
+                const srcH = (crop.height / 100) * img.height;
                 
-                document.getElementById('cropPlaceholder').classList.add('hidden');
-                document.getElementById('zonePlaceholder').classList.add('hidden');
+                canvas.width = srcW;
+                canvas.height = srcH;
+                ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
                 
-                drawCropView();
-                updateZoneView();
+                gameContainer.style.backgroundImage = `url('${canvas.toDataURL()}')`;
             };
-            
-            img.onerror = () => showToast("Failed to load image", "error");
+            img.onerror = () => {
+                // Fallback to uncropped
+                gameContainer.style.backgroundImage = `url('${imageUrl}')`;
+            };
             img.src = imageUrl;
         }
         
-        function drawCropView() {
-            if (!loadedImage) return;
+        function updateTextColorButton() {
+            const colorProps = colors[currentTextColor];
+            textOverlay.style.color = colorProps.hex;
+            textOverlay.style.textShadow = colorProps.shadow;
             
-            const container = document.getElementById('cropContainer');
-            const maxWidth = container.clientWidth;
-            const maxHeight = 500;
-            
-            const scale = Math.min(maxWidth / loadedImage.width, maxHeight / loadedImage.height, 1);
-            const w = loadedImage.width * scale;
-            const h = loadedImage.height * scale;
-            
-            cropCanvas.width = w;
-            cropCanvas.height = h;
-            
-            // Draw the full image
-            cropCtx.drawImage(loadedImage, 0, 0, w, h);
-            
-            // Darken the entire image
-            cropCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            cropCtx.fillRect(0, 0, w, h);
-            
-            // Draw the crop region (clear/bright)
-            const crop = currentLevel.crop;
-            const cropX = (crop.x / 100) * w;
-            const cropY = (crop.y / 100) * h;
-            const cropW = (crop.width / 100) * w;
-            const cropH = (crop.height / 100) * h;
-            
-            // Clear the crop region and redraw that part of the image
-            cropCtx.save();
-            cropCtx.beginPath();
-            cropCtx.rect(cropX, cropY, cropW, cropH);
-            cropCtx.clip();
-            cropCtx.drawImage(loadedImage, 0, 0, w, h);
-            cropCtx.restore();
-            
-            // Draw crop border
-            cropCtx.strokeStyle = '#7BAFD4';
-            cropCtx.lineWidth = 2;
-            cropCtx.strokeRect(cropX, cropY, cropW, cropH);
-            
-            // Draw corner handles
-            const handleSize = 10;
-            cropCtx.fillStyle = '#7BAFD4';
-            
-            // Corners
-            cropCtx.fillRect(cropX - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
-            cropCtx.fillRect(cropX + cropW - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
-            cropCtx.fillRect(cropX - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
-            cropCtx.fillRect(cropX + cropW - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
-            
-            // Edge handles
-            cropCtx.fillRect(cropX + cropW/2 - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
-            cropCtx.fillRect(cropX + cropW/2 - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
-            cropCtx.fillRect(cropX - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
-            cropCtx.fillRect(cropX + cropW - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
-            
-            // Draw aspect ratio label - show ACTUAL ratio for debugging
-            const actualCropWidth = (crop.width / 100) * loadedImage.width;
-            const actualCropHeight = (crop.height / 100) * loadedImage.height;
-            const actualRatio = actualCropWidth / actualCropHeight;
-            const ratioText = `${actualRatio.toFixed(2)} (target: 1.33)`;
-            
-            cropCtx.fillStyle = actualRatio > 1.30 && actualRatio < 1.36 ? 'rgba(123, 175, 212, 0.9)' : 'rgba(231, 76, 60, 0.9)';
-            cropCtx.font = "bold 14px 'Century Gothic', sans-serif";
-            cropCtx.fillText(ratioText, cropX + 8, cropY + 20);
-            
-            // Also show image dimensions
-            cropCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            cropCtx.font = "12px 'Century Gothic', sans-serif";
-            cropCtx.fillText(`Image: ${loadedImage.width}×${loadedImage.height}`, cropX + 8, cropY + 38);
-            cropCtx.fillText(`Crop: ${Math.round(actualCropWidth)}×${Math.round(actualCropHeight)}`, cropX + 8, cropY + 54);
+            if (currentTextColor === 'white') {
+                changeColorBtn.textContent = "Change to Black";
+                changeColorBtn.className = "btn btn-white";
+            } else {
+                changeColorBtn.textContent = "Change to White";
+                changeColorBtn.className = "btn btn-dark";
+            }
         }
         
-        function updateZoneView() {
-            if (!loadedImage || !currentLevel.crop) return;
+        function getClosestPerfectZone(clickPercent, zones) {
+            if (!zones || zones.length === 0) return { zone: null, distance: Infinity };
+            if (zones.length === 1) return { zone: zones[0], distance: 0 };
             
-            const container = document.getElementById('zoneContainer');
-            const crop = currentLevel.crop;
+            let closestZone = null;
+            let minDistance = Infinity;
             
-            // Create a cropped version of the image as a data URL
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            const srcX = (crop.x / 100) * loadedImage.width;
-            const srcY = (crop.y / 100) * loadedImage.height;
-            const srcW = (crop.width / 100) * loadedImage.width;
-            const srcH = (crop.height / 100) * loadedImage.height;
-            
-            tempCanvas.width = srcW;
-            tempCanvas.height = srcH;
-            tempCtx.drawImage(loadedImage, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
-            
-            // Set as background
-            container.style.backgroundImage = `url('${tempCanvas.toDataURL()}')`;
-            
-            // Size the overlay canvases
-            const rect = container.getBoundingClientRect();
-            overlayCanvas.width = interactionCanvas.width = rect.width;
-            overlayCanvas.height = interactionCanvas.height = rect.height;
-            
-            redrawOverlay();
-        }
-        
-        function redrawOverlay(mouseX, mouseY) {
-            if (!loadedImage) return;
-            
-            // Re-check container size in case of resize
-            const container = document.getElementById('zoneContainer');
-            const rect = container.getBoundingClientRect();
-            
-            if (overlayCanvas.width !== rect.width || overlayCanvas.height !== rect.height) {
-                overlayCanvas.width = interactionCanvas.width = rect.width;
-                overlayCanvas.height = interactionCanvas.height = rect.height;
-            }
-            
-            const w = overlayCanvas.width;
-            const h = overlayCanvas.height;
-            overlayCtx.clearRect(0, 0, w, h);
-            
-            // If zones are hidden, only draw text previews
-            if (!zonesVisible) {
-                currentLevel.zoneSets.forEach(set => {
-                    if (set.perfectZone) {
-                        drawTextPreview(set.perfectZone, set.color);
-                    }
-                });
-                return;
-            }
-            
-            // Draw non-selected sets first (faded)
-            currentLevel.zoneSets.forEach(set => {
-                if (set.id === selectedSetId) return; // Skip selected set for now
-                
-                // Draw faded good zones
-                set.goodZones.forEach((zone, idx) => {
-                    drawZone(zone, 'good', set.color, false, true); // true = faded
-                });
-                
-                // Draw faded perfect zone
-                if (set.perfectZone) {
-                    drawZone(set.perfectZone, 'perfect', set.color, false, true);
+            zones.forEach(zone => {
+                const zoneCenterX = zone.x + zone.width / 2;
+                const zoneCenterY = zone.y + zone.height / 2;
+                const distance = Math.hypot(clickPercent.x - zoneCenterX, clickPercent.y - zoneCenterY);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZone = zone;
                 }
             });
-            
-            // Draw selected set on top (full opacity)
-            const selectedSet = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (selectedSet) {
-                // Draw good zones
-                selectedSet.goodZones.forEach((zone, idx) => {
-                    drawZone(zone, 'good', selectedSet.color, selectedZoneType === 'good' && selectedZoneIndex === idx, false);
-                });
-                
-                // Draw perfect zone
-                if (selectedSet.perfectZone) {
-                    drawZone(selectedSet.perfectZone, 'perfect', selectedSet.color, selectedZoneType === 'perfect', false);
-                    
-                    // Draw text preview in perfect zone
-                    drawTextPreview(selectedSet.perfectZone, selectedSet.color);
-                    
-                    // Draw distance guides if selected
-                    if (selectedZoneType === 'perfect' && selectedSet.goodZones.length > 0) {
-                        drawDistanceGuides(selectedSet.perfectZone, selectedSet.goodZones);
-                    }
-                }
-            }
-            
-            // Draw polygon being created
-            if (editorMode === 'drawGood' && polygonPoints.length > 0) {
-                drawTempPolygon(polygonPoints, mouseX, mouseY);
-            }
-            
-            // Draw temp rectangle while drawing perfect zone
-            if (tempZone && editorMode === 'drawPerfect') {
-                const color = 'rgba(59, 130, 246, 0.5)';
-                overlayCtx.fillStyle = color;
-                overlayCtx.strokeStyle = '#fff';
-                overlayCtx.lineWidth = 2;
-                const rect = percentToPixel(tempZone);
-                overlayCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
-                overlayCtx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-            }
+            return { zone: closestZone, distance: minDistance };
         }
         
-        function drawZone(zone, type, textColor, isSelected, isFaded = false) {
-            const baseColor = type === 'good' ? 'rgba(74, 222, 128,' : 'rgba(59, 130, 246,';
+        function checkAnswer(clickPercent, isNoGoodSpotClick) {
+            if (!gameActive) return;
+            gameActive = false;
             
-            // Faded zones are much more transparent
-            let fillAlpha, strokeAlpha;
-            if (isFaded) {
-                fillAlpha = '0.1)';
-                strokeAlpha = '0.3)';
-            } else if (isSelected) {
-                fillAlpha = '0.5)';
-                strokeAlpha = '1)';
-            } else {
-                fillAlpha = '0.3)';
-                strokeAlpha = '0.7)';
-            }
+            textOverlay.style.opacity = '0';
+            gameControls.classList.add('hidden');
+            gameContainer.classList.remove('game-active');
             
-            overlayCtx.fillStyle = baseColor + fillAlpha;
+            const currentImage = gameImages[currentImageIndex];
+            const goodZones = currentImage.goodZones[currentTextColor] || [];
+            const perfectZones = currentImage.perfectZones[currentTextColor] || [];
             
-            if (isFaded) {
-                overlayCtx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-            } else {
-                overlayCtx.strokeStyle = isSelected ? '#fff' : (textColor === 'white' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)');
-            }
+            let isCorrect = false;
+            let points = 0;
+            let message = '';
+            let feedbackColor = currentTextColor;
+            let directionalFeedback = { text: '', targetZone: null };
             
-            overlayCtx.lineWidth = isSelected ? 3 : (isFaded ? 1 : 2);
-            overlayCtx.setLineDash(isSelected ? [] : [5, 5]);
-            
-            if (type === 'good' && zone.points) {
-                // Draw polygon
-                const pixelPoints = polygonToPixels(zone);
+            if (isNoGoodSpotClick) {
+                // Check if there are good spots in ANY color, not just the current color
+                const allWhiteGood = currentImage.goodZones.white || [];
+                const allBlackGood = currentImage.goodZones.black || [];
+                const allWhitePerfect = currentImage.perfectZones.white || [];
+                const allBlackPerfect = currentImage.perfectZones.black || [];
                 
-                overlayCtx.beginPath();
-                overlayCtx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
-                for (let i = 1; i < pixelPoints.length; i++) {
-                    overlayCtx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
-                }
-                overlayCtx.closePath();
-                overlayCtx.fill();
-                overlayCtx.stroke();
+                const hasAnyGoodSpot = allWhiteGood.length > 0 || allBlackGood.length > 0 || 
+                                       allWhitePerfect.length > 0 || allBlackPerfect.length > 0;
                 
-                // Draw vertex handles if selected (not faded)
-                if (isSelected && !isFaded) {
-                    drawPolygonVertices(pixelPoints);
-                }
-                
-                // Label at first point (skip for faded)
-                if (!isFaded) {
-                    overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-                    overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
-                    overlayCtx.fillText('GOOD', pixelPoints[0].x + 4, pixelPoints[0].y + 14);
-                }
-            } else {
-                // Draw rectangle (for perfect zones and legacy good zones)
-                const rect = percentToPixel(zone);
-                
-                overlayCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
-                overlayCtx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-                
-                // Draw resize handles if selected (not faded)
-                if (isSelected && !isFaded) {
-                    drawResizeHandles(rect);
-                }
-                
-                // Label (skip for faded)
-                if (!isFaded) {
-                    overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-                    overlayCtx.font = "bold 11px 'Century Gothic', sans-serif";
-                    overlayCtx.fillText(type === 'good' ? 'GOOD' : 'PERFECT', rect.x + 4, rect.y + 14);
-                }
-            }
-            
-            overlayCtx.setLineDash([]);
-        }
-        
-        function drawPolygonVertices(pixelPoints) {
-            const handleSize = 10;
-            
-            pixelPoints.forEach((p, idx) => {
-                // Highlight selected vertex
-                const isVertexSelected = selectedVertexIndex === idx;
-                
-                overlayCtx.fillStyle = isVertexSelected ? '#7BAFD4' : '#fff';
-                overlayCtx.strokeStyle = '#000';
-                overlayCtx.lineWidth = 2;
-                
-                overlayCtx.beginPath();
-                overlayCtx.arc(p.x, p.y, handleSize/2, 0, Math.PI * 2);
-                overlayCtx.fill();
-                overlayCtx.stroke();
-                
-                // Draw vertex number
-                overlayCtx.fillStyle = '#000';
-                overlayCtx.font = "bold 9px sans-serif";
-                overlayCtx.textAlign = 'center';
-                overlayCtx.textBaseline = 'middle';
-                overlayCtx.fillText(String(idx + 1), p.x, p.y);
-                overlayCtx.textAlign = 'left';
-                overlayCtx.textBaseline = 'alphabetic';
-            });
-        }
-        
-        function drawResizeHandles(rect) {
-            const handleSize = 8;
-            const handles = getHandlePositions(rect);
-            
-            overlayCtx.fillStyle = '#fff';
-            overlayCtx.strokeStyle = '#000';
-            overlayCtx.lineWidth = 1;
-            
-            handles.forEach(h => {
-                overlayCtx.fillRect(h.x - handleSize/2, h.y - handleSize/2, handleSize, handleSize);
-                overlayCtx.strokeRect(h.x - handleSize/2, h.y - handleSize/2, handleSize, handleSize);
-            });
-        }
-        
-        function getHandlePositions(rect) {
-            return [
-                { id: 'nw', x: rect.x, y: rect.y },
-                { id: 'n', x: rect.x + rect.w/2, y: rect.y },
-                { id: 'ne', x: rect.x + rect.w, y: rect.y },
-                { id: 'e', x: rect.x + rect.w, y: rect.y + rect.h/2 },
-                { id: 'se', x: rect.x + rect.w, y: rect.y + rect.h },
-                { id: 's', x: rect.x + rect.w/2, y: rect.y + rect.h },
-                { id: 'sw', x: rect.x, y: rect.y + rect.h },
-                { id: 'w', x: rect.x, y: rect.y + rect.h/2 }
-            ];
-        }
-        
-        // Draw polygon being created
-        function drawTempPolygon(points, mouseX, mouseY) {
-            if (points.length === 0) return;
-            
-            const pixelPoints = points.map(p => ({
-                x: (p.x / 100) * overlayCanvas.width,
-                y: (p.y / 100) * overlayCanvas.height
-            }));
-            
-            overlayCtx.strokeStyle = '#7BAFD4';
-            overlayCtx.lineWidth = 2;
-            overlayCtx.setLineDash([]);
-            
-            // Draw completed segments
-            overlayCtx.beginPath();
-            overlayCtx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
-            for (let i = 1; i < pixelPoints.length; i++) {
-                overlayCtx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
-            }
-            
-            // Line to current mouse position
-            if (mouseX !== undefined) {
-                overlayCtx.lineTo(mouseX, mouseY);
-                
-                // Dashed line back to start if near closing
-                const startDist = Math.hypot(mouseX - pixelPoints[0].x, mouseY - pixelPoints[0].y);
-                if (startDist < 20 && points.length >= 3) {
-                    overlayCtx.setLineDash([5, 5]);
-                    overlayCtx.lineTo(pixelPoints[0].x, pixelPoints[0].y);
-                }
-            }
-            
-            overlayCtx.stroke();
-            overlayCtx.setLineDash([]);
-            
-            // Draw vertices
-            pixelPoints.forEach((p, idx) => {
-                overlayCtx.fillStyle = idx === 0 && points.length >= 3 ? '#7BAFD4' : '#fff';
-                overlayCtx.strokeStyle = '#000';
-                overlayCtx.lineWidth = 2;
-                overlayCtx.beginPath();
-                overlayCtx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-                overlayCtx.fill();
-                overlayCtx.stroke();
-            });
-            
-            // Instruction text
-            overlayCtx.fillStyle = 'rgba(0,0,0,0.7)';
-            overlayCtx.fillRect(10, overlayCanvas.height - 35, 280, 25);
-            overlayCtx.fillStyle = '#fff';
-            overlayCtx.font = "12px 'Century Gothic', sans-serif";
-            if (points.length < 3) {
-                overlayCtx.fillText(`Click to add points (${points.length}/3 minimum)`, 15, overlayCanvas.height - 18);
-            } else {
-                overlayCtx.fillText('Click near start point to close, or keep adding', 15, overlayCanvas.height - 18);
-            }
-        }
-        
-        function drawTextPreview(zone, textColor) {
-            const rect = percentToPixel(zone);
-            const centerX = rect.x + rect.w / 2;
-            const centerY = rect.y + rect.h / 2;
-            
-            // Fixed text size matching game (3.5rem ≈ 56px, but scale to canvas)
-            // The game container and admin canvas should show text at same relative size
-            const canvasHeight = overlayCanvas.height;
-            const fontSize = canvasHeight * 0.09; // ~9% of height matches 3.5rem in game
-            
-            overlayCtx.fillStyle = textColor === 'white' ? '#fff' : '#000';
-            overlayCtx.font = `bold ${fontSize}px 'Century Gothic', sans-serif`;
-            overlayCtx.textAlign = 'center';
-            overlayCtx.textBaseline = 'middle';
-            
-            // Draw shadow
-            overlayCtx.shadowColor = textColor === 'white' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)';
-            overlayCtx.shadowBlur = 6;
-            overlayCtx.shadowOffsetX = 2;
-            overlayCtx.shadowOffsetY = 2;
-            
-            // Two lines of title text
-            const lineHeight = fontSize * 1.15;
-            overlayCtx.fillText('Read', centerX, centerY - lineHeight/2);
-            overlayCtx.fillText('This Text', centerX, centerY + lineHeight/2);
-            
-            // Measure actual text to show bounding box
-            const textWidth = overlayCtx.measureText('This Text').width; // Wider line
-            const textHeight = lineHeight * 2;
-            
-            // Draw tight bounding box around text (for reference)
-            overlayCtx.shadowColor = 'transparent';
-            overlayCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            overlayCtx.lineWidth = 1;
-            overlayCtx.setLineDash([2, 2]);
-            overlayCtx.strokeRect(
-                centerX - textWidth/2 - 4,
-                centerY - textHeight/2,
-                textWidth + 8,
-                textHeight
-            );
-            overlayCtx.setLineDash([]);
-            
-            overlayCtx.textAlign = 'left';
-            overlayCtx.textBaseline = 'alphabetic';
-        }
-        
-        function drawDistanceGuides(perfectZone, goodZones) {
-            const pRect = percentToPixel(perfectZone);
-            const pCenterX = pRect.x + pRect.w / 2;
-            const pCenterY = pRect.y + pRect.h / 2;
-            
-            // Convert perfect zone center to percentage for polygon check
-            const pCenterPct = pixelToPercent(pCenterX, pCenterY);
-            
-            goodZones.forEach(goodZone => {
-                if (goodZone.points) {
-                    // Polygon - check if perfect center is inside
-                    if (pointInPolygon(pCenterPct.x, pCenterPct.y, goodZone)) {
-                        drawPolygonDistanceGuides(pRect, goodZone);
-                    }
+                if (!hasAnyGoodSpot) {
+                    isCorrect = true;
+                    points = 100;
+                    message = '<p class="feedback-good">✓ Correct! No good spots on this image.</p>';
                 } else {
-                    // Legacy rectangle
-                    const gRect = percentToPixel(goodZone);
-                    
-                    if (pCenterX >= gRect.x && pCenterX <= gRect.x + gRect.w &&
-                        pCenterY >= gRect.y && pCenterY <= gRect.y + gRect.h) {
-                        drawRectDistanceGuides(pRect, gRect);
+                    isCorrect = false;
+                    points = 0;
+                    // Tell them which color has a good spot
+                    const hasWhiteSpot = allWhiteGood.length > 0 || allWhitePerfect.length > 0;
+                    const hasBlackSpot = allBlackGood.length > 0 || allBlackPerfect.length > 0;
+                    let colorHint = '';
+                    if (hasWhiteSpot && hasBlackSpot) {
+                        colorHint = 'both white and black text';
+                    } else if (hasWhiteSpot) {
+                        colorHint = 'white text';
+                    } else {
+                        colorHint = 'black text';
                     }
+                    message = `<p class="feedback-bad">✗ A good spot exists for ${colorHint}.</p>`;
                 }
-            });
-        }
-        
-        function drawRectDistanceGuides(pRect, gRect) {
-            const pCenterX = pRect.x + pRect.w / 2;
-            const pCenterY = pRect.y + pRect.h / 2;
-            
-            overlayCtx.strokeStyle = 'rgba(123, 175, 212, 0.8)';
-            overlayCtx.lineWidth = 1;
-            overlayCtx.setLineDash([3, 3]);
-            
-            // Left distance
-            const leftDist = pRect.x - gRect.x;
-            overlayCtx.beginPath();
-            overlayCtx.moveTo(gRect.x, pCenterY);
-            overlayCtx.lineTo(pRect.x, pCenterY);
-            overlayCtx.stroke();
-            drawDistanceLabel(gRect.x + leftDist/2, pCenterY - 10, Math.round(leftDist) + 'px');
-            
-            // Right distance
-            const rightDist = (gRect.x + gRect.w) - (pRect.x + pRect.w);
-            overlayCtx.beginPath();
-            overlayCtx.moveTo(pRect.x + pRect.w, pCenterY);
-            overlayCtx.lineTo(gRect.x + gRect.w, pCenterY);
-            overlayCtx.stroke();
-            drawDistanceLabel(pRect.x + pRect.w + rightDist/2, pCenterY - 10, Math.round(rightDist) + 'px');
-            
-            // Top distance
-            const topDist = pRect.y - gRect.y;
-            overlayCtx.beginPath();
-            overlayCtx.moveTo(pCenterX, gRect.y);
-            overlayCtx.lineTo(pCenterX, pRect.y);
-            overlayCtx.stroke();
-            drawDistanceLabel(pCenterX + 10, gRect.y + topDist/2, Math.round(topDist) + 'px');
-            
-            // Bottom distance
-            const bottomDist = (gRect.y + gRect.h) - (pRect.y + pRect.h);
-            overlayCtx.beginPath();
-            overlayCtx.moveTo(pCenterX, pRect.y + pRect.h);
-            overlayCtx.lineTo(pCenterX, gRect.y + gRect.h);
-            overlayCtx.stroke();
-            drawDistanceLabel(pCenterX + 10, pRect.y + pRect.h + bottomDist/2, Math.round(bottomDist) + 'px');
-            
-            overlayCtx.setLineDash([]);
-        }
-        
-        function drawPolygonDistanceGuides(pRect, polygon) {
-            const pCenterX = pRect.x + pRect.w / 2;
-            const pCenterY = pRect.y + pRect.h / 2;
-            
-            // Get pixel coordinates of polygon
-            const pixelPoints = polygonToPixels(polygon);
-            
-            overlayCtx.strokeStyle = 'rgba(123, 175, 212, 0.8)';
-            overlayCtx.lineWidth = 1;
-            overlayCtx.setLineDash([3, 3]);
-            
-            // Find distances from each edge of perfect zone to nearest polygon edge
-            // Left edge
-            const leftEdge = findNearestPolygonIntersection(pRect.x, pCenterY, -1, 0, pixelPoints);
-            if (leftEdge) {
-                const leftDist = pRect.x - leftEdge.x;
-                overlayCtx.beginPath();
-                overlayCtx.moveTo(leftEdge.x, pCenterY);
-                overlayCtx.lineTo(pRect.x, pCenterY);
-                overlayCtx.stroke();
-                drawDistanceLabel(leftEdge.x + leftDist/2, pCenterY - 10, Math.round(leftDist) + 'px');
-            }
-            
-            // Right edge
-            const rightEdge = findNearestPolygonIntersection(pRect.x + pRect.w, pCenterY, 1, 0, pixelPoints);
-            if (rightEdge) {
-                const rightDist = rightEdge.x - (pRect.x + pRect.w);
-                overlayCtx.beginPath();
-                overlayCtx.moveTo(pRect.x + pRect.w, pCenterY);
-                overlayCtx.lineTo(rightEdge.x, pCenterY);
-                overlayCtx.stroke();
-                drawDistanceLabel(pRect.x + pRect.w + rightDist/2, pCenterY - 10, Math.round(rightDist) + 'px');
-            }
-            
-            // Top edge
-            const topEdge = findNearestPolygonIntersection(pCenterX, pRect.y, 0, -1, pixelPoints);
-            if (topEdge) {
-                const topDist = pRect.y - topEdge.y;
-                overlayCtx.beginPath();
-                overlayCtx.moveTo(pCenterX, topEdge.y);
-                overlayCtx.lineTo(pCenterX, pRect.y);
-                overlayCtx.stroke();
-                drawDistanceLabel(pCenterX + 10, topEdge.y + topDist/2, Math.round(topDist) + 'px');
-            }
-            
-            // Bottom edge
-            const bottomEdge = findNearestPolygonIntersection(pCenterX, pRect.y + pRect.h, 0, 1, pixelPoints);
-            if (bottomEdge) {
-                const bottomDist = bottomEdge.y - (pRect.y + pRect.h);
-                overlayCtx.beginPath();
-                overlayCtx.moveTo(pCenterX, pRect.y + pRect.h);
-                overlayCtx.lineTo(pCenterX, bottomEdge.y);
-                overlayCtx.stroke();
-                drawDistanceLabel(pCenterX + 10, pRect.y + pRect.h + bottomDist/2, Math.round(bottomDist) + 'px');
-            }
-            
-            overlayCtx.setLineDash([]);
-        }
-        
-        // Find where a ray from point (px, py) in direction (dx, dy) intersects the polygon
-        function findNearestPolygonIntersection(px, py, dx, dy, pixelPoints) {
-            let nearestDist = Infinity;
-            let nearestPoint = null;
-            
-            for (let i = 0; i < pixelPoints.length; i++) {
-                const j = (i + 1) % pixelPoints.length;
-                const x1 = pixelPoints[i].x, y1 = pixelPoints[i].y;
-                const x2 = pixelPoints[j].x, y2 = pixelPoints[j].y;
-                
-                // Ray-line segment intersection
-                const intersection = raySegmentIntersection(px, py, dx, dy, x1, y1, x2, y2);
-                if (intersection) {
-                    const dist = Math.hypot(intersection.x - px, intersection.y - py);
-                    if (dist < nearestDist) {
-                        nearestDist = dist;
-                        nearestPoint = intersection;
-                    }
-                }
-            }
-            
-            return nearestPoint;
-        }
-        
-        function raySegmentIntersection(px, py, dx, dy, x1, y1, x2, y2) {
-            const ex = x2 - x1;
-            const ey = y2 - y1;
-            
-            const denom = dx * ey - dy * ex;
-            if (Math.abs(denom) < 0.0001) return null; // Parallel
-            
-            const t = ((x1 - px) * ey - (y1 - py) * ex) / denom;
-            const u = ((x1 - px) * dy - (y1 - py) * dx) / denom;
-            
-            if (t >= 0 && u >= 0 && u <= 1) {
-                return {
-                    x: px + t * dx,
-                    y: py + t * dy
-                };
-            }
-            
-            return null;
-        }
-        
-        function drawDistanceLabel(x, y, text) {
-            overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            const metrics = overlayCtx.measureText(text);
-            overlayCtx.fillRect(x - metrics.width/2 - 4, y - 8, metrics.width + 8, 16);
-            
-            overlayCtx.fillStyle = '#7BAFD4';
-            overlayCtx.font = "bold 10px 'Century Gothic', sans-serif";
-            overlayCtx.textAlign = 'center';
-            overlayCtx.textBaseline = 'middle';
-            overlayCtx.fillText(text, x, y);
-            overlayCtx.textAlign = 'left';
-            overlayCtx.textBaseline = 'alphabetic';
-        }
-        
-        // ============================================
-        // CROP MOUSE HANDLERS
-        // ============================================
-        let cropDragHandle = null;
-        let cropDragStart = null;
-        
-        function getCropHandleAt(x, y) {
-            if (!loadedImage || !currentLevel.crop) return null;
-            
-            const w = cropCanvas.width;
-            const h = cropCanvas.height;
-            const crop = currentLevel.crop;
-            
-            const cropX = (crop.x / 100) * w;
-            const cropY = (crop.y / 100) * h;
-            const cropW = (crop.width / 100) * w;
-            const cropH = (crop.height / 100) * h;
-            
-            const handleSize = 12;
-            
-            // Check corners first
-            if (Math.abs(x - cropX) < handleSize && Math.abs(y - cropY) < handleSize) return 'nw';
-            if (Math.abs(x - (cropX + cropW)) < handleSize && Math.abs(y - cropY) < handleSize) return 'ne';
-            if (Math.abs(x - cropX) < handleSize && Math.abs(y - (cropY + cropH)) < handleSize) return 'sw';
-            if (Math.abs(x - (cropX + cropW)) < handleSize && Math.abs(y - (cropY + cropH)) < handleSize) return 'se';
-            
-            // Check edges
-            if (Math.abs(x - (cropX + cropW/2)) < handleSize && Math.abs(y - cropY) < handleSize) return 'n';
-            if (Math.abs(x - (cropX + cropW/2)) < handleSize && Math.abs(y - (cropY + cropH)) < handleSize) return 's';
-            if (Math.abs(x - cropX) < handleSize && Math.abs(y - (cropY + cropH/2)) < handleSize) return 'w';
-            if (Math.abs(x - (cropX + cropW)) < handleSize && Math.abs(y - (cropY + cropH/2)) < handleSize) return 'e';
-            
-            // Check if inside (for move)
-            if (x >= cropX && x <= cropX + cropW && y >= cropY && y <= cropY + cropH) return 'move';
-            
-            return null;
-        }
-        
-        function handleCropMouseDown(e) {
-            if (!loadedImage) return;
-            
-            const rect = cropCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            cropDragHandle = getCropHandleAt(x, y);
-            if (cropDragHandle) {
-                cropDragStart = {
-                    x, y,
-                    crop: { ...currentLevel.crop }
-                };
-                cropCanvas.style.cursor = cropDragHandle === 'move' ? 'grabbing' : 'crosshair';
-            }
-        }
-        
-        function handleCropMouseMove(e) {
-            const rect = cropCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            if (!cropDragStart) {
-                // Just update cursor
-                const handle = getCropHandleAt(x, y);
-                if (handle === 'move') cropCanvas.style.cursor = 'grab';
-                else if (handle === 'nw' || handle === 'se') cropCanvas.style.cursor = 'nwse-resize';
-                else if (handle === 'ne' || handle === 'sw') cropCanvas.style.cursor = 'nesw-resize';
-                else if (handle === 'n' || handle === 's') cropCanvas.style.cursor = 'ns-resize';
-                else if (handle === 'e' || handle === 'w') cropCanvas.style.cursor = 'ew-resize';
-                else cropCanvas.style.cursor = 'default';
-                return;
-            }
-            
-            const w = cropCanvas.width;
-            const h = cropCanvas.height;
-            const imgW = loadedImage.width;
-            const imgH = loadedImage.height;
-            const original = cropDragStart.crop;
-            
-            // Convert to percentages
-            const dx = ((x - cropDragStart.x) / w) * 100;
-            const dy = ((y - cropDragStart.y) / h) * 100;
-            
-            let newX = original.x;
-            let newY = original.y;
-            let newW = original.width;
-            let newH = original.height;
-            
-            const minWidthPct = 20; // Minimum 20% of image width
-            
-            if (cropDragHandle === 'move') {
-                newX = Math.max(0, Math.min(100 - original.width, original.x + dx));
-                newY = Math.max(0, Math.min(100 - original.height, original.y + dy));
             } else {
-                // For resizing, we need to maintain 4:3 aspect ratio
-                // The key insight: we adjust width and then calculate the corresponding height
+                const textRect = getTextBoundingBoxAsPercentage(clickPercent);
+                const isClickInGood = goodZones.some(z => textFullyInsideZone(textRect, z));
                 
-                if (cropDragHandle === 'e' || cropDragHandle === 'ne' || cropDragHandle === 'se') {
-                    // Dragging east edge - adjust width
-                    newW = Math.max(minWidthPct, Math.min(100 - original.x, original.width + dx));
-                    newH = getHeightForWidth(newW, imgW, imgH);
+                const { zone: closestPerfectZone } = getClosestPerfectZone(clickPercent, perfectZones);
+                const isClickInPerfect = closestPerfectZone ? calculateOverlapPercentage(textRect, closestPerfectZone) > 0 : false;
+                
+                if (isClickInPerfect || isClickInGood) {
+                    isCorrect = true;
                     
-                    // Adjust Y for north handles
-                    if (cropDragHandle === 'ne') {
-                        newY = original.y + original.height - newH;
+                    if (isClickInPerfect) {
+                        const overlap = calculateOverlapPercentage(textRect, closestPerfectZone);
+                        const idealCenter = { x: closestPerfectZone.x + closestPerfectZone.width / 2, y: closestPerfectZone.y + closestPerfectZone.height / 2 };
+                        const distFromCenter = Math.hypot(clickPercent.x - idealCenter.x, clickPercent.y - idealCenter.y);
+                        
+                        if (distFromCenter < 2) {
+                            points = 100;
+                        } else if (overlap === 100) {
+                            points = 95;
+                        } else if (overlap >= 75) {
+                            points = 90;
+                        } else {
+                            points = 80 + Math.floor((overlap / 74) * 9);
+                        }
+                        directionalFeedback.targetZone = closestPerfectZone;
+                    } else {
+                        points = 70;
                     }
-                }
-                else if (cropDragHandle === 'w' || cropDragHandle === 'nw' || cropDragHandle === 'sw') {
-                    // Dragging west edge
-                    const rightEdge = original.x + original.width;
-                    newX = Math.max(0, Math.min(rightEdge - minWidthPct, original.x + dx));
-                    newW = rightEdge - newX;
-                    newH = getHeightForWidth(newW, imgW, imgH);
                     
-                    // Adjust Y for north handles
-                    if (cropDragHandle === 'nw') {
-                        newY = original.y + original.height - newH;
-                    }
-                }
-                else if (cropDragHandle === 'n') {
-                    // Dragging north edge - adjust height, calculate width
-                    const bottomEdge = original.y + original.height;
-                    const minHeightPct = getHeightForWidth(minWidthPct, imgW, imgH);
-                    newY = Math.max(0, Math.min(bottomEdge - minHeightPct, original.y + dy));
-                    newH = bottomEdge - newY;
-                    newW = getWidthForHeight(newH, imgW, imgH);
-                    // Center horizontally
-                    newX = original.x + (original.width - newW) / 2;
-                }
-                else if (cropDragHandle === 's') {
-                    // Dragging south edge
-                    const minHeightPct = getHeightForWidth(minWidthPct, imgW, imgH);
-                    newH = Math.max(minHeightPct, Math.min(100 - original.y, original.height + dy));
-                    newW = getWidthForHeight(newH, imgW, imgH);
-                    // Center horizontally
-                    newX = original.x + (original.width - newW) / 2;
-                }
-                
-                // Clamp to image bounds
-                if (newX < 0) {
-                    newX = 0;
-                }
-                if (newY < 0) {
-                    newY = 0;
-                }
-                if (newX + newW > 100) {
-                    newW = 100 - newX;
-                    newH = getHeightForWidth(newW, imgW, imgH);
-                }
-                if (newY + newH > 100) {
-                    newH = 100 - newY;
-                    newW = getWidthForHeight(newH, imgW, imgH);
-                }
-            }
-            
-            currentLevel.crop = { x: newX, y: newY, width: newW, height: newH };
-            drawCropView();
-        }
-        
-        function handleCropMouseUp() {
-            if (cropDragStart) {
-                cropDragStart = null;
-                cropDragHandle = null;
-                updateZoneView(); // Update the zone view with new crop
-            }
-        }
-        
-        function percentToPixel(zone) {
-            return {
-                x: (zone.x / 100) * overlayCanvas.width,
-                y: (zone.y / 100) * overlayCanvas.height,
-                w: (zone.width / 100) * overlayCanvas.width,
-                h: (zone.height / 100) * overlayCanvas.height
-            };
-        }
-
-        // ============================================
-        // MOUSE HANDLERS
-        // ============================================
-        function handleMouseDown(e) {
-            if (!loadedImage) return;
-            
-            const rect = interactionCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const pct = pixelToPercent(x, y);
-            
-            if (editorMode === 'drawGood') {
-                // Polygon drawing mode - add point on click
-                if (!selectedSetId) {
-                    showToast('Select or create a Zone Set first', 'error');
-                    return;
-                }
-                
-                // Check if clicking near start point to close polygon
-                if (polygonPoints.length >= 3) {
-                    const startPx = {
-                        x: (polygonPoints[0].x / 100) * overlayCanvas.width,
-                        y: (polygonPoints[0].y / 100) * overlayCanvas.height
-                    };
-                    if (Math.hypot(x - startPx.x, y - startPx.y) < 20) {
-                        // Close the polygon
-                        finishPolygon();
-                        return;
-                    }
-                }
-                
-                // Add point
-                polygonPoints.push({ x: pct.x, y: pct.y });
-                redrawOverlay(x, y);
-                return;
-            }
-            
-            if (editorMode === 'drawPerfect') {
-                // Rectangle drawing mode for perfect zones
-                if (!selectedSetId) {
-                    showToast('Select or create a Zone Set first', 'error');
-                    return;
-                }
-                isDrawing = true;
-                drawStart = { x, y };
-                tempZone = null;
-                return;
-            }
-            
-            if (editorMode === 'select') {
-                // Don't allow zone manipulation when zones are hidden
-                if (!zonesVisible) return;
-                
-                // Check if clicking on a polygon vertex first
-                if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set) {
-                        const zone = set.goodZones[selectedZoneIndex];
-                        if (zone && zone.points) {
-                            const pixelPoints = polygonToPixels(zone);
-                            for (let i = 0; i < pixelPoints.length; i++) {
-                                if (Math.hypot(x - pixelPoints[i].x, y - pixelPoints[i].y) < 10) {
-                                    saveUndoState('vertex move');
-                                    selectedVertexIndex = i;
-                                    dragHandle = 'vertex';
-                                    drawStart = { 
-                                        x, y, 
-                                        points: zone.points.map(p => ({...p})),
-                                        originalPoint: { ...zone.points[i] } // For shift constraint
-                                    };
-                                    redrawOverlay();
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Check if clicking on rectangle handles (for perfect zones)
-                if (selectedSetId && selectedZoneType === 'perfect') {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set && set.perfectZone) {
-                        const zone = set.perfectZone;
-                        const zoneRect = percentToPixel(zone);
-                        const handles = getHandlePositions(zoneRect);
-                        
-                        for (const h of handles) {
-                            if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
-                                saveUndoState('perfect zone resize');
-                                dragHandle = h.id;
-                                drawStart = { x, y, zone: { ...zone } };
-                                return;
-                            }
-                        }
-                        
-                        // Check if inside for move
-                        if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
-                            y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
-                            saveUndoState('perfect zone move');
-                            dragHandle = 'move';
-                            drawStart = { x, y, zone: { ...zone } };
-                            return;
-                        }
-                    }
-                }
-                
-                // Check if clicking inside a polygon (for move)
-                if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set) {
-                        const zone = set.goodZones[selectedZoneIndex];
-                        if (zone && zone.points && pointInPolygon(pct.x, pct.y, zone)) {
-                            saveUndoState('polygon move');
-                            dragHandle = 'movePolygon';
-                            drawStart = { x, y, points: zone.points.map(p => ({...p})) };
-                            return;
-                        }
-                    }
-                }
-                
-                // Check if clicking on a zone to select it
-                const clicked = findZoneAt(x, y);
-                if (clicked) {
-                    selectedSetId = clicked.setId;
-                    selectedZoneType = clicked.type;
-                    selectedZoneIndex = clicked.index;
-                    selectedVertexIndex = null;
-                    updateZoneSetsList();
-                    updateZoneSetEditor();
-                    redrawOverlay();
+                    message = `<p class="feedback-good">✓ Good placement! +${points}</p>`;
+                    
                 } else {
-                    // Deselect
-                    selectedSetId = null;
-                    selectedZoneType = null;
-                    selectedZoneIndex = null;
-                    selectedVertexIndex = null;
-                    document.getElementById('zoneSetEditor').classList.add('hidden');
-                    redrawOverlay();
+                    isCorrect = false;
+                    points = 0;
+                    
+                    const otherColor = currentTextColor === 'white' ? 'black' : 'white';
+                    const otherGood = currentImage.goodZones[otherColor] || [];
+                    const clickRect = { x: clickPercent.x, y: clickPercent.y, width: 0.1, height: 0.1 };
+                    
+                    if (otherGood.some(z => calculateOverlapPercentage(clickRect, z) > 0)) {
+                        message = '<p class="feedback-bad">✗ Good spot, wrong color!</p><p class="feedback-hint">Try the other text color here.</p>';
+                        feedbackColor = otherColor;
+                    } else if (currentImage.feedback) {
+                        message = `<p class="feedback-bad">${currentImage.feedback}</p>`;
+                    } else {
+                        message = '<p class="feedback-bad">✗ Not a good spot for text.</p>';
+                    }
                 }
+            }
+            
+            score += points;
+            totalScoreEl.textContent = score;
+            feedbackArea.innerHTML = message;
+            
+            // Show score popup
+            if (points > 0 && clickPercent) {
+                showScorePopup(clickPercent, points);
+            }
+            
+            // Score celebration
+            if (points >= 90) {
+                spawnConfetti();
+            }
+            if (points === 100) {
+                spawnFireworks();
+            }
+            
+            showFeedback(isCorrect, clickPercent, points, feedbackColor, directionalFeedback, isNoGoodSpotClick);
+            
+            if (currentImageIndex < gameImages.length - 1) {
+                nextControls.classList.remove('hidden');
+            } else {
+                setTimeout(endGame, 1500);
             }
         }
         
-        function finishPolygon() {
-            console.log('finishPolygon called, points:', polygonPoints.length);
-            if (polygonPoints.length < 3) {
-                showToast('Need at least 3 points for a polygon', 'error');
-                polygonPoints = [];
-                redrawOverlay();
-                return;
-            }
-            
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            console.log('Adding polygon to set:', selectedSetId, 'with points:', [...polygonPoints]);
-            if (set) {
-                set.goodZones.push({ points: [...polygonPoints] });
-                selectedZoneType = 'good';
-                selectedZoneIndex = set.goodZones.length - 1;
-                console.log('Polygon added, new goodZones count:', set.goodZones.length);
-                updateSetZonesList();
-            }
-            
-            polygonPoints = [];
-            editorMode = 'select';
-            console.log('Mode changed to select, polygonPoints cleared');
-            updateModeIndicator();
-            redrawOverlay();
+        function showScorePopup(clickPercent, points) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = `+${points}`;
+            popup.style.left = `${clickPercent.x}%`;
+            popup.style.top = `${clickPercent.y}%`;
+            popup.style.color = points === 100 ? '#7BAFD4' : points >= 80 ? '#a8d1f0' : '#fbbf24';
+            gameContainer.appendChild(popup);
+            setTimeout(() => popup.remove(), 1500);
         }
         
-        function handleMouseMove(e) {
-            if (!loadedImage) return;
-            
-            const rect = interactionCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const pct = pixelToPercent(x, y);
-            
-            // Drawing polygon - update preview
-            if (editorMode === 'drawGood' && polygonPoints.length > 0) {
-                redrawOverlay(x, y);
-                return;
+        function spawnConfetti() {
+            const colors = ['#7BAFD4', '#ffffff', '#a8d1f0', '#888888', '#666666'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3500);
             }
-            
-            // Dragging vertex
-            if (dragHandle === 'vertex' && drawStart && selectedVertexIndex !== null) {
-                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                if (set && set.goodZones[selectedZoneIndex]) {
-                    let newX = Math.max(0, Math.min(100, pct.x));
-                    let newY = Math.max(0, Math.min(100, pct.y));
+        }
+        
+        function spawnFireworks() {
+            const colors = ['#7BAFD4', '#ffffff', '#a8d1f0', '#888888', '#666666'];
+            // Spawn 3-4 firework bursts at different positions
+            for (let burst = 0; burst < 4; burst++) {
+                setTimeout(() => {
+                    const centerX = 20 + Math.random() * 60; // 20-80% of screen width
+                    const centerY = 20 + Math.random() * 40; // 20-60% of screen height
                     
-                    // Shift key constrains to horizontal or vertical
-                    if (e.shiftKey && drawStart.originalPoint) {
-                        const dx = Math.abs(newX - drawStart.originalPoint.x);
-                        const dy = Math.abs(newY - drawStart.originalPoint.y);
-                        if (dx > dy) {
-                            newY = drawStart.originalPoint.y; // Horizontal lock
-                        } else {
-                            newX = drawStart.originalPoint.x; // Vertical lock
-                        }
-                    }
-                    
-                    set.goodZones[selectedZoneIndex].points[selectedVertexIndex] = { x: newX, y: newY };
-                    redrawOverlay();
-                }
-                return;
-            }
-            
-            // Moving entire polygon
-            if (dragHandle === 'movePolygon' && drawStart) {
-                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                if (set && set.goodZones[selectedZoneIndex]) {
-                    let dx = pct.x - pixelToPercent(drawStart.x, 0).x;
-                    let dy = pct.y - pixelToPercent(0, drawStart.y).y;
-                    
-                    // Shift key constrains to horizontal or vertical
-                    if (e.shiftKey) {
-                        if (Math.abs(dx) > Math.abs(dy)) {
-                            dy = 0; // Horizontal lock
-                        } else {
-                            dx = 0; // Vertical lock
-                        }
-                    }
-                    
-                    set.goodZones[selectedZoneIndex].points = drawStart.points.map(p => ({
-                        x: Math.max(0, Math.min(100, p.x + dx)),
-                        y: Math.max(0, Math.min(100, p.y + dy))
-                    }));
-                    redrawOverlay();
-                }
-                return;
-            }
-            
-            // Moving/resizing rectangle (perfect zones)
-            if (dragHandle && drawStart && dragHandle !== 'vertex' && dragHandle !== 'movePolygon') {
-                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                if (!set) return;
-                
-                const zone = set.perfectZone;
-                if (!zone) return;
-                
-                const original = drawStart.zone;
-                const canvasW = overlayCanvas.width;
-                const canvasH = overlayCanvas.height;
-                const mouseXPct = (x / canvasW) * 100;
-                const mouseYPct = (y / canvasH) * 100;
-                
-                if (dragHandle === 'move') {
-                    let dx = mouseXPct - (drawStart.x / canvasW) * 100;
-                    let dy = mouseYPct - (drawStart.y / canvasH) * 100;
-                    
-                    // Shift key constrains to horizontal or vertical
-                    if (e.shiftKey) {
-                        if (Math.abs(dx) > Math.abs(dy)) {
-                            dy = 0; // Horizontal lock
-                        } else {
-                            dx = 0; // Vertical lock
-                        }
-                    }
-                    
-                    zone.x = Math.max(0, Math.min(100 - original.width, original.x + dx));
-                    zone.y = Math.max(0, Math.min(100 - original.height, original.y + dy));
-                } else {
-                    // Resizing
-                    let newX = zone.x, newY = zone.y, newW = zone.width, newH = zone.height;
-                    const minSize = PERFECT_MIN_WIDTH;
-                    const minHeight = PERFECT_MIN_HEIGHT;
-                    
-                    if (dragHandle.includes('e')) newW = Math.max(minSize, mouseXPct - original.x);
-                    if (dragHandle.includes('w')) {
-                        const rightEdge = original.x + original.width;
-                        newX = Math.min(mouseXPct, rightEdge - minSize);
-                        newW = rightEdge - newX;
-                    }
-                    if (dragHandle.includes('s')) newH = Math.max(minHeight, mouseYPct - original.y);
-                    if (dragHandle.includes('n')) {
-                        const bottomEdge = original.y + original.height;
-                        newY = Math.min(mouseYPct, bottomEdge - minHeight);
-                        newH = bottomEdge - newY;
-                    }
-                    
-                    zone.x = Math.max(0, newX);
-                    zone.y = Math.max(0, newY);
-                    zone.width = Math.min(newW, 100 - zone.x);
-                    zone.height = Math.min(newH, 100 - zone.y);
-                }
-                
-                redrawOverlay();
-                updateSetZonesList();
-                return;
-            }
-            
-            // Drawing rectangle (perfect zone)
-            if (isDrawing && editorMode === 'drawPerfect') {
-                const w = x - drawStart.x;
-                const h = y - drawStart.y;
-                
-                tempZone = pixelToPercentRect(
-                    w > 0 ? drawStart.x : x,
-                    h > 0 ? drawStart.y : y,
-                    Math.abs(w),
-                    Math.abs(h)
-                );
-                
-                redrawOverlay();
-                return;
-            }
-            
-            // Update cursor in select mode
-            if (editorMode === 'select') {
-                let cursor = 'default';
-                
-                // Check polygon vertices
-                if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set && set.goodZones[selectedZoneIndex]?.points) {
-                        const pixelPoints = polygonToPixels(set.goodZones[selectedZoneIndex]);
-                        for (const p of pixelPoints) {
-                            if (Math.hypot(x - p.x, y - p.y) < 10) {
-                                cursor = 'pointer';
-                                break;
-                            }
-                        }
-                        // Inside polygon = move
-                        if (cursor === 'default' && pointInPolygon(pct.x, pct.y, set.goodZones[selectedZoneIndex])) {
-                            cursor = 'move';
-                        }
-                    }
-                }
-                
-                // Check rectangle handles
-                if (selectedSetId && selectedZoneType === 'perfect') {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set?.perfectZone) {
-                        const zoneRect = percentToPixel(set.perfectZone);
-                        const handles = getHandlePositions(zoneRect);
+                    // Each burst has multiple particles
+                    for (let i = 0; i < 20; i++) {
+                        const particle = document.createElement('div');
+                        particle.className = 'firework-particle';
+                        particle.style.left = centerX + 'vw';
+                        particle.style.top = centerY + 'vh';
+                        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
                         
-                        for (const h of handles) {
-                            if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
-                                const cursors = {
-                                    'nw': 'nw-resize', 'ne': 'ne-resize', 'sw': 'sw-resize', 'se': 'se-resize',
-                                    'n': 'n-resize', 's': 's-resize', 'e': 'e-resize', 'w': 'w-resize'
-                                };
-                                cursor = cursors[h.id];
-                                break;
-                            }
-                        }
+                        // Random direction
+                        const angle = (Math.PI * 2 * i) / 20 + (Math.random() - 0.5) * 0.5;
+                        const distance = 80 + Math.random() * 60;
+                        particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                        particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
                         
-                        if (cursor === 'default' && 
-                            x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
-                            y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
-                            cursor = 'move';
-                        }
+                        document.body.appendChild(particle);
+                        setTimeout(() => particle.remove(), 1500);
                     }
-                }
-                
-                interactionCanvas.style.cursor = cursor;
+                }, burst * 200);
             }
         }
         
-        function pixelToPercentRect(x, y, w, h) {
-            return {
-                x: Math.round((x / overlayCanvas.width) * 10000) / 100,
-                y: Math.round((y / overlayCanvas.height) * 10000) / 100,
-                width: Math.round((w / overlayCanvas.width) * 10000) / 100,
-                height: Math.round((h / overlayCanvas.height) * 10000) / 100
-            };
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            finalScoreEl.textContent = score;
         }
         
-        function handleMouseUp(e) {
-            if (dragHandle) {
-                dragHandle = null;
-                drawStart = null;
-                selectedVertexIndex = null;
-                return;
-            }
+        function showFeedback(isCorrect, clickPercent, points, color, directionalFeedback, isNoGoodSpotClick) {
+            const currentImage = gameImages[currentImageIndex];
+            const goodZones = currentImage.goodZones[color] || [];
+            const perfectZones = currentImage.perfectZones[color] || [];
             
-            // For polygon drawing, we don't finish on mouseUp - only on clicking near start
-            if (editorMode === 'drawGood') return;
-            
-            if (!isDrawing || !tempZone) {
-                isDrawing = false;
-                return;
-            }
-            
-            // Rectangle for perfect zone
-            if (tempZone.width < PERFECT_MIN_WIDTH || tempZone.height < PERFECT_MIN_HEIGHT) {
-                showToast(`Perfect zone must be at least ${PERFECT_MIN_WIDTH}% × ${PERFECT_MIN_HEIGHT}% to fit text`, 'error');
-                tempZone = null;
-                isDrawing = false;
-                redrawOverlay();
-                return;
-            }
-            
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (set) {
-                set.perfectZone = { ...tempZone };
-                selectedZoneType = 'perfect';
-                selectedZoneIndex = null;
-                updateSetZonesList();
-            }
-            
-            tempZone = null;
-            isDrawing = false;
-            editorMode = 'select';
-            updateModeIndicator();
-            redrawOverlay();
-        }
-        
-        function handleKeyDown(e) {
-            // Don't handle keyboard shortcuts when typing in input fields
-            const activeEl = document.activeElement;
-            const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-            
-            if (isTyping) return;
-            
-            // Ctrl+Z / Cmd+Z for undo
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                e.preventDefault();
-                undo();
-                return;
-            }
-            
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                e.preventDefault();
-                
-                // Delete selected vertex
-                if (selectedVertexIndex !== null && selectedSetId && selectedZoneType === 'good') {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set && set.goodZones[selectedZoneIndex]?.points) {
-                        const zone = set.goodZones[selectedZoneIndex];
-                        if (zone.points.length > 3) {
-                            saveUndoState('delete vertex');
-                            zone.points.splice(selectedVertexIndex, 1);
-                            selectedVertexIndex = null;
-                            updateSetZonesList();
-                            redrawOverlay();
-                        } else {
-                            showToast('Polygon must have at least 3 points', 'error');
-                        }
-                        return;
-                    }
-                }
-                
-                // Delete selected zone
-                if (selectedSetId && selectedZoneType) {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set) {
-                        saveUndoState('delete zone');
-                        if (selectedZoneType === 'perfect') {
-                            set.perfectZone = null;
-                        } else if (selectedZoneType === 'good' && selectedZoneIndex !== null) {
-                            set.goodZones.splice(selectedZoneIndex, 1);
-                        }
-                        selectedZoneType = null;
-                        selectedZoneIndex = null;
-                        selectedVertexIndex = null;
-                        updateSetZonesList();
-                        redrawOverlay();
-                    }
-                }
-            } else if (e.key === 'Escape') {
-                // Cancel polygon drawing
-                if (polygonPoints.length > 0) {
-                    polygonPoints = [];
-                }
-                editorMode = 'select';
-                tempZone = null;
-                selectedVertexIndex = null;
-                updateModeIndicator();
-                redrawOverlay();
-            }
-        }
-        
-        function findZoneAt(x, y) {
-            const pct = pixelToPercent(x, y);
-            
-            // Only find zones in the selected set
-            if (!selectedSetId) return null;
-            
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (!set) return null;
-            
-            // Check perfect zone first (always rectangle)
-            if (set.perfectZone) {
-                const rect = percentToPixel(set.perfectZone);
-                if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
-                    return { setId: set.id, type: 'perfect', index: null };
-                }
-            }
-            
-            // Check good zones (polygons or legacy rectangles)
-            for (let j = set.goodZones.length - 1; j >= 0; j--) {
-                const zone = set.goodZones[j];
-                
-                if (zone.points) {
-                    // Polygon
-                    if (pointInPolygon(pct.x, pct.y, zone)) {
-                        return { setId: set.id, type: 'good', index: j };
-                    }
-                } else {
-                    // Legacy rectangle
-                    const rect = percentToPixel(zone);
-                    if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
-                        return { setId: set.id, type: 'good', index: j };
-                    }
-                }
-            }
-            
-            return null;
-        }
-
-        // ============================================
-        // VIEW TOGGLE
-        // ============================================
-        function switchToView(view) {
-            editorView = view;
-            
-            const cropBtn = document.getElementById('cropViewBtn');
-            const zoneBtn = document.getElementById('zoneViewBtn');
-            const cropContainer = document.getElementById('cropContainer');
-            const zoneContainer = document.getElementById('zoneContainer');
-            const cropTools = document.getElementById('cropTools');
-            const zoneTools = document.getElementById('zoneTools');
-            
-            if (view === 'crop') {
-                cropBtn.classList.add('btn-cyan');
-                cropBtn.classList.remove('btn-outline');
-                zoneBtn.classList.remove('btn-cyan');
-                zoneBtn.classList.add('btn-outline');
-                cropContainer.classList.remove('hidden');
-                zoneContainer.classList.add('hidden');
-                cropTools.classList.remove('hidden');
-                zoneTools.classList.add('hidden');
-                drawCropView();
-            } else {
-                zoneBtn.classList.add('btn-cyan');
-                zoneBtn.classList.remove('btn-outline');
-                cropBtn.classList.remove('btn-cyan');
-                cropBtn.classList.add('btn-outline');
-                cropContainer.classList.add('hidden');
-                zoneContainer.classList.remove('hidden');
-                cropTools.classList.add('hidden');
-                zoneTools.classList.remove('hidden');
-                updateZoneView();
-            }
-        }
-        
-        document.getElementById('cropViewBtn').addEventListener('click', () => {
-            if (!loadedImage) {
-                showToast('Upload an image first', 'error');
-                return;
-            }
-            // Warn if there are existing zones
-            const hasZones = currentLevel.zoneSets.some(s => s.goodZones.length > 0 || s.perfectZone);
-            if (hasZones && editorView !== 'crop') {
-                if (!confirm('Warning: Changing the crop will misalign existing zones. Continue?')) {
-                    return;
-                }
-            }
-            switchToView('crop');
-        });
-        
-        document.getElementById('zoneViewBtn').addEventListener('click', () => {
-            if (!loadedImage) {
-                showToast('Upload an image first', 'error');
-                return;
-            }
-            switchToView('zones');
-        });
-        
-        document.getElementById('resetCropBtn').addEventListener('click', () => {
-            if (!loadedImage) return;
-            currentLevel.crop = getAutoCrop(loadedImage.width, loadedImage.height);
-            drawCropView();
-            updateZoneView();
-        });
-        
-        // ============================================
-        // MODE BUTTONS
-        // ============================================
-        function ensureZonesVisible() {
-            if (!zonesVisible) {
-                zonesVisible = true;
-                const btn = document.getElementById('toggleZonesBtn');
-                btn.classList.remove('btn-active');
-                btn.innerHTML = '👁 Zones';
-                redrawOverlay();
-            }
-        }
-        
-        document.getElementById('toggleZonesBtn').addEventListener('click', () => {
-            zonesVisible = !zonesVisible;
-            const btn = document.getElementById('toggleZonesBtn');
-            if (zonesVisible) {
-                btn.classList.remove('btn-active');
-                btn.innerHTML = '👁 Zones';
-            } else {
-                btn.classList.add('btn-active');
-                btn.innerHTML = '👁‍🗨 Zones Hidden';
-            }
-            redrawOverlay();
-        });
-        
-        document.getElementById('selectModeBtn').addEventListener('click', () => {
-            editorMode = 'select';
-            updateModeIndicator();
-        });
-        
-        document.getElementById('drawGoodBtn').addEventListener('click', () => {
-            if (!selectedSetId) {
-                showToast('Select or create a Zone Set first', 'error');
-                return;
-            }
-            ensureZonesVisible(); // Can't draw what you can't see
-            editorMode = 'drawGood';
-            updateModeIndicator();
-        });
-        
-        document.getElementById('drawPerfectBtn').addEventListener('click', () => {
-            if (!selectedSetId) {
-                showToast('Select or create a Zone Set first', 'error');
-                return;
-            }
-            ensureZonesVisible(); // Can't draw what you can't see
-            editorMode = 'drawPerfect';
-            polygonPoints = []; // Clear any in-progress polygon
-            updateModeIndicator();
-        });
-        
-        document.getElementById('autoPerfectBtn').addEventListener('click', () => {
-            console.log('Auto Perfect clicked');
-            console.log('selectedSetId:', selectedSetId);
-            
-            if (!selectedSetId) {
-                showToast('Select or create a Zone Set first', 'error');
-                return;
-            }
-            
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            console.log('Found set:', set);
-            
-            if (!set || set.goodZones.length === 0) {
-                showToast('Draw a Good Zone first, then use Auto Perfect', 'error');
-                return;
-            }
-            
-            // Use selected good zone, or the first good zone if none selected
-            let goodZone;
-            if (selectedZoneType === 'good' && selectedZoneIndex !== null) {
-                goodZone = set.goodZones[selectedZoneIndex];
-            } else {
-                goodZone = set.goodZones[0];
-            }
-            
-            console.log('Using goodZone:', goodZone);
-            
-            if (!goodZone) return;
-            
-            // Ensure it's a polygon
-            const polygon = ensurePolygon(goodZone);
-            console.log('Polygon:', polygon);
-            
-            // Find the best center point
-            const center = findBestPerfectZonePosition(polygon);
-            console.log('Best center:', center);
-            
-            // Check if the rectangle fits
-            if (!center.fits) {
-                showToast('Good zone is too small or narrow for the text. Try making it larger or draw the perfect zone manually.', 'error');
-                return;
-            }
-            
-            // Create perfect zone at minimum size, centered on that point
-            const perfectZone = {
-                x: center.x - PERFECT_MIN_WIDTH / 2,
-                y: center.y - PERFECT_MIN_HEIGHT / 2,
-                width: PERFECT_MIN_WIDTH,
-                height: PERFECT_MIN_HEIGHT
-            };
-            
-            console.log('Perfect zone before clamp:', perfectZone);
-            
-            // Clamp to bounds
-            perfectZone.x = Math.max(0, Math.min(100 - PERFECT_MIN_WIDTH, perfectZone.x));
-            perfectZone.y = Math.max(0, Math.min(100 - PERFECT_MIN_HEIGHT, perfectZone.y));
-            
-            console.log('Perfect zone after clamp:', perfectZone);
-            
-            set.perfectZone = perfectZone;
-            selectedZoneType = 'perfect';
-            selectedZoneIndex = null;
-            
-            updateSetZonesList();
-            redrawOverlay();
-            showToast('Perfect zone placed!', 'success');
-        });
-
-        // ============================================
-        // ZONE SETS UI
-        // ============================================
-        function updateZoneSetsList() {
-            const container = document.getElementById('zoneSetsList');
-            
-            if (currentLevel.zoneSets.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No zone sets yet</p>';
-                return;
-            }
-            
-            container.innerHTML = currentLevel.zoneSets.map(set => `
-                <div class="zone-set-item ${set.color}-set ${set.id === selectedSetId ? 'selected' : ''}" data-set-id="${set.id}">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <strong class="text-sm">${set.name || 'Unnamed Set'}</strong>
-                            <span class="text-xs text-gray-400 ml-2">(${set.color})</span>
-                        </div>
-                        <div class="flex gap-1">
-                            <button class="duplicate-set-btn text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded" title="Duplicate this set">⧉</button>
-                            <button class="delete-set-btn text-xs px-2 py-1 bg-red-900 hover:bg-red-800 rounded" title="Delete this set">×</button>
-                        </div>
-                    </div>
-                    <div class="text-xs text-gray-500 mt-1">
-                        ${set.goodZones.length} good zone${set.goodZones.length !== 1 ? 's' : ''}, 
-                        ${set.perfectZone ? '1 perfect zone' : 'no perfect zone'}
-                    </div>
-                </div>
-            `).join('');
-            
-            // Add click handlers
-            container.querySelectorAll('.zone-set-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    // Don't select if clicking a button
-                    if (e.target.closest('button')) return;
+            // Draw good zones
+            goodZones.forEach(zone => {
+                if (isPolygonZone(zone)) {
+                    // Draw polygon using SVG
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.style.position = 'absolute';
+                    svg.style.left = '0';
+                    svg.style.top = '0';
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                    svg.style.pointerEvents = 'none';
                     
-                    selectedSetId = item.dataset.setId;
-                    selectedZoneType = null;
-                    selectedZoneIndex = null;
-                    selectedVertexIndex = null;
-                    updateZoneSetsList();
-                    updateZoneSetEditor();
-                    redrawOverlay();
-                });
-                
-                // Duplicate button
-                item.querySelector('.duplicate-set-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const setId = item.dataset.setId;
-                    const originalSet = currentLevel.zoneSets.find(s => s.id === setId);
-                    if (originalSet) {
-                        const newSet = JSON.parse(JSON.stringify(originalSet)); // Deep clone
-                        newSet.id = 'set_' + Date.now();
-                        newSet.name = (originalSet.name || 'Unnamed') + ' (copy)';
-                        currentLevel.zoneSets.push(newSet);
-                        selectedSetId = newSet.id;
-                        selectedZoneType = null;
-                        selectedZoneIndex = null;
-                        updateZoneSetsList();
-                        updateZoneSetEditor();
-                        redrawOverlay();
-                        showToast('Set duplicated!', 'success');
-                    }
-                });
-                
-                // Delete button
-                item.querySelector('.delete-set-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const setId = item.dataset.setId;
-                    if (confirm('Delete this zone set?')) {
-                        currentLevel.zoneSets = currentLevel.zoneSets.filter(s => s.id !== setId);
-                        if (selectedSetId === setId) {
-                            selectedSetId = currentLevel.zoneSets.length > 0 ? currentLevel.zoneSets[0].id : null;
-                            selectedZoneType = null;
-                            selectedZoneIndex = null;
-                        }
-                        updateZoneSetsList();
-                        updateZoneSetEditor();
-                        redrawOverlay();
-                        showToast('Set deleted', 'info');
-                    }
-                });
-            });
-        }
-        
-        function updateZoneSetEditor() {
-            const editor = document.getElementById('zoneSetEditor');
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            
-            if (!set) {
-                editor.classList.add('hidden');
-                return;
-            }
-            
-            editor.classList.remove('hidden');
-            
-            document.getElementById('zoneSetName').value = set.name || '';
-            document.getElementById('zoneSetFeedback').value = set.placementFeedback || '';
-            document.getElementById('perfectZoneHint').value = set.perfectHint || '';
-            
-            // Update color buttons
-            document.querySelectorAll('.color-btn').forEach(btn => {
-                btn.classList.toggle('btn-active', btn.dataset.color === set.color);
-            });
-            
-            updateSetZonesList();
-        }
-        
-        function updateSetZonesList() {
-            const container = document.getElementById('setZonesList');
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            
-            if (!set) {
-                container.innerHTML = '<p class="text-gray-500">No zones yet</p>';
-                return;
-            }
-            
-            let html = '';
-            
-            set.goodZones.forEach((zone, idx) => {
-                let sizeText;
-                if (zone.points) {
-                    // Polygon - show point count
-                    sizeText = `${zone.points.length} points`;
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const pointsStr = zone.points.map(p => `${p.x}%,${p.y}%`).join(' ');
+                    polygon.setAttribute('points', pointsStr);
+                    polygon.setAttribute('fill', 'rgba(76, 175, 80, 0.4)');
+                    polygon.setAttribute('stroke', 'rgba(255, 255, 255, 0.9)');
+                    polygon.setAttribute('stroke-width', '2');
+                    
+                    svg.appendChild(polygon);
+                    feedbackZonesContainer.appendChild(svg);
                 } else {
                     // Rectangle
-                    sizeText = `${zone.width.toFixed(1)}% × ${zone.height.toFixed(1)}%`;
-                }
-                html += `<div class="flex items-center justify-between py-1 ${selectedZoneType === 'good' && selectedZoneIndex === idx ? 'text-cyan-400' : ''}">
-                    <span>Good Zone ${idx + 1}</span>
-                    <span class="text-gray-500">${sizeText}</span>
-                </div>`;
-            });
-            
-            if (set.perfectZone) {
-                html += `<div class="flex items-center justify-between py-1 ${selectedZoneType === 'perfect' ? 'text-cyan-400' : ''}">
-                    <span>Perfect Zone</span>
-                    <span class="text-gray-500">${set.perfectZone.width.toFixed(1)}% × ${set.perfectZone.height.toFixed(1)}%</span>
-                </div>`;
-            }
-            
-            container.innerHTML = html || '<p class="text-gray-500">No zones yet</p>';
-        }
-        
-        // Zone set editor event handlers
-        document.getElementById('zoneSetName').addEventListener('input', (e) => {
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (set) {
-                set.name = e.target.value;
-                updateZoneSetsList();
-            }
-        });
-        
-        document.getElementById('zoneSetFeedback').addEventListener('input', (e) => {
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (set) set.placementFeedback = e.target.value;
-        });
-        
-        document.getElementById('perfectZoneHint').addEventListener('input', (e) => {
-            const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (set) set.perfectHint = e.target.value;
-        });
-        
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                if (set) {
-                    set.color = btn.dataset.color;
-                    updateZoneSetEditor();
-                    updateZoneSetsList();
-                    redrawOverlay();
+                    const zoneEl = document.createElement('div');
+                    zoneEl.className = 'feedback-zone';
+                    zoneEl.style.left = `${zone.x}%`;
+                    zoneEl.style.top = `${zone.y}%`;
+                    zoneEl.style.width = `${zone.width}%`;
+                    zoneEl.style.height = `${zone.height}%`;
+                    feedbackZonesContainer.appendChild(zoneEl);
                 }
             });
-        });
-        
-        document.getElementById('addZoneSetBtn').addEventListener('click', () => {
-            const newSet = {
-                id: 'set_' + Date.now(),
-                name: 'Zone Set ' + (currentLevel.zoneSets.length + 1),
-                color: 'white',
-                placementFeedback: '',
-                perfectHint: '',
-                goodZones: [],
-                perfectZone: null
-            };
-            currentLevel.zoneSets.push(newSet);
-            selectedSetId = newSet.id;
-            updateZoneSetsList();
-            updateZoneSetEditor();
-            redrawOverlay();
-        });
-        
-        document.getElementById('deleteZoneSetBtn').addEventListener('click', () => {
-            if (!selectedSetId) return;
-            if (!confirm('Delete this zone set?')) return;
             
-            currentLevel.zoneSets = currentLevel.zoneSets.filter(s => s.id !== selectedSetId);
-            selectedSetId = null;
-            selectedZoneType = null;
-            document.getElementById('zoneSetEditor').classList.add('hidden');
-            updateZoneSetsList();
-            redrawOverlay();
-        });
-
-        // ============================================
-        // IMAGE UPLOAD & URL
-        // ============================================
-        document.getElementById('loadUrlBtn').addEventListener('click', loadImageFromUrl);
-        document.getElementById('imageUrlInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loadImageFromUrl();
-        });
-        
-        async function loadImageFromUrl() {
-            const url = document.getElementById('imageUrlInput').value.trim();
-            if (!url) return showToast('Enter a URL', 'error');
+            // Draw perfect zones
+            perfectZones.forEach(zone => {
+                const zoneEl = document.createElement('div');
+                zoneEl.className = 'perfect-zone-feedback';
+                zoneEl.style.left = `${zone.x}%`;
+                zoneEl.style.top = `${zone.y}%`;
+                zoneEl.style.width = `${zone.width}%`;
+                zoneEl.style.height = `${zone.height}%`;
+                feedbackZonesContainer.appendChild(zoneEl);
+            });
             
-            showLoading('Loading...');
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Fetch failed');
-                const blob = await response.blob();
+            // Draw user placement
+            if (clickPercent && points < 100) {
+                const textRect = getTextBoundingBoxAsPercentage(clickPercent);
                 
-                if (response.headers.get('content-type')?.includes('video') || url.endsWith('.webm')) {
-                    await extractFrameFromVideo(blob, url);
-                } else {
-                    await uploadImageBlob(blob, url);
-                }
-            } catch (error) {
-                hideLoading();
-                // Try direct load
-                currentLevel.imageUrl = url;
-                loadImageToCanvas(url);
-                showToast('Loaded (not uploaded)', 'info');
-            }
-        }
-        
-        async function extractFrameFromVideo(blob, name) {
-            return new Promise((resolve) => {
-                const video = document.createElement('video');
-                video.muted = true;
-                video.onloadeddata = () => video.currentTime = 0;
-                video.onseeked = async () => {
-                    const c = document.createElement('canvas');
-                    c.width = video.videoWidth;
-                    c.height = video.videoHeight;
-                    c.getContext('2d').drawImage(video, 0, 0);
-                    c.toBlob(async (b) => {
-                        await uploadImageBlob(b, name.replace('.webm', '.jpg'));
-                        resolve();
-                    }, 'image/jpeg', 0.9);
-                };
-                video.src = URL.createObjectURL(blob);
-            });
-        }
-        
-        async function uploadImageBlob(blob, name) {
-            if (!firebaseReady) return showToast('Sign in first', 'error');
-            
-            const fileName = `${Date.now()}_${name.split('/').pop().replace(/[^a-z0-9.]/gi, '_')}`;
-            const storageRef = ref(storage, `game-images/${fileName}`);
-            await uploadBytes(storageRef, blob);
-            const url = await getDownloadURL(storageRef);
-            
-            currentLevel.imageUrl = url;
-            currentLevel.imagePath = `game-images/${fileName}`;
-            loadImageToCanvas(url);
-            hideLoading();
-            showToast('Uploaded!', 'success');
-        }
-        
-        document.getElementById('imageUpload').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            showLoading('Processing...');
-            try {
-                if (file.type.includes('video') || file.name.endsWith('.webm')) {
-                    await extractFrameFromVideo(file, file.name);
-                } else {
-                    await uploadImageBlob(file, file.name);
-                }
-            } catch (err) {
-                hideLoading();
-                showToast('Upload failed', 'error');
-            }
-        });
-
-        // ============================================
-        // LEVEL SAVE/LOAD
-        // ============================================
-        document.getElementById('saveLevelBtn').addEventListener('click', saveLevel);
-        document.getElementById('newLevelBtn').addEventListener('click', newLevel);
-        
-        async function saveLevel() {
-            if (!currentLevel.imageUrl) return showToast('Upload an image first', 'error');
-            if (!firebaseReady) return showToast('Sign in first', 'error');
-            
-            currentLevel.name = document.getElementById('levelName').value || 'Untitled';
-            currentLevel.feedback = document.getElementById('levelFeedback').value;
-            
-            showLoading('Saving...');
-            
-            try {
-                // Convert zone sets to game format
-                const goodZones = { white: [], black: [] };
-                const perfectZones = { white: [], black: [] };
-                let placementFeedback = '';
+                const userShadow = document.createElement('div');
+                userShadow.className = 'feedback-shadow';
+                userShadow.style.borderColor = '#ef4444';
+                userShadow.style.left = `${textRect.x}%`;
+                userShadow.style.top = `${textRect.y}%`;
+                userShadow.style.width = `${textRect.width}%`;
+                userShadow.style.height = `${textRect.height}%`;
+                feedbackZonesContainer.appendChild(userShadow);
                 
-                currentLevel.zoneSets.forEach(set => {
-                    set.goodZones.forEach(zone => {
-                        goodZones[set.color].push({ ...zone });
-                    });
+                // Draw ideal placement
+                if (directionalFeedback.targetZone) {
+                    const targetZone = directionalFeedback.targetZone;
+                    const idealCenter = { x: targetZone.x + targetZone.width / 2, y: targetZone.y + targetZone.height / 2 };
+                    const idealRect = getTextBoundingBoxAsPercentage(idealCenter);
                     
-                    if (set.perfectZone) {
-                        perfectZones[set.color].push({
-                            ...set.perfectZone,
-                            id: set.id,
-                            hint: set.perfectHint || ''
-                        });
-                        if (set.placementFeedback) {
-                            placementFeedback = set.placementFeedback;
-                        }
-                    }
-                });
-                
-                const levelData = {
-                    name: currentLevel.name,
-                    imageUrl: currentLevel.imageUrl,
-                    imagePath: currentLevel.imagePath,
-                    crop: currentLevel.crop,
-                    feedback: currentLevel.feedback,
-                    placementFeedback,
-                    goodZones,
-                    perfectZones,
-                    zoneSets: currentLevel.zoneSets, // Also save raw zone sets
-                    updatedAt: serverTimestamp()
-                };
-                
-                if (currentLevel.id) {
-                    await updateDoc(doc(db, 'levels', currentLevel.id), levelData);
-                } else {
-                    levelData.createdAt = serverTimestamp();
-                    const docRef = await addDoc(collection(db, 'levels'), levelData);
-                    currentLevel.id = docRef.id;
-                }
-                
-                hideLoading();
-                showToast('Saved!', 'success');
-            } catch (err) {
-                hideLoading();
-                showToast('Save failed: ' + err.message, 'error');
-            }
-        }
-        
-        function newLevel() {
-            currentLevel = {
-                id: null, name: '', imageUrl: '', imagePath: '',
-                crop: null, feedback: '', zoneSets: []
-            };
-            document.getElementById('levelName').value = '';
-            document.getElementById('levelFeedback').value = '';
-            document.getElementById('zoneSetEditor').classList.add('hidden');
-            selectedSetId = null;
-            loadedImage = null;
-            
-            // Clear both views
-            cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
-            document.getElementById('cropPlaceholder').classList.remove('hidden');
-            
-            const zoneContainer = document.getElementById('zoneContainer');
-            zoneContainer.style.backgroundImage = '';
-            if (overlayCtx) overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            document.getElementById('zonePlaceholder').classList.remove('hidden');
-            
-            // Switch to crop view
-            switchToView('crop');
-            updateZoneSetsList();
-        }
-        
-        async function loadLevel(levelId) {
-            showLoading('Loading...');
-            try {
-                const docSnap = await getDoc(doc(db, 'levels', levelId));
-                if (!docSnap.exists()) throw new Error('Not found');
-                
-                const data = docSnap.data();
-                
-                // Try to load zone sets if available, otherwise convert from old format
-                if (data.zoneSets && data.zoneSets.length > 0) {
-                    currentLevel = {
-                        id: docSnap.id,
-                        name: data.name || '',
-                        imageUrl: data.imageUrl,
-                        imagePath: data.imagePath || '',
-                        crop: data.crop || null, // Will be auto-calculated on image load if null
-                        feedback: data.feedback || '',
-                        zoneSets: data.zoneSets
-                    };
-                } else {
-                    // Convert from old format
-                    currentLevel = {
-                        id: docSnap.id,
-                        name: data.name || '',
-                        imageUrl: data.imageUrl,
-                        imagePath: data.imagePath || '',
-                        crop: data.crop || null,
-                        feedback: data.feedback || '',
-                        zoneSets: convertOldFormat(data)
-                    };
-                }
-                
-                document.getElementById('levelName').value = currentLevel.name;
-                document.getElementById('levelFeedback').value = currentLevel.feedback;
-                
-                loadImageToCanvas(currentLevel.imageUrl);
-                selectedSetId = currentLevel.zoneSets[0]?.id || null;
-                updateZoneSetsList();
-                updateZoneSetEditor();
-                
-                // Switch to editor and zones view (since level is already configured)
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                document.querySelector('[data-tab="editor"]').classList.add('active');
-                document.getElementById('editorTab').classList.remove('hidden');
-                
-                // If level has zones, go to zone view; otherwise stay in crop view
-                const hasZones = currentLevel.zoneSets.some(s => s.goodZones.length > 0 || s.perfectZone);
-                if (hasZones) {
-                    // Small delay to ensure image is loaded
-                    setTimeout(() => switchToView('zones'), 100);
-                }
-                
-                hideLoading();
-            } catch (err) {
-                hideLoading();
-                showToast('Load failed', 'error');
-            }
-        }
-        
-        function convertOldFormat(data) {
-            const sets = [];
-            
-            ['white', 'black'].forEach(color => {
-                const goodZones = data.goodZones?.[color] || [];
-                const perfectZones = data.perfectZones?.[color] || [];
-                
-                if (goodZones.length > 0 || perfectZones.length > 0) {
-                    // Create one set per perfect zone, or one set if no perfect zones
-                    if (perfectZones.length > 0) {
-                        perfectZones.forEach((pz, idx) => {
-                            sets.push({
-                                id: 'set_' + color + '_' + idx,
-                                name: `${color.charAt(0).toUpperCase() + color.slice(1)} Set ${idx + 1}`,
-                                color,
-                                placementFeedback: data.placementFeedback || '',
-                                perfectHint: pz.hint || '',
-                                goodZones: idx === 0 ? goodZones.map(z => ({...z})) : [],
-                                perfectZone: { x: pz.x, y: pz.y, width: pz.width, height: pz.height }
-                            });
-                        });
-                    } else if (goodZones.length > 0) {
-                        sets.push({
-                            id: 'set_' + color + '_0',
-                            name: `${color.charAt(0).toUpperCase() + color.slice(1)} Set`,
-                            color,
-                            placementFeedback: '',
-                            perfectHint: '',
-                            goodZones: goodZones.map(z => ({...z})),
-                            perfectZone: null
-                        });
+                    const idealShadow = document.createElement('div');
+                    idealShadow.className = 'feedback-shadow';
+                    idealShadow.style.borderColor = '#3b82f6';
+                    idealShadow.style.left = `${idealRect.x}%`;
+                    idealShadow.style.top = `${idealRect.y}%`;
+                    idealShadow.style.width = `${idealRect.width}%`;
+                    idealShadow.style.height = `${idealRect.height}%`;
+                    feedbackZonesContainer.appendChild(idealShadow);
+                    
+                    // Directional hint
+                    const dx = clickPercent.x - idealCenter.x;
+                    const dy = clickPercent.y - idealCenter.y;
+                    const threshold = textRect.width * 0.1;
+                    let feedbackText = [];
+                    if (dy > threshold) feedbackText.push("up");
+                    else if (dy < -threshold) feedbackText.push("down");
+                    if (dx > threshold) feedbackText.push("left");
+                    else if (dx < -threshold) feedbackText.push("right");
+                    
+                    if (feedbackText.length > 0) {
+                        const p = document.createElement('p');
+                        p.className = "feedback-hint";
+                        p.innerHTML = `Try moving <strong>${feedbackText.join(' & ')}</strong> for a better score.`;
+                        feedbackArea.appendChild(p);
                     }
                 }
-            });
-            
-            return sets;
-        }
-
-        // ============================================
-        // LEVELS LIST
-        // ============================================
-        async function loadLevelsList() {
-            const container = document.getElementById('levelsList');
-            if (!firebaseReady) {
-                container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-12">Sign in first</p>';
-                return;
             }
             
-            try {
-                const snapshot = await getDocs(collection(db, 'levels'));
-                if (snapshot.empty) {
-                    container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-12">No levels yet</p>';
-                    return;
+            // Show best placement marker
+            if (perfectZones.length > 0 && clickPercent && !isNoGoodSpotClick) {
+                const { zone: closestPerfectZone } = getClosestPerfectZone(clickPercent, perfectZones);
+                if (closestPerfectZone) {
+                    const idealCenter = { x: closestPerfectZone.x + closestPerfectZone.width / 2, y: closestPerfectZone.y + closestPerfectZone.height / 2 };
+                    const idealRect = getTextBoundingBoxAsPercentage(idealCenter);
+                    const idealShadow = document.createElement('div');
+                    idealShadow.className = 'feedback-shadow';
+                    idealShadow.style.borderColor = '#3b82f6';
+                    idealShadow.style.left = `${idealRect.x}%`;
+                    idealShadow.style.top = `${idealRect.y}%`;
+                    idealShadow.style.width = `${idealRect.width}%`;
+                    idealShadow.style.height = `${idealRect.height}%`;
+                    feedbackZonesContainer.appendChild(idealShadow);
                 }
-                
-                container.innerHTML = '';
-                snapshot.docs.forEach(docSnap => {
-                    const level = docSnap.data();
-                    const card = document.createElement('div');
-                    card.className = 'level-card';
-                    card.style.cursor = 'pointer';
-                    card.innerHTML = `
-                        <img src="${level.imageUrl}" alt="${level.name}">
-                        <div class="p-3">
-                            <h4 class="font-bold truncate text-sm">${level.name || 'Untitled'}</h4>
-                            <div class="flex gap-2 mt-2">
-                                <button class="btn btn-outline btn-sm flex-1 edit-btn">Edit</button>
-                                <button class="btn btn-danger btn-sm del-btn">×</button>
-                            </div>
-                        </div>
-                    `;
-                    // Click on card or image to edit
-                    card.addEventListener('click', () => loadLevel(docSnap.id));
-                    card.querySelector('img').style.cursor = 'pointer';
-                    card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); loadLevel(docSnap.id); });
-                    card.querySelector('.del-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        if (confirm('Delete?')) {
-                            await deleteDoc(doc(db, 'levels', docSnap.id));
-                            loadLevelsList();
-                        }
-                    });
-                    container.appendChild(card);
-                });
-            } catch (err) {
-                container.innerHTML = '<p class="text-red-400 col-span-full text-center py-12">Error</p>';
+            }
+            
+            // Show hints
+            if (directionalFeedback.targetZone && directionalFeedback.targetZone.hint) {
+                const p = document.createElement('p');
+                p.className = "feedback-hint";
+                p.textContent = directionalFeedback.targetZone.hint;
+                feedbackArea.appendChild(p);
+            } else if (currentImage.placementFeedback) {
+                const p = document.createElement('p');
+                p.className = "feedback-hint";
+                p.textContent = currentImage.placementFeedback;
+                feedbackArea.appendChild(p);
             }
         }
         
-        document.getElementById('refreshLevelsBtn').addEventListener('click', loadLevelsList);
-
-        // ============================================
-        // MIGRATION (same as before, condensed)
-        // ============================================
-        const originalGameImages = [
-            { src: 'https://pdr-assets.b-cdn.net/collections/herbert-geddes-life-in-japan/People_in_boats_on_waterways_through_rice_fields;_snow-covered_mountain_in_background._(19329128803).jpg', name: 'Mountain Rice Fields', goodZones: { white: [{ x: 25, y: 75, width: 75, height: 25 }], black: [{ x: 0.9, y: 0, width: 40.5, height: 38.1 }, { x: 41.4, y: 0, width: 57.1, height: 25 }] }, perfectZones: { white: [{ id: 'water_centered', hint: "Shifted right to align with the clearest water.", x: 40, y: 75, width: 30, height: 20 }], black: [{ id: 'sky_peak_centered', hint: "Centered above the mountain peak.", x: 35.75, y: 3, width: 30, height: 20 }, { id: 'sky_left_balanced', hint: "Balanced between edge and peak.", x: 10.3, y: 5.7, width: 30, height: 20 }] } },
-            { src: 'https://pdr-assets.b-cdn.net/collections/nathaniel-hawthorne-s-tanglewood-tales-illustrated-by-virginia-frances-sterrett-1921/4_2fabcd2a0_b.jpg', name: 'Tanglewood Dragon', goodZones: { white: [], black: [{ x: 5.6, y: 67, width: 88.885, height: 33 }, { x: 5.6, y: 53, width: 34.4, height: 14 }] }, perfectZones: { white: [], black: [{ id: 'creative', hint: "Excellent creative composition!", x: 10, y: 58, width: 30, height: 20 }, { id: 'centered', hint: "Solid! For more dynamic composition, notice where the dragon looks.", x: 35, y: 73.5, width: 30, height: 20 }] } },
-            { src: 'https://pdr-assets.b-cdn.net/collections/correct-postures-for-housework-1920s/3856279792_f5eb5d1399_z.jpg', name: 'Housework Postures', goodZones: { white: [], black: [{ x: 22.47, y: 0, width: 43.2, height: 36.7 }] }, perfectZones: { white: [], black: [{ x: 29.2, y: 8.35, width: 30, height: 20 }] } },
-            { src: 'https://pdr-assets.b-cdn.net/collections/through-the-first-antarctic-night-1900/48103624963_32ec491012_b.jpg', name: 'Antarctic Iceberg', goodZones: { white: [{ x: 0, y: 5, width: 100, height: 32.4 }], black: [{ x: 0, y: 5, width: 100, height: 32.4 }] }, perfectZones: { white: [{ x: 38, y: 11.2, width: 30, height: 20 }], black: [{ x: 38, y: 11.2, width: 30, height: 20 }] }, placementFeedback: "Perfect spot is centered above the iceberg." },
-            { src: 'https://pdr-assets.b-cdn.net/collections/flowers-and-pictures-of-the-holy-land/10171710394_a7bd417a9f_o.jpg', name: 'Holy Land Flowers', goodZones: { white: [], black: [{ x: 1.7, y: 2.5, width: 96.6, height: 22.5 }] }, perfectZones: { white: [], black: [{ x: 35, y: 3.75, width: 30, height: 20 }] } },
-            { src: 'https://pdr-assets.b-cdn.net/collections/photographs-of-models-of-the-moon-1874/45077382895_af6af4615d_b.jpg', name: 'Moon Model', goodZones: { white: [{ x: 52.1, y: 4.5, width: 42.5, height: 29.775 }], black: [] }, perfectZones: { white: [{ x: 54.5, y: 8.5, width: 30, height: 20 }], black: [] }, placementFeedback: "Uses the largest dark, clear area." },
-            { src: 'https://pdr-assets.b-cdn.net/collections/herbert-geddes-life-in-japan/Women_preparing_rice_field_in_mud._(19327195784).jpg', name: 'Rice Field Workers', goodZones: { white: [{ x: 38.9, y: 0, width: 59.3, height: 20.2 }], black: [] }, perfectZones: { white: [{ x: 50.5, y: 0.1, width: 30, height: 20 }], black: [] }, placementFeedback: "Uses the largest dark area." },
-            { src: 'https://pdr-assets.b-cdn.net/shop/cp-2-small.jpg', name: 'Busy Image (No Spot)', goodZones: { white: [], black: [] }, perfectZones: { white: [], black: [] }, feedback: "No good spot. Too busy for text." },
-            { src: 'https://pdr-assets.b-cdn.net/collections/watercolours-from-a-16th-century-de-materia-medica/20879595101_be37994770_o.jpg', name: 'Materia Medica', goodZones: { white: [], black: [{ x: 12.25, y: 50.5, width: 35.8, height: 30.5 }] }, perfectZones: { white: [], black: [{ x: 15.15, y: 55.75, width: 30, height: 20 }] } },
-            { src: 'https://pdr-assets.b-cdn.net/collections/los-angeles-alligator-farm/alligator-farm-14.jpg', name: 'Alligator Farm (No Spot)', goodZones: { white: [], black: [] }, perfectZones: { white: [], black: [] }, feedback: "No good spot. Too busy for text." }
-        ];
+        function getTextBoundingBoxAsPercentage(clickPercent) {
+            const rect = gameContainer.getBoundingClientRect();
+            const textWidthPercent = (textBoundingBox.width / rect.width) * 100;
+            const textHeightPercent = (textBoundingBox.height / rect.height) * 100;
+            return {
+                x: clickPercent.x - textWidthPercent / 2,
+                y: clickPercent.y - textHeightPercent / 2,
+                width: textWidthPercent,
+                height: textHeightPercent
+            };
+        }
         
-        document.getElementById('startMigrationBtn').addEventListener('click', async () => {
-            if (!firebaseReady) return showToast('Sign in first', 'error');
-            
-            const progress = document.getElementById('migrationProgress');
-            const count = document.getElementById('migrationCount');
-            const bar = document.getElementById('migrationBar');
-            const log = document.getElementById('migrationLog');
-            
-            progress.classList.remove('hidden');
-            log.innerHTML = '';
-            
-            let done = 0;
-            const total = originalGameImages.length;
-            
-            for (const img of originalGameImages) {
-                try {
-                    log.innerHTML += `<div class="text-gray-400">Downloading: ${img.name}...</div>`;
-                    const resp = await fetch(img.src);
-                    if (!resp.ok) throw new Error('Fetch failed');
-                    const blob = await resp.blob();
-                    
-                    const fileName = `${Date.now()}_${img.name.replace(/[^a-z0-9]/gi, '_')}.jpg`;
-                    const storageRef = ref(storage, `game-images/${fileName}`);
-                    await uploadBytes(storageRef, blob);
-                    const url = await getDownloadURL(storageRef);
-                    
-                    await addDoc(collection(db, 'levels'), {
-                        name: img.name,
-                        imageUrl: url,
-                        imagePath: `game-images/${fileName}`,
-                        feedback: img.feedback || '',
-                        placementFeedback: img.placementFeedback || '',
-                        goodZones: img.goodZones,
-                        perfectZones: img.perfectZones,
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp()
-                    });
-                    
-                    log.innerHTML += `<div class="text-green-400">✓ ${img.name}</div>`;
-                } catch (err) {
-                    log.innerHTML += `<div class="text-red-400">✗ ${img.name}: ${err.message}</div>`;
-                }
-                done++;
-                count.textContent = `${done} / ${total}`;
-                bar.style.width = `${(done/total)*100}%`;
-                log.scrollTop = log.scrollHeight;
-            }
-            
-            showToast('Migration complete!', 'success');
+        function calculateOverlapPercentage(boxA, boxB) {
+            const x_overlap = Math.max(0, Math.min(boxA.x + boxA.width, boxB.x + boxB.width) - Math.max(boxA.x, boxB.x));
+            const y_overlap = Math.max(0, Math.min(boxA.y + boxA.height, boxB.y + boxB.height) - Math.max(boxA.y, boxB.y));
+            const overlapArea = x_overlap * y_overlap;
+            const boxAArea = boxA.width * boxA.height;
+            return boxAArea > 0 ? (overlapArea / boxAArea) * 100 : 0;
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        startGameBtn.addEventListener('click', startGame);
+        playAgainBtn.addEventListener('click', startGame);
+        
+        changeColorBtn.addEventListener('click', () => {
+            if (!gameActive) return;
+            currentTextColor = currentTextColor === 'white' ? 'black' : 'white';
+            updateTextColorButton();
         });
-
-        // ============================================
-        // INIT
-        // ============================================
-        console.log('Script loaded, initializing...');
-        try {
-            initCanvases();
-            console.log('Canvases initialized');
-        } catch (e) {
-            console.error('initCanvases error:', e);
-        }
-        updateModeIndicator();
-        console.log('Admin panel ready');
+        
+        noGoodSpotBtn.addEventListener('click', () => checkAnswer(null, true));
+        
+        nextLevelBtn.addEventListener('click', () => {
+            currentImageIndex++;
+            loadRound();
+        });
+        
+        gameContainer.addEventListener('mousemove', (e) => {
+            if (!gameActive) return;
+            const rect = gameContainer.getBoundingClientRect();
+            textOverlay.style.left = `${e.clientX - rect.left}px`;
+            textOverlay.style.top = `${e.clientY - rect.top}px`;
+        });
+        
+        gameContainer.addEventListener('mouseenter', () => {
+            if (gameActive) textOverlay.style.opacity = '1';
+        });
+        
+        gameContainer.addEventListener('mouseleave', () => {
+            if (gameActive) textOverlay.style.opacity = '0';
+        });
+        
+        gameContainer.addEventListener('click', (e) => {
+            const rect = gameContainer.getBoundingClientRect();
+            const clickPercent = {
+                x: ((e.clientX - rect.left) / rect.width) * 100,
+                y: ((e.clientY - rect.top) / rect.height) * 100
+            };
+            checkAnswer(clickPercent, false);
+        });
+        
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !nextControls.classList.contains('hidden')) {
+                e.preventDefault();
+                currentImageIndex++;
+                loadRound();
+            }
+        });
+        
+        // Initialize
+        init();
     </script>
 </body>
 </html>
