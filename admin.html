@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.1</title>
+    <title>The Sweet Spot - Level Editor v1.8.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -773,37 +773,74 @@
         
         // Find the best position for perfect zone within a polygon
         function findBestPerfectZonePosition(polygon) {
-            // Start with centroid
-            let bestX = 0, bestY = 0;
-            const centroid = getPolygonCentroid(polygon);
+            const halfW = PERFECT_MIN_WIDTH / 2;
+            const halfH = PERFECT_MIN_HEIGHT / 2;
             
-            // If centroid is inside, use it; otherwise search for better point
-            if (pointInPolygon(centroid.x, centroid.y, polygon)) {
+            // Check if a rectangle centered at (cx, cy) fits entirely inside the polygon
+            function rectangleFitsAt(cx, cy) {
+                const corners = [
+                    { x: cx - halfW, y: cy - halfH }, // top-left
+                    { x: cx + halfW, y: cy - halfH }, // top-right
+                    { x: cx - halfW, y: cy + halfH }, // bottom-left
+                    { x: cx + halfW, y: cy + halfH }  // bottom-right
+                ];
+                return corners.every(c => pointInPolygon(c.x, c.y, polygon));
+            }
+            
+            // Get minimum distance from rectangle edges to polygon edges
+            function getMinEdgeDistance(cx, cy) {
+                const corners = [
+                    { x: cx - halfW, y: cy - halfH },
+                    { x: cx + halfW, y: cy - halfH },
+                    { x: cx - halfW, y: cy + halfH },
+                    { x: cx + halfW, y: cy + halfH }
+                ];
+                let minDist = Infinity;
+                for (const corner of corners) {
+                    const dist = distanceToPolygonEdge(corner.x, corner.y, polygon);
+                    if (dist < minDist) minDist = dist;
+                }
+                return minDist;
+            }
+            
+            const bounds = getPolygonBounds(polygon);
+            let bestX = null, bestY = null;
+            let bestScore = -Infinity;
+            
+            // First try centroid
+            const centroid = getPolygonCentroid(polygon);
+            if (rectangleFitsAt(centroid.x, centroid.y)) {
                 bestX = centroid.x;
                 bestY = centroid.y;
-            } else {
-                // Sample points inside polygon and find one farthest from edges
-                const bounds = getPolygonBounds(polygon);
-                let maxDist = -1;
-                
-                for (let i = 0; i < 20; i++) {
-                    for (let j = 0; j < 20; j++) {
-                        const x = bounds.x + (bounds.width * (i + 0.5) / 20);
-                        const y = bounds.y + (bounds.height * (j + 0.5) / 20);
-                        
-                        if (pointInPolygon(x, y, polygon)) {
-                            const dist = distanceToPolygonEdge(x, y, polygon);
-                            if (dist > maxDist) {
-                                maxDist = dist;
-                                bestX = x;
-                                bestY = y;
-                            }
+                bestScore = getMinEdgeDistance(centroid.x, centroid.y);
+            }
+            
+            // Sample grid to find best position where rectangle fits
+            // Use finer grid for better results
+            const gridSize = 30;
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const x = bounds.x + (bounds.width * (i + 0.5) / gridSize);
+                    const y = bounds.y + (bounds.height * (j + 0.5) / gridSize);
+                    
+                    if (rectangleFitsAt(x, y)) {
+                        const score = getMinEdgeDistance(x, y);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestX = x;
+                            bestY = y;
                         }
                     }
                 }
             }
             
-            return { x: bestX, y: bestY };
+            // If no valid position found, return centroid anyway (will be flagged by caller)
+            if (bestX === null) {
+                console.warn('No position found where perfect zone fits inside polygon');
+                return { x: centroid.x, y: centroid.y, fits: false };
+            }
+            
+            return { x: bestX, y: bestY, fits: true };
         }
         
         function updateModeIndicator() {
@@ -2468,6 +2505,12 @@
             // Find the best center point
             const center = findBestPerfectZonePosition(polygon);
             console.log('Best center:', center);
+            
+            // Check if the rectangle fits
+            if (!center.fits) {
+                showToast('Good zone is too small or narrow for the text. Try making it larger or draw the perfect zone manually.', 'error');
+                return;
+            }
             
             // Create perfect zone at minimum size, centered on that point
             const perfectZone = {
