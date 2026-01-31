@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.3</title>
+    <title>The Sweet Spot - Level Editor v1.7.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -2268,9 +2268,17 @@
             let html = '';
             
             set.goodZones.forEach((zone, idx) => {
+                let sizeText;
+                if (zone.points) {
+                    // Polygon - show point count
+                    sizeText = `${zone.points.length} points`;
+                } else {
+                    // Rectangle
+                    sizeText = `${zone.width.toFixed(1)}% × ${zone.height.toFixed(1)}%`;
+                }
                 html += `<div class="flex items-center justify-between py-1 ${selectedZoneType === 'good' && selectedZoneIndex === idx ? 'text-cyan-400' : ''}">
                     <span>Good Zone ${idx + 1}</span>
-                    <span class="text-gray-500">${zone.width.toFixed(1)}% × ${zone.height.toFixed(1)}%</span>
+                    <span class="text-gray-500">${sizeText}</span>
                 </div>`;
             });
             
