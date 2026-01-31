@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.4</title>
+    <title>The Sweet Spot - Level Editor v1.8.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -570,9 +570,9 @@
         let canvasScale = 1;
         
         // Text preview dimensions - must match actual game text (3.5rem)
-        // Based on visual comparison with actual game rendering
-        const TEXT_WIDTH_PERCENT = 38;  // Actual game text width  
-        const TEXT_HEIGHT_PERCENT = 24; // Actual game text height
+        // These need to be accurate for Auto Perfect placement to work correctly
+        const TEXT_WIDTH_PERCENT = 32;  // Actual game text width  
+        const TEXT_HEIGHT_PERCENT = 20; // Actual game text height
         
         // Minimum zone sizes
         const PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
@@ -1461,15 +1461,15 @@
             const textWidth = overlayCtx.measureText('This Text').width; // Wider line
             const textHeight = lineHeight * 2;
             
-            // Draw tight bounding box around text (for reference)
+            // Draw tight bounding box around text (no padding - exact text size)
             overlayCtx.shadowColor = 'transparent';
-            overlayCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            overlayCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
             overlayCtx.lineWidth = 1;
-            overlayCtx.setLineDash([2, 2]);
+            overlayCtx.setLineDash([3, 3]);
             overlayCtx.strokeRect(
-                centerX - textWidth/2 - 4,
+                centerX - textWidth/2,
                 centerY - textHeight/2,
-                textWidth + 8,
+                textWidth,
                 textHeight
             );
             overlayCtx.setLineDash([]);
