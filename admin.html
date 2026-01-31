@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.5</title>
+    <title>The Sweet Spot - Level Editor v1.8.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -1459,13 +1459,13 @@
             
             // Measure actual text to show bounding box
             const textWidth = overlayCtx.measureText('This Text').width; // Wider line
-            const textHeight = lineHeight * 2;
+            const textHeight = fontSize * 2.5; // Account for two lines plus some padding
             
-            // Draw tight bounding box around text (no padding - exact text size)
+            // Draw tight bounding box around text
             overlayCtx.shadowColor = 'transparent';
-            overlayCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-            overlayCtx.lineWidth = 1;
-            overlayCtx.setLineDash([3, 3]);
+            overlayCtx.strokeStyle = 'rgba(255, 255, 0, 0.8)'; // Yellow for visibility
+            overlayCtx.lineWidth = 2;
+            overlayCtx.setLineDash([4, 4]);
             overlayCtx.strokeRect(
                 centerX - textWidth/2,
                 centerY - textHeight/2,
@@ -2308,6 +2308,61 @@
                 selectedVertexIndex = null;
                 updateModeIndicator();
                 redrawOverlay();
+            } else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                // Arrow keys to nudge selected zone/vertex
+                if (!selectedSetId || !selectedZoneType) return;
+                if (!zonesVisible) return; // Don't nudge when zones hidden
+                
+                e.preventDefault();
+                
+                // Nudge amount: 1% normally, 0.1% with shift for fine control
+                const nudge = e.shiftKey ? 0.1 : 1;
+                let dx = 0, dy = 0;
+                
+                if (e.key === 'ArrowUp') dy = -nudge;
+                if (e.key === 'ArrowDown') dy = nudge;
+                if (e.key === 'ArrowLeft') dx = -nudge;
+                if (e.key === 'ArrowRight') dx = nudge;
+                
+                const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                if (!set) return;
+                
+                // Nudge selected vertex
+                if (selectedVertexIndex !== null && selectedZoneType === 'good') {
+                    const zone = set.goodZones[selectedZoneIndex];
+                    if (zone && zone.points) {
+                        saveUndoState('nudge vertex');
+                        const p = zone.points[selectedVertexIndex];
+                        p.x = Math.max(0, Math.min(100, p.x + dx));
+                        p.y = Math.max(0, Math.min(100, p.y + dy));
+                        redrawOverlay();
+                        return;
+                    }
+                }
+                
+                // Nudge perfect zone
+                if (selectedZoneType === 'perfect' && set.perfectZone) {
+                    saveUndoState('nudge perfect zone');
+                    set.perfectZone.x = Math.max(0, Math.min(100 - set.perfectZone.width, set.perfectZone.x + dx));
+                    set.perfectZone.y = Math.max(0, Math.min(100 - set.perfectZone.height, set.perfectZone.y + dy));
+                    redrawOverlay();
+                    updateSetZonesList();
+                    return;
+                }
+                
+                // Nudge good zone (polygon)
+                if (selectedZoneType === 'good' && selectedZoneIndex !== null) {
+                    const zone = set.goodZones[selectedZoneIndex];
+                    if (zone && zone.points) {
+                        saveUndoState('nudge polygon');
+                        zone.points = zone.points.map(p => ({
+                            x: Math.max(0, Math.min(100, p.x + dx)),
+                            y: Math.max(0, Math.min(100, p.y + dy))
+                        }));
+                        redrawOverlay();
+                        return;
+                    }
+                }
             }
         }
         
@@ -2502,7 +2557,21 @@
             
             // Find the best center point
             const center = findBestPerfectZonePosition(polygon);
-            console.log('Best center:', center);
+            
+            // Detailed debug output for troubleshooting
+            console.log('=== AUTO PERFECT DEBUG ===');
+            console.log('Constants: TEXT_WIDTH=' + PERFECT_MIN_WIDTH + '%, TEXT_HEIGHT=' + PERFECT_MIN_HEIGHT + '%');
+            console.log('Polygon points:', JSON.stringify(polygon.points, null, 2));
+            console.log('Centroid would be at:', getPolygonCentroid(polygon));
+            console.log('Best center found:', center);
+            console.log('Rectangle corners at this position:');
+            const halfW = PERFECT_MIN_WIDTH / 2;
+            const halfH = PERFECT_MIN_HEIGHT / 2;
+            console.log('  Top-left:     (' + (center.x - halfW).toFixed(2) + ', ' + (center.y - halfH).toFixed(2) + ')');
+            console.log('  Top-right:    (' + (center.x + halfW).toFixed(2) + ', ' + (center.y - halfH).toFixed(2) + ')');
+            console.log('  Bottom-left:  (' + (center.x - halfW).toFixed(2) + ', ' + (center.y + halfH).toFixed(2) + ')');
+            console.log('  Bottom-right: (' + (center.x + halfW).toFixed(2) + ', ' + (center.y + halfH).toFixed(2) + ')');
+            console.log('=========================');
             
             // Check if the rectangle fits
             if (!center.fits) {
@@ -2518,13 +2587,11 @@
                 height: PERFECT_MIN_HEIGHT
             };
             
-            console.log('Perfect zone before clamp:', perfectZone);
-            
             // Clamp to bounds
             perfectZone.x = Math.max(0, Math.min(100 - PERFECT_MIN_WIDTH, perfectZone.x));
             perfectZone.y = Math.max(0, Math.min(100 - PERFECT_MIN_HEIGHT, perfectZone.y));
             
-            console.log('Perfect zone after clamp:', perfectZone);
+            console.log('Final perfect zone:', perfectZone);
             
             set.perfectZone = perfectZone;
             selectedZoneType = 'perfect';
