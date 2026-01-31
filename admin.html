@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.2</title>
+    <title>The Sweet Spot - Level Editor v1.7.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -1712,6 +1712,7 @@
         }
         
         function finishPolygon() {
+            console.log('finishPolygon called, points:', polygonPoints.length);
             if (polygonPoints.length < 3) {
                 showToast('Need at least 3 points for a polygon', 'error');
                 polygonPoints = [];
@@ -1720,15 +1721,18 @@
             }
             
             const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+            console.log('Adding polygon to set:', selectedSetId, 'with points:', [...polygonPoints]);
             if (set) {
                 set.goodZones.push({ points: [...polygonPoints] });
                 selectedZoneType = 'good';
                 selectedZoneIndex = set.goodZones.length - 1;
+                console.log('Polygon added, new goodZones count:', set.goodZones.length);
                 updateSetZonesList();
             }
             
             polygonPoints = [];
             editorMode = 'select';
+            console.log('Mode changed to select, polygonPoints cleared');
             updateModeIndicator();
             redrawOverlay();
         }
@@ -2129,12 +2133,17 @@
         });
         
         document.getElementById('autoPerfectBtn').addEventListener('click', () => {
+            console.log('Auto Perfect clicked');
+            console.log('selectedSetId:', selectedSetId);
+            
             if (!selectedSetId) {
                 showToast('Select or create a Zone Set first', 'error');
                 return;
             }
             
             const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+            console.log('Found set:', set);
+            
             if (!set || set.goodZones.length === 0) {
                 showToast('Draw a Good Zone first, then use Auto Perfect', 'error');
                 return;
@@ -2148,13 +2157,17 @@
                 goodZone = set.goodZones[0];
             }
             
+            console.log('Using goodZone:', goodZone);
+            
             if (!goodZone) return;
             
             // Ensure it's a polygon
             const polygon = ensurePolygon(goodZone);
+            console.log('Polygon:', polygon);
             
             // Find the best center point
             const center = findBestPerfectZonePosition(polygon);
+            console.log('Best center:', center);
             
             // Create perfect zone at minimum size, centered on that point
             const perfectZone = {
@@ -2164,9 +2177,13 @@
                 height: PERFECT_MIN_HEIGHT
             };
             
+            console.log('Perfect zone before clamp:', perfectZone);
+            
             // Clamp to bounds
             perfectZone.x = Math.max(0, Math.min(100 - PERFECT_MIN_WIDTH, perfectZone.x));
             perfectZone.y = Math.max(0, Math.min(100 - PERFECT_MIN_HEIGHT, perfectZone.y));
+            
+            console.log('Perfect zone after clamp:', perfectZone);
             
             set.perfectZone = perfectZone;
             selectedZoneType = 'perfect';
@@ -2621,6 +2638,7 @@
                     const level = docSnap.data();
                     const card = document.createElement('div');
                     card.className = 'level-card';
+                    card.style.cursor = 'pointer';
                     card.innerHTML = `
                         <img src="${level.imageUrl}" alt="${level.name}">
                         <div class="p-3">
@@ -2631,6 +2649,9 @@
                             </div>
                         </div>
                     `;
+                    // Click on card or image to edit
+                    card.addEventListener('click', () => loadLevel(docSnap.id));
+                    card.querySelector('img').style.cursor = 'pointer';
                     card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); loadLevel(docSnap.id); });
                     card.querySelector('.del-btn').addEventListener('click', async (e) => {
                         e.stopPropagation();
