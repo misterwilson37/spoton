@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.5</title>
+    <title>The Sweet Spot - Level Editor v1.7.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -356,6 +356,7 @@
                             </div>
                             
                             <div class="flex gap-2 ml-auto">
+                                <button id="toggleZonesBtn" class="btn btn-outline btn-sm" title="Toggle zone visibility">👁 Zones</button>
                                 <button id="selectModeBtn" class="btn btn-blue btn-sm btn-active">Select</button>
                                 <button id="drawGoodBtn" class="btn btn-green btn-sm">+ Good Zone</button>
                                 <button id="drawPerfectBtn" class="btn btn-blue btn-sm">+ Perfect Zone</button>
@@ -556,6 +557,7 @@
         let drawStart = { x: 0, y: 0 };
         let tempZone = null;
         let polygonPoints = []; // Points being drawn for new polygon
+        let zonesVisible = true; // Toggle for zone visibility
         
         // Canvas refs
         let overlayCanvas, overlayCtx;
@@ -1101,6 +1103,16 @@
             const h = overlayCanvas.height;
             overlayCtx.clearRect(0, 0, w, h);
             
+            // If zones are hidden, only draw text previews
+            if (!zonesVisible) {
+                currentLevel.zoneSets.forEach(set => {
+                    if (set.perfectZone) {
+                        drawTextPreview(set.perfectZone, set.color);
+                    }
+                });
+                return;
+            }
+            
             // Draw non-selected sets first (faded)
             currentLevel.zoneSets.forEach(set => {
                 if (set.id === selectedSetId) return; // Skip selected set for now
@@ -1371,58 +1383,175 @@
         }
         
         function drawDistanceGuides(perfectZone, goodZones) {
-            // Find the containing good zone
             const pRect = percentToPixel(perfectZone);
             const pCenterX = pRect.x + pRect.w / 2;
             const pCenterY = pRect.y + pRect.h / 2;
             
+            // Convert perfect zone center to percentage for polygon check
+            const pCenterPct = pixelToPercent(pCenterX, pCenterY);
+            
             goodZones.forEach(goodZone => {
-                const gRect = percentToPixel(goodZone);
-                
-                // Check if perfect zone is inside this good zone
-                if (pCenterX >= gRect.x && pCenterX <= gRect.x + gRect.w &&
-                    pCenterY >= gRect.y && pCenterY <= gRect.y + gRect.h) {
+                if (goodZone.points) {
+                    // Polygon - check if perfect center is inside
+                    if (pointInPolygon(pCenterPct.x, pCenterPct.y, goodZone)) {
+                        drawPolygonDistanceGuides(pRect, goodZone);
+                    }
+                } else {
+                    // Legacy rectangle
+                    const gRect = percentToPixel(goodZone);
                     
-                    // Draw distance lines
-                    overlayCtx.strokeStyle = 'rgba(0, 245, 212, 0.8)';
-                    overlayCtx.lineWidth = 1;
-                    overlayCtx.setLineDash([3, 3]);
-                    
-                    // Left distance
-                    const leftDist = pRect.x - gRect.x;
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(gRect.x, pCenterY);
-                    overlayCtx.lineTo(pRect.x, pCenterY);
-                    overlayCtx.stroke();
-                    drawDistanceLabel(gRect.x + leftDist/2, pCenterY - 10, Math.round(leftDist) + 'px');
-                    
-                    // Right distance
-                    const rightDist = (gRect.x + gRect.w) - (pRect.x + pRect.w);
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(pRect.x + pRect.w, pCenterY);
-                    overlayCtx.lineTo(gRect.x + gRect.w, pCenterY);
-                    overlayCtx.stroke();
-                    drawDistanceLabel(pRect.x + pRect.w + rightDist/2, pCenterY - 10, Math.round(rightDist) + 'px');
-                    
-                    // Top distance
-                    const topDist = pRect.y - gRect.y;
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(pCenterX, gRect.y);
-                    overlayCtx.lineTo(pCenterX, pRect.y);
-                    overlayCtx.stroke();
-                    drawDistanceLabel(pCenterX + 10, gRect.y + topDist/2, Math.round(topDist) + 'px');
-                    
-                    // Bottom distance
-                    const bottomDist = (gRect.y + gRect.h) - (pRect.y + pRect.h);
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(pCenterX, pRect.y + pRect.h);
-                    overlayCtx.lineTo(pCenterX, gRect.y + gRect.h);
-                    overlayCtx.stroke();
-                    drawDistanceLabel(pCenterX + 10, pRect.y + pRect.h + bottomDist/2, Math.round(bottomDist) + 'px');
-                    
-                    overlayCtx.setLineDash([]);
+                    if (pCenterX >= gRect.x && pCenterX <= gRect.x + gRect.w &&
+                        pCenterY >= gRect.y && pCenterY <= gRect.y + gRect.h) {
+                        drawRectDistanceGuides(pRect, gRect);
+                    }
                 }
             });
+        }
+        
+        function drawRectDistanceGuides(pRect, gRect) {
+            const pCenterX = pRect.x + pRect.w / 2;
+            const pCenterY = pRect.y + pRect.h / 2;
+            
+            overlayCtx.strokeStyle = 'rgba(123, 175, 212, 0.8)';
+            overlayCtx.lineWidth = 1;
+            overlayCtx.setLineDash([3, 3]);
+            
+            // Left distance
+            const leftDist = pRect.x - gRect.x;
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(gRect.x, pCenterY);
+            overlayCtx.lineTo(pRect.x, pCenterY);
+            overlayCtx.stroke();
+            drawDistanceLabel(gRect.x + leftDist/2, pCenterY - 10, Math.round(leftDist) + 'px');
+            
+            // Right distance
+            const rightDist = (gRect.x + gRect.w) - (pRect.x + pRect.w);
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(pRect.x + pRect.w, pCenterY);
+            overlayCtx.lineTo(gRect.x + gRect.w, pCenterY);
+            overlayCtx.stroke();
+            drawDistanceLabel(pRect.x + pRect.w + rightDist/2, pCenterY - 10, Math.round(rightDist) + 'px');
+            
+            // Top distance
+            const topDist = pRect.y - gRect.y;
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(pCenterX, gRect.y);
+            overlayCtx.lineTo(pCenterX, pRect.y);
+            overlayCtx.stroke();
+            drawDistanceLabel(pCenterX + 10, gRect.y + topDist/2, Math.round(topDist) + 'px');
+            
+            // Bottom distance
+            const bottomDist = (gRect.y + gRect.h) - (pRect.y + pRect.h);
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(pCenterX, pRect.y + pRect.h);
+            overlayCtx.lineTo(pCenterX, gRect.y + gRect.h);
+            overlayCtx.stroke();
+            drawDistanceLabel(pCenterX + 10, pRect.y + pRect.h + bottomDist/2, Math.round(bottomDist) + 'px');
+            
+            overlayCtx.setLineDash([]);
+        }
+        
+        function drawPolygonDistanceGuides(pRect, polygon) {
+            const pCenterX = pRect.x + pRect.w / 2;
+            const pCenterY = pRect.y + pRect.h / 2;
+            
+            // Get pixel coordinates of polygon
+            const pixelPoints = polygonToPixels(polygon);
+            
+            overlayCtx.strokeStyle = 'rgba(123, 175, 212, 0.8)';
+            overlayCtx.lineWidth = 1;
+            overlayCtx.setLineDash([3, 3]);
+            
+            // Find distances from each edge of perfect zone to nearest polygon edge
+            // Left edge
+            const leftEdge = findNearestPolygonIntersection(pRect.x, pCenterY, -1, 0, pixelPoints);
+            if (leftEdge) {
+                const leftDist = pRect.x - leftEdge.x;
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(leftEdge.x, pCenterY);
+                overlayCtx.lineTo(pRect.x, pCenterY);
+                overlayCtx.stroke();
+                drawDistanceLabel(leftEdge.x + leftDist/2, pCenterY - 10, Math.round(leftDist) + 'px');
+            }
+            
+            // Right edge
+            const rightEdge = findNearestPolygonIntersection(pRect.x + pRect.w, pCenterY, 1, 0, pixelPoints);
+            if (rightEdge) {
+                const rightDist = rightEdge.x - (pRect.x + pRect.w);
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(pRect.x + pRect.w, pCenterY);
+                overlayCtx.lineTo(rightEdge.x, pCenterY);
+                overlayCtx.stroke();
+                drawDistanceLabel(pRect.x + pRect.w + rightDist/2, pCenterY - 10, Math.round(rightDist) + 'px');
+            }
+            
+            // Top edge
+            const topEdge = findNearestPolygonIntersection(pCenterX, pRect.y, 0, -1, pixelPoints);
+            if (topEdge) {
+                const topDist = pRect.y - topEdge.y;
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(pCenterX, topEdge.y);
+                overlayCtx.lineTo(pCenterX, pRect.y);
+                overlayCtx.stroke();
+                drawDistanceLabel(pCenterX + 10, topEdge.y + topDist/2, Math.round(topDist) + 'px');
+            }
+            
+            // Bottom edge
+            const bottomEdge = findNearestPolygonIntersection(pCenterX, pRect.y + pRect.h, 0, 1, pixelPoints);
+            if (bottomEdge) {
+                const bottomDist = bottomEdge.y - (pRect.y + pRect.h);
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(pCenterX, pRect.y + pRect.h);
+                overlayCtx.lineTo(pCenterX, bottomEdge.y);
+                overlayCtx.stroke();
+                drawDistanceLabel(pCenterX + 10, pRect.y + pRect.h + bottomDist/2, Math.round(bottomDist) + 'px');
+            }
+            
+            overlayCtx.setLineDash([]);
+        }
+        
+        // Find where a ray from point (px, py) in direction (dx, dy) intersects the polygon
+        function findNearestPolygonIntersection(px, py, dx, dy, pixelPoints) {
+            let nearestDist = Infinity;
+            let nearestPoint = null;
+            
+            for (let i = 0; i < pixelPoints.length; i++) {
+                const j = (i + 1) % pixelPoints.length;
+                const x1 = pixelPoints[i].x, y1 = pixelPoints[i].y;
+                const x2 = pixelPoints[j].x, y2 = pixelPoints[j].y;
+                
+                // Ray-line segment intersection
+                const intersection = raySegmentIntersection(px, py, dx, dy, x1, y1, x2, y2);
+                if (intersection) {
+                    const dist = Math.hypot(intersection.x - px, intersection.y - py);
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestPoint = intersection;
+                    }
+                }
+            }
+            
+            return nearestPoint;
+        }
+        
+        function raySegmentIntersection(px, py, dx, dy, x1, y1, x2, y2) {
+            const ex = x2 - x1;
+            const ey = y2 - y1;
+            
+            const denom = dx * ey - dy * ex;
+            if (Math.abs(denom) < 0.0001) return null; // Parallel
+            
+            const t = ((x1 - px) * ey - (y1 - py) * ex) / denom;
+            const u = ((x1 - px) * dy - (y1 - py) * dx) / denom;
+            
+            if (t >= 0 && u >= 0 && u <= 1) {
+                return {
+                    x: px + t * dx,
+                    y: py + t * dy
+                };
+            }
+            
+            return null;
         }
         
         function drawDistanceLabel(x, y, text) {
@@ -2144,6 +2273,19 @@
         // ============================================
         // MODE BUTTONS
         // ============================================
+        document.getElementById('toggleZonesBtn').addEventListener('click', () => {
+            zonesVisible = !zonesVisible;
+            const btn = document.getElementById('toggleZonesBtn');
+            if (zonesVisible) {
+                btn.classList.remove('btn-active');
+                btn.innerHTML = '👁 Zones';
+            } else {
+                btn.classList.add('btn-active');
+                btn.innerHTML = '👁‍🗨 Zones Hidden';
+            }
+            redrawOverlay();
+        });
+        
         document.getElementById('selectModeBtn').addEventListener('click', () => {
             editorMode = 'select';
             updateModeIndicator();
