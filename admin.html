@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.2</title>
+    <title>The Sweet Spot - Level Editor v1.8.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -803,20 +803,19 @@
                 return minDist;
             }
             
+            // First try centroid - this is usually the best visual position
+            const centroid = getPolygonCentroid(polygon);
+            if (rectangleFitsAt(centroid.x, centroid.y)) {
+                // Centroid works! Use it.
+                return { x: centroid.x, y: centroid.y, fits: true };
+            }
+            
+            // Centroid doesn't fit - search for best alternative
             const bounds = getPolygonBounds(polygon);
             let bestX = null, bestY = null;
             let bestScore = -Infinity;
             
-            // First try centroid
-            const centroid = getPolygonCentroid(polygon);
-            if (rectangleFitsAt(centroid.x, centroid.y)) {
-                bestX = centroid.x;
-                bestY = centroid.y;
-                bestScore = getMinEdgeDistance(centroid.x, centroid.y);
-            }
-            
             // Sample grid to find best position where rectangle fits
-            // Use finer grid for better results
             const gridSize = 30;
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
@@ -834,7 +833,7 @@
                 }
             }
             
-            // If no valid position found, return centroid anyway (will be flagged by caller)
+            // If no valid position found, return centroid anyway (will be flagged)
             if (bestX === null) {
                 console.warn('No position found where perfect zone fits inside polygon');
                 return { x: centroid.x, y: centroid.y, fits: false };
