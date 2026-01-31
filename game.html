@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.7.0</title>
+    <title>The Sweet Spot v1.7.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -445,7 +445,29 @@
             }
         }
         
-        // Check if any part of the text rectangle overlaps with a zone
+        // Check if the ENTIRE text rectangle is inside a zone
+        // For polygons: all 4 corners must be inside
+        // For rectangles: use overlap percentage (100% = fully inside)
+        function textFullyInsideZone(textRect, zone) {
+            if (isPolygonZone(zone)) {
+                // Check all 4 corners of the text rectangle
+                const corners = [
+                    { x: textRect.x, y: textRect.y },                                    // top-left
+                    { x: textRect.x + textRect.width, y: textRect.y },                   // top-right
+                    { x: textRect.x, y: textRect.y + textRect.height },                  // bottom-left
+                    { x: textRect.x + textRect.width, y: textRect.y + textRect.height }  // bottom-right
+                ];
+                return corners.every(corner => pointInPolygon(corner.x, corner.y, zone));
+            } else {
+                // For rectangles, check if text is fully contained
+                return textRect.x >= zone.x &&
+                       textRect.y >= zone.y &&
+                       textRect.x + textRect.width <= zone.x + zone.width &&
+                       textRect.y + textRect.height <= zone.y + zone.height;
+            }
+        }
+        
+        // Check if any part of the text rectangle overlaps with a zone (for partial credit feedback)
         function textOverlapsZone(textRect, zone) {
             if (isPolygonZone(zone)) {
                 // For polygons, check if text center is inside
@@ -618,7 +640,6 @@
             };
             img.src = imageUrl;
         }
-        }
         
         function updateTextColorButton() {
             const colorProps = colors[currentTextColor];
@@ -703,7 +724,7 @@
                 }
             } else {
                 const textRect = getTextBoundingBoxAsPercentage(clickPercent);
-                const isClickInGood = goodZones.some(z => textOverlapsZone(textRect, z));
+                const isClickInGood = goodZones.some(z => textFullyInsideZone(textRect, z));
                 
                 const { zone: closestPerfectZone } = getClosestPerfectZone(clickPercent, perfectZones);
                 const isClickInPerfect = closestPerfectZone ? calculateOverlapPercentage(textRect, closestPerfectZone) > 0 : false;
