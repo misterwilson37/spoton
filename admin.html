@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.6</title>
+    <title>The Sweet Spot - Level Editor v1.8.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -776,14 +776,33 @@
             const halfH = PERFECT_MIN_HEIGHT / 2;
             
             // Check if a rectangle centered at (cx, cy) fits entirely inside the polygon
+            // Must verify: 1) all corners inside polygon, 2) no polygon vertices inside rectangle
             function rectangleFitsAt(cx, cy) {
+                const left = cx - halfW;
+                const right = cx + halfW;
+                const top = cy - halfH;
+                const bottom = cy + halfH;
+                
+                // Check all 4 corners are inside polygon
                 const corners = [
-                    { x: cx - halfW, y: cy - halfH }, // top-left
-                    { x: cx + halfW, y: cy - halfH }, // top-right
-                    { x: cx - halfW, y: cy + halfH }, // bottom-left
-                    { x: cx + halfW, y: cy + halfH }  // bottom-right
+                    { x: left, y: top },
+                    { x: right, y: top },
+                    { x: left, y: bottom },
+                    { x: right, y: bottom }
                 ];
-                return corners.every(c => pointInPolygon(c.x, c.y, polygon));
+                if (!corners.every(c => pointInPolygon(c.x, c.y, polygon))) {
+                    return false;
+                }
+                
+                // Check no polygon vertices are inside the rectangle
+                // (this catches cases where polygon edge cuts through rectangle)
+                for (const pt of polygon.points) {
+                    if (pt.x > left && pt.x < right && pt.y > top && pt.y < bottom) {
+                        return false; // Polygon vertex inside rectangle = bad
+                    }
+                }
+                
+                return true;
             }
             
             // Get minimum distance from rectangle edges to polygon edges
