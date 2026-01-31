@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.8</title>
+    <title>The Sweet Spot - Level Editor v1.7.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -881,6 +881,7 @@
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.tab + 'Tab').classList.remove('hidden');
                 if (btn.dataset.tab === 'levels') loadLevelsList();
+                if (btn.dataset.tab === 'editor') newLevel(); // Start fresh when going to editor
             });
         });
 
@@ -1833,6 +1834,9 @@
             }
             
             if (editorMode === 'select') {
+                // Don't allow zone manipulation when zones are hidden
+                if (!zonesVisible) return;
+                
                 // Check if clicking on a polygon vertex first
                 if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
@@ -2359,6 +2363,16 @@
         // ============================================
         // MODE BUTTONS
         // ============================================
+        function ensureZonesVisible() {
+            if (!zonesVisible) {
+                zonesVisible = true;
+                const btn = document.getElementById('toggleZonesBtn');
+                btn.classList.remove('btn-active');
+                btn.innerHTML = '👁 Zones';
+                redrawOverlay();
+            }
+        }
+        
         document.getElementById('toggleZonesBtn').addEventListener('click', () => {
             zonesVisible = !zonesVisible;
             const btn = document.getElementById('toggleZonesBtn');
@@ -2382,6 +2396,7 @@
                 showToast('Select or create a Zone Set first', 'error');
                 return;
             }
+            ensureZonesVisible(); // Can't draw what you can't see
             editorMode = 'drawGood';
             updateModeIndicator();
         });
@@ -2391,6 +2406,7 @@
                 showToast('Select or create a Zone Set first', 'error');
                 return;
             }
+            ensureZonesVisible(); // Can't draw what you can't see
             editorMode = 'drawPerfect';
             polygonPoints = []; // Clear any in-progress polygon
             updateModeIndicator();
