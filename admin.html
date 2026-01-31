@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.1</title>
+    <title>The Sweet Spot - Level Editor v1.7.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -1577,15 +1577,6 @@
                 y: (zone.y / 100) * overlayCanvas.height,
                 w: (zone.width / 100) * overlayCanvas.width,
                 h: (zone.height / 100) * overlayCanvas.height
-            };
-        }
-        
-        function pixelToPercent(x, y, w, h) {
-            return {
-                x: Math.round((x / overlayCanvas.width) * 10000) / 100,
-                y: Math.round((y / overlayCanvas.height) * 10000) / 100,
-                width: Math.round((w / overlayCanvas.width) * 10000) / 100,
-                height: Math.round((h / overlayCanvas.height) * 10000) / 100
             };
         }
 
