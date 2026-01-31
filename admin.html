@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.9</title>
+    <title>The Sweet Spot - Level Editor v1.8.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -569,15 +569,16 @@
         let loadedImage = null;
         let canvasScale = 1;
         
-        // Text preview dimensions (approximate - based on actual game text)
-        const TEXT_WIDTH_PERCENT = 18;  // Actual text is ~15-16%, plus small margin
-        const TEXT_HEIGHT_PERCENT = 10; // Actual text is ~8%, plus small margin
+        // Text preview dimensions - must match actual game text (3.5rem)
+        // These percentages are based on the actual rendered text size in the game
+        const TEXT_WIDTH_PERCENT = 36;  // Actual game text width
+        const TEXT_HEIGHT_PERCENT = 20; // Actual game text height
         
         // Minimum zone sizes
         const PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
         const PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
-        const GOOD_MIN_WIDTH = TEXT_WIDTH_PERCENT + 3; // Must be bigger than perfect
-        const GOOD_MIN_HEIGHT = TEXT_HEIGHT_PERCENT + 3;
+        const GOOD_MIN_WIDTH = TEXT_WIDTH_PERCENT + 5; // Must be bigger than perfect
+        const GOOD_MIN_HEIGHT = TEXT_HEIGHT_PERCENT + 5;
 
         // ============================================
         // UI HELPERS
