@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.7</title>
+    <title>The Sweet Spot - Level Editor v1.8.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -569,16 +569,38 @@
         let loadedImage = null;
         let canvasScale = 1;
         
-        // Text preview dimensions - must match actual game text (3.5rem)
-        // These need to be accurate for Auto Perfect placement to work correctly
-        const TEXT_WIDTH_PERCENT = 32;  // Actual game text width  
-        const TEXT_HEIGHT_PERCENT = 20; // Actual game text height
+        // Text dimensions are calculated dynamically based on actual rendered text
+        // These will be updated when canvas is ready
+        let TEXT_WIDTH_PERCENT = 32;  // Default, will be recalculated
+        let TEXT_HEIGHT_PERCENT = 20; // Default, will be recalculated
         
-        // Minimum zone sizes
-        const PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
-        const PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
-        const GOOD_MIN_WIDTH = TEXT_WIDTH_PERCENT + 5; // Must be bigger than perfect
-        const GOOD_MIN_HEIGHT = TEXT_HEIGHT_PERCENT + 5;
+        // Minimum zone sizes (will update with text measurements)
+        let PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
+        let PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
+        const GOOD_MIN_MARGIN = 5; // Good zones need this much margin around perfect
+        
+        // Calculate actual text dimensions as percentages
+        function measureTextDimensions() {
+            if (!overlayCanvas || overlayCanvas.width === 0) return;
+            
+            const canvasWidth = overlayCanvas.width;
+            const canvasHeight = overlayCanvas.height;
+            const fontSize = canvasHeight * 0.09; // Same as in drawTextPreview
+            
+            overlayCtx.font = `bold ${fontSize}px 'Century Gothic', sans-serif`;
+            const textWidth = overlayCtx.measureText('This Text').width;
+            const textHeight = fontSize * 2.5; // Two lines plus spacing
+            
+            // Convert to percentages
+            TEXT_WIDTH_PERCENT = (textWidth / canvasWidth) * 100;
+            TEXT_HEIGHT_PERCENT = (textHeight / canvasHeight) * 100;
+            
+            // Update perfect zone minimums
+            PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
+            PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
+            
+            console.log('Measured text dimensions:', TEXT_WIDTH_PERCENT.toFixed(1) + '% x ' + TEXT_HEIGHT_PERCENT.toFixed(1) + '%');
+        }
 
         // ============================================
         // UI HELPERS
@@ -1181,6 +1203,9 @@
             overlayCanvas.width = interactionCanvas.width = rect.width;
             overlayCanvas.height = interactionCanvas.height = rect.height;
             
+            // Measure text size now that canvas is ready
+            measureTextDimensions();
+            
             redrawOverlay();
         }
         
@@ -1194,6 +1219,7 @@
             if (overlayCanvas.width !== rect.width || overlayCanvas.height !== rect.height) {
                 overlayCanvas.width = interactionCanvas.width = rect.width;
                 overlayCanvas.height = interactionCanvas.height = rect.height;
+                measureTextDimensions(); // Re-measure on resize
             }
             
             const w = overlayCanvas.width;
@@ -1476,20 +1502,20 @@
             overlayCtx.fillText('Read', centerX, centerY - lineHeight/2);
             overlayCtx.fillText('This Text', centerX, centerY + lineHeight/2);
             
-            // Measure actual text to show bounding box
-            const textWidth = overlayCtx.measureText('This Text').width; // Wider line
-            const textHeight = fontSize * 2.5; // Account for two lines plus some padding
+            // Draw bounding box using the SAME dimensions as perfect zone
+            // Convert percentages to pixels
+            const boxWidth = (TEXT_WIDTH_PERCENT / 100) * overlayCanvas.width;
+            const boxHeight = (TEXT_HEIGHT_PERCENT / 100) * overlayCanvas.height;
             
-            // Draw tight bounding box around text
             overlayCtx.shadowColor = 'transparent';
             overlayCtx.strokeStyle = 'rgba(255, 255, 0, 0.8)'; // Yellow for visibility
             overlayCtx.lineWidth = 2;
             overlayCtx.setLineDash([4, 4]);
             overlayCtx.strokeRect(
-                centerX - textWidth/2,
-                centerY - textHeight/2,
-                textWidth,
-                textHeight
+                centerX - boxWidth/2,
+                centerY - boxHeight/2,
+                boxWidth,
+                boxHeight
             );
             overlayCtx.setLineDash([]);
             
