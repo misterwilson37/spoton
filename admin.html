@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.8</title>
+    <title>The Sweet Spot - Level Editor v1.8.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -579,27 +579,28 @@
         let PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
         const GOOD_MIN_MARGIN = 5; // Good zones need this much margin around perfect
         
-        // Calculate actual text dimensions as percentages
+        // Measure actual text size and update constants
         function measureTextDimensions() {
             if (!overlayCanvas || overlayCanvas.width === 0) return;
             
-            const canvasWidth = overlayCanvas.width;
             const canvasHeight = overlayCanvas.height;
+            const canvasWidth = overlayCanvas.width;
             const fontSize = canvasHeight * 0.09; // Same as in drawTextPreview
             
             overlayCtx.font = `bold ${fontSize}px 'Century Gothic', sans-serif`;
             const textWidth = overlayCtx.measureText('This Text').width;
-            const textHeight = fontSize * 2.5; // Two lines plus spacing
+            // Two lines: lineHeight (1.15) + one fontSize = ~2.15 total
+            const textHeight = fontSize * 2.2;
             
             // Convert to percentages
             TEXT_WIDTH_PERCENT = (textWidth / canvasWidth) * 100;
             TEXT_HEIGHT_PERCENT = (textHeight / canvasHeight) * 100;
             
-            // Update perfect zone minimums
+            // Update dependent constants
             PERFECT_MIN_WIDTH = TEXT_WIDTH_PERCENT;
             PERFECT_MIN_HEIGHT = TEXT_HEIGHT_PERCENT;
             
-            console.log('Measured text dimensions:', TEXT_WIDTH_PERCENT.toFixed(1) + '% x ' + TEXT_HEIGHT_PERCENT.toFixed(1) + '%');
+            console.log('Text measured:', TEXT_WIDTH_PERCENT.toFixed(1) + '% x ' + TEXT_HEIGHT_PERCENT.toFixed(1) + '%');
         }
 
         // ============================================
