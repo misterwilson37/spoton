@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.7</title>
+    <title>The Sweet Spot - Level Editor v1.7.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -559,6 +559,10 @@
         let polygonPoints = []; // Points being drawn for new polygon
         let zonesVisible = true; // Toggle for zone visibility
         
+        // Undo history
+        let undoHistory = [];
+        const MAX_UNDO_HISTORY = 50;
+        
         // Canvas refs
         let overlayCanvas, overlayCtx;
         let interactionCanvas;
@@ -627,6 +631,42 @@
                 return rectToPolygon(zone);
             }
             return zone;
+        }
+        
+        // ============================================
+        // UNDO SYSTEM
+        // ============================================
+        function saveUndoState(description = '') {
+            // Deep clone current zone sets
+            const state = {
+                zoneSets: JSON.parse(JSON.stringify(currentLevel.zoneSets)),
+                selectedSetId,
+                selectedZoneType,
+                selectedZoneIndex,
+                description
+            };
+            undoHistory.push(state);
+            if (undoHistory.length > MAX_UNDO_HISTORY) {
+                undoHistory.shift();
+            }
+        }
+        
+        function undo() {
+            if (undoHistory.length === 0) {
+                showToast('Nothing to undo', 'info');
+                return;
+            }
+            
+            const state = undoHistory.pop();
+            currentLevel.zoneSets = state.zoneSets;
+            selectedSetId = state.selectedSetId;
+            selectedZoneType = state.selectedZoneType;
+            selectedZoneIndex = state.selectedZoneIndex;
+            
+            updateZoneSetsList();
+            updateZoneSetEditor();
+            redrawOverlay();
+            showToast('Undone' + (state.description ? ': ' + state.description : ''), 'info');
         }
         
         // Point-in-polygon test using ray casting algorithm
@@ -1802,9 +1842,14 @@
                             const pixelPoints = polygonToPixels(zone);
                             for (let i = 0; i < pixelPoints.length; i++) {
                                 if (Math.hypot(x - pixelPoints[i].x, y - pixelPoints[i].y) < 10) {
+                                    saveUndoState('vertex move');
                                     selectedVertexIndex = i;
                                     dragHandle = 'vertex';
-                                    drawStart = { x, y, points: zone.points.map(p => ({...p})) };
+                                    drawStart = { 
+                                        x, y, 
+                                        points: zone.points.map(p => ({...p})),
+                                        originalPoint: { ...zone.points[i] } // For shift constraint
+                                    };
                                     redrawOverlay();
                                     return;
                                 }
@@ -1823,6 +1868,7 @@
                         
                         for (const h of handles) {
                             if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
+                                saveUndoState('perfect zone resize');
                                 dragHandle = h.id;
                                 drawStart = { x, y, zone: { ...zone } };
                                 return;
@@ -1832,6 +1878,7 @@
                         // Check if inside for move
                         if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
                             y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                            saveUndoState('perfect zone move');
                             dragHandle = 'move';
                             drawStart = { x, y, zone: { ...zone } };
                             return;
@@ -1845,6 +1892,7 @@
                     if (set) {
                         const zone = set.goodZones[selectedZoneIndex];
                         if (zone && zone.points && pointInPolygon(pct.x, pct.y, zone)) {
+                            saveUndoState('polygon move');
                             dragHandle = 'movePolygon';
                             drawStart = { x, y, points: zone.points.map(p => ({...p})) };
                             return;
@@ -1918,10 +1966,21 @@
             if (dragHandle === 'vertex' && drawStart && selectedVertexIndex !== null) {
                 const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                 if (set && set.goodZones[selectedZoneIndex]) {
-                    set.goodZones[selectedZoneIndex].points[selectedVertexIndex] = { 
-                        x: Math.max(0, Math.min(100, pct.x)), 
-                        y: Math.max(0, Math.min(100, pct.y)) 
-                    };
+                    let newX = Math.max(0, Math.min(100, pct.x));
+                    let newY = Math.max(0, Math.min(100, pct.y));
+                    
+                    // Shift key constrains to horizontal or vertical
+                    if (e.shiftKey && drawStart.originalPoint) {
+                        const dx = Math.abs(newX - drawStart.originalPoint.x);
+                        const dy = Math.abs(newY - drawStart.originalPoint.y);
+                        if (dx > dy) {
+                            newY = drawStart.originalPoint.y; // Horizontal lock
+                        } else {
+                            newX = drawStart.originalPoint.x; // Vertical lock
+                        }
+                    }
+                    
+                    set.goodZones[selectedZoneIndex].points[selectedVertexIndex] = { x: newX, y: newY };
                     redrawOverlay();
                 }
                 return;
@@ -1931,8 +1990,17 @@
             if (dragHandle === 'movePolygon' && drawStart) {
                 const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                 if (set && set.goodZones[selectedZoneIndex]) {
-                    const dx = pct.x - pixelToPercent(drawStart.x, 0).x;
-                    const dy = pct.y - pixelToPercent(0, drawStart.y).y;
+                    let dx = pct.x - pixelToPercent(drawStart.x, 0).x;
+                    let dy = pct.y - pixelToPercent(0, drawStart.y).y;
+                    
+                    // Shift key constrains to horizontal or vertical
+                    if (e.shiftKey) {
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            dy = 0; // Horizontal lock
+                        } else {
+                            dx = 0; // Vertical lock
+                        }
+                    }
                     
                     set.goodZones[selectedZoneIndex].points = drawStart.points.map(p => ({
                         x: Math.max(0, Math.min(100, p.x + dx)),
@@ -1958,8 +2026,17 @@
                 const mouseYPct = (y / canvasH) * 100;
                 
                 if (dragHandle === 'move') {
-                    const dx = mouseXPct - (drawStart.x / canvasW) * 100;
-                    const dy = mouseYPct - (drawStart.y / canvasH) * 100;
+                    let dx = mouseXPct - (drawStart.x / canvasW) * 100;
+                    let dy = mouseYPct - (drawStart.y / canvasH) * 100;
+                    
+                    // Shift key constrains to horizontal or vertical
+                    if (e.shiftKey) {
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            dy = 0; // Horizontal lock
+                        } else {
+                            dx = 0; // Vertical lock
+                        }
+                    }
                     
                     zone.x = Math.max(0, Math.min(100 - original.width, original.x + dx));
                     zone.y = Math.max(0, Math.min(100 - original.height, original.y + dy));
@@ -2117,6 +2194,13 @@
             
             if (isTyping) return;
             
+            // Ctrl+Z / Cmd+Z for undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undo();
+                return;
+            }
+            
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 e.preventDefault();
                 
@@ -2126,6 +2210,7 @@
                     if (set && set.goodZones[selectedZoneIndex]?.points) {
                         const zone = set.goodZones[selectedZoneIndex];
                         if (zone.points.length > 3) {
+                            saveUndoState('delete vertex');
                             zone.points.splice(selectedVertexIndex, 1);
                             selectedVertexIndex = null;
                             updateSetZonesList();
@@ -2141,6 +2226,7 @@
                 if (selectedSetId && selectedZoneType) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
+                        saveUndoState('delete zone');
                         if (selectedZoneType === 'perfect') {
                             set.perfectZone = null;
                         } else if (selectedZoneType === 'good' && selectedZoneIndex !== null) {
