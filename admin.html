@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.7.0</title>
+    <title>The Sweet Spot - Level Editor v1.7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -814,9 +814,13 @@
         });
         
         document.getElementById('googleSignInBtn').addEventListener('click', async () => {
+            console.log('Sign in button clicked');
             try {
-                await signInWithPopup(auth, new GoogleAuthProvider());
+                console.log('Attempting signInWithPopup...');
+                const result = await signInWithPopup(auth, new GoogleAuthProvider());
+                console.log('Sign in successful:', result.user.email);
             } catch (error) {
+                console.error('Sign in error:', error);
                 if (error.code !== 'auth/popup-closed-by-user') {
                     showToast("Sign in failed: " + error.message, "error");
                 }
@@ -2723,8 +2727,15 @@
         // ============================================
         // INIT
         // ============================================
-        initCanvases();
+        console.log('Script loaded, initializing...');
+        try {
+            initCanvases();
+            console.log('Canvases initialized');
+        } catch (e) {
+            console.error('initCanvases error:', e);
+        }
         updateModeIndicator();
+        console.log('Admin panel ready');
     </script>
 </body>
 </html>
