@@ -2,7 +2,7 @@
 
 An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
 
-**Current Version:** v1.9.2
+**Current Version:** v1.9.3
 
 ---
 
@@ -135,6 +135,21 @@ The "ZONES" button toggles between:
 - **Zones visible**: Full editing UI with all overlays
 - **Zones hidden**: Text-only preview mode (can still drag text)
 
+### Unsaved Changes Protection
+
+The editor tracks when you've made changes that haven't been saved:
+- **New Level**: Prompts if you have unsaved changes
+- **Load Level**: Prompts if you have unsaved changes
+- **Close Tab/Browser**: Browser shows a warning dialog
+- Changes are marked as saved after successful save or load
+
+### Save Validation
+
+When saving, the editor validates your zone sets:
+- Warns if a zone set has no good zones
+- Warns if a perfect zone center is outside all good zones in its set
+- You can still save with warnings (after confirmation)
+
 ---
 
 ## Zone System
@@ -175,6 +190,7 @@ The admin panel dynamically measures rendered text to ensure:
 | Key | Action |
 |-----|--------|
 | `Ctrl+Z` / `Cmd+Z` | Undo |
+| `Ctrl+Y` / `Cmd+Shift+Z` | Redo |
 | `Delete` / `Backspace` | Delete selected zone or vertex |
 | `Escape` | Cancel polygon drawing, deselect vertex |
 | `Arrow Keys` | Nudge selected zone/vertex by 1% |
@@ -279,7 +295,17 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### v1.9.2 (Current)
+### v1.9.3 (Current)
+- Added redo functionality (`Ctrl+Y` / `Cmd+Shift+Z`)
+- Added save validation (warns about empty zone sets, misplaced perfect zones)
+- Added unsaved changes protection:
+  - Prompt when creating new level with unsaved changes
+  - Prompt when loading a level with unsaved changes
+  - Browser warning when closing tab with unsaved changes
+- Added feedback when trying to delete with zones hidden
+- Unified text sizing: game.html now uses dynamic 9% height like admin
+
+### v1.9.2
 - Added `DEBUG` flag for console logging
 - Removed unused code (`canvasScale`, `GOOD_MIN_MARGIN`, `textOverlapsZone`)
 - Fixed arrow key nudge to update sidebar for all zone types
@@ -328,9 +354,9 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 Items identified during code review that could be addressed:
 
-1. **No redo functionality** - Only undo exists currently
-2. **No save validation** - Could verify zones are valid before saving
-3. **Text size sync** - Game uses fixed CSS while admin measures dynamically; could unify
+1. ~~**No redo functionality**~~ - ✅ Implemented in v1.9.3
+2. ~~**No save validation**~~ - ✅ Implemented in v1.9.3
+3. ~~**Text size sync**~~ - ✅ Implemented in v1.9.3
 4. **Concave polygon edge cases** - Very acute angles might allow edge-through-rectangle issues in Auto Perfect
 
 ---
