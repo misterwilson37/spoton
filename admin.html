@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.9.2</title>
+    <title>The Sweet Spot - Level Editor v1.9.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -563,9 +563,13 @@
         let zonesVisible = true; // Toggle for zone visibility
         let hiddenSets = new Set(); // Track which sets are hidden (UI only, not saved)
         
-        // Undo history
+        // Undo/Redo history
         let undoHistory = [];
+        let redoHistory = [];
         const MAX_UNDO_HISTORY = 50;
+        
+        // Track unsaved changes
+        let isDirty = false;
         
         // Canvas refs
         let overlayCanvas, overlayCtx;
@@ -660,7 +664,7 @@
         }
         
         // ============================================
-        // UNDO SYSTEM
+        // UNDO/REDO SYSTEM
         // ============================================
         function saveUndoState(description = '') {
             // Deep clone current zone sets
@@ -675,6 +679,10 @@
             if (undoHistory.length > MAX_UNDO_HISTORY) {
                 undoHistory.shift();
             }
+            // Clear redo history when new action is taken
+            redoHistory = [];
+            // Mark as dirty
+            isDirty = true;
         }
         
         function undo() {
@@ -682,6 +690,15 @@
                 showToast('Nothing to undo', 'info');
                 return;
             }
+            
+            // Save current state to redo history first
+            redoHistory.push({
+                zoneSets: JSON.parse(JSON.stringify(currentLevel.zoneSets)),
+                selectedSetId,
+                selectedZoneType,
+                selectedZoneIndex,
+                description: 'redo'
+            });
             
             const state = undoHistory.pop();
             currentLevel.zoneSets = state.zoneSets;
@@ -693,6 +710,33 @@
             updateZoneSetEditor();
             redrawOverlay();
             showToast('Undone' + (state.description ? ': ' + state.description : ''), 'info');
+        }
+        
+        function redo() {
+            if (redoHistory.length === 0) {
+                showToast('Nothing to redo', 'info');
+                return;
+            }
+            
+            // Save current state to undo history first
+            undoHistory.push({
+                zoneSets: JSON.parse(JSON.stringify(currentLevel.zoneSets)),
+                selectedSetId,
+                selectedZoneType,
+                selectedZoneIndex,
+                description: 'undo'
+            });
+            
+            const state = redoHistory.pop();
+            currentLevel.zoneSets = state.zoneSets;
+            selectedSetId = state.selectedSetId;
+            selectedZoneType = state.selectedZoneType;
+            selectedZoneIndex = state.selectedZoneIndex;
+            
+            updateZoneSetsList();
+            updateZoneSetEditor();
+            redrawOverlay();
+            showToast('Redone', 'info');
         }
         
         // Point-in-polygon test using ray casting algorithm
@@ -2329,14 +2373,27 @@
             if (isTyping) return;
             
             // Ctrl+Z / Cmd+Z for undo
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
                 e.preventDefault();
                 undo();
                 return;
             }
             
+            // Ctrl+Y / Cmd+Shift+Z for redo
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+                return;
+            }
+            
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 e.preventDefault();
+                
+                // Can't delete when zones are hidden
+                if (!zonesVisible) {
+                    showToast('Turn on zone visibility to delete', 'info');
+                    return;
+                }
                 
                 // Delete selected vertex
                 if (selectedVertexIndex !== null && selectedSetId && selectedZoneType === 'good') {
@@ -2985,6 +3042,34 @@
             currentLevel.name = document.getElementById('levelName').value || 'Untitled';
             currentLevel.feedback = document.getElementById('levelFeedback').value;
             
+            // Validate zone sets
+            const warnings = [];
+            currentLevel.zoneSets.forEach((set, idx) => {
+                const setName = set.name || `Set ${idx + 1}`;
+                if (set.goodZones.length === 0) {
+                    warnings.push(`"${setName}" has no good zones`);
+                }
+                if (set.perfectZone && set.goodZones.length > 0) {
+                    // Check if perfect zone center is inside any good zone
+                    const perfectCenter = {
+                        x: set.perfectZone.x + set.perfectZone.width / 2,
+                        y: set.perfectZone.y + set.perfectZone.height / 2
+                    };
+                    const isInside = set.goodZones.some(gz => {
+                        const polygon = ensurePolygon(gz);
+                        return pointInPolygon(perfectCenter.x, perfectCenter.y, polygon);
+                    });
+                    if (!isInside) {
+                        warnings.push(`"${setName}" perfect zone is outside its good zones`);
+                    }
+                }
+            });
+            
+            if (warnings.length > 0) {
+                const proceed = confirm('Validation warnings:\n\n• ' + warnings.join('\n• ') + '\n\nSave anyway?');
+                if (!proceed) return;
+            }
+            
             showLoading('Saving...');
             
             try {
@@ -3033,6 +3118,7 @@
                 
                 hideLoading();
                 showToast('Saved!', 'success');
+                isDirty = false;
             } catch (err) {
                 hideLoading();
                 showToast('Save failed: ' + err.message, 'error');
@@ -3040,6 +3126,13 @@
         }
         
         function newLevel() {
+            // Check for unsaved changes
+            if (isDirty) {
+                if (!confirm('You have unsaved changes. Discard them and create a new level?')) {
+                    return;
+                }
+            }
+            
             currentLevel = {
                 id: null, name: '', imageUrl: '', imagePath: '',
                 crop: null, feedback: '', zoneSets: []
@@ -3050,6 +3143,9 @@
             selectedSetId = null;
             loadedImage = null;
             hiddenSets.clear(); // Clear any hidden set state
+            undoHistory = [];
+            redoHistory = [];
+            isDirty = false;
             
             // Clear both views
             cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
@@ -3066,8 +3162,17 @@
         }
         
         async function loadLevel(levelId) {
+            // Check for unsaved changes
+            if (isDirty) {
+                if (!confirm('You have unsaved changes. Discard them and load this level?')) {
+                    return;
+                }
+            }
+            
             showLoading('Loading...');
             hiddenSets.clear(); // Clear any hidden set state
+            undoHistory = [];
+            redoHistory = [];
             try {
                 const docSnap = await getDoc(doc(db, 'levels', levelId));
                 if (!docSnap.exists()) throw new Error('Not found');
@@ -3120,6 +3225,7 @@
                 }
                 
                 hideLoading();
+                isDirty = false;
             } catch (err) {
                 hideLoading();
                 showToast('Load failed', 'error');
@@ -3300,6 +3406,15 @@
         if (DEBUG) {
             document.getElementById('migrateTabBtn').classList.remove('hidden');
         }
+        
+        // Warn about unsaved changes when leaving page
+        window.addEventListener('beforeunload', (e) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = ''; // Required for Chrome
+                return 'You have unsaved changes. Are you sure you want to leave?';
+            }
+        });
         
         if (DEBUG) console.log('Admin panel ready');
     </script>
