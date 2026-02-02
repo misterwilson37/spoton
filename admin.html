@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.9.3</title>
+    <title>The Sweet Spot - Level Editor v1.9.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -839,13 +839,65 @@
             return Math.hypot(px - nearX, py - nearY);
         }
         
+        // Check if two line segments intersect
+        // Uses cross product method to detect intersection
+        function lineSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+            // Direction vectors
+            const d1x = x2 - x1, d1y = y2 - y1;
+            const d2x = x4 - x3, d2y = y4 - y3;
+            
+            // Cross product of directions
+            const cross = d1x * d2y - d1y * d2x;
+            
+            // If cross product is 0, lines are parallel
+            if (Math.abs(cross) < 0.0001) return false;
+            
+            // Calculate parameters for intersection point
+            const dx = x3 - x1, dy = y3 - y1;
+            const t = (dx * d2y - dy * d2x) / cross;
+            const u = (dx * d1y - dy * d1x) / cross;
+            
+            // Check if intersection point is within both segments
+            return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+        }
+        
+        // Check if any polygon edge intersects any rectangle edge
+        function polygonIntersectsRectangle(polygon, left, top, right, bottom) {
+            // Rectangle edges
+            const rectEdges = [
+                [left, top, right, top],       // Top edge
+                [right, top, right, bottom],   // Right edge
+                [right, bottom, left, bottom], // Bottom edge
+                [left, bottom, left, top]      // Left edge
+            ];
+            
+            // Check each polygon edge against each rectangle edge
+            const points = polygon.points;
+            for (let i = 0; i < points.length; i++) {
+                const j = (i + 1) % points.length;
+                const px1 = points[i].x, py1 = points[i].y;
+                const px2 = points[j].x, py2 = points[j].y;
+                
+                for (const [rx1, ry1, rx2, ry2] of rectEdges) {
+                    if (lineSegmentsIntersect(px1, py1, px2, py2, rx1, ry1, rx2, ry2)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
         // Find the best position for perfect zone within a polygon
         function findBestPerfectZonePosition(polygon) {
             const halfW = PERFECT_MIN_WIDTH / 2;
             const halfH = PERFECT_MIN_HEIGHT / 2;
             
             // Check if a rectangle centered at (cx, cy) fits entirely inside the polygon
-            // Must verify: 1) all corners inside polygon, 2) no polygon vertices inside rectangle
+            // Must verify: 
+            // 1) All corners inside polygon
+            // 2) No polygon vertices inside rectangle
+            // 3) No polygon edges intersect rectangle edges (handles concave shapes)
             function rectangleFitsAt(cx, cy) {
                 const left = cx - halfW;
                 const right = cx + halfW;
@@ -864,11 +916,15 @@
                 }
                 
                 // Check no polygon vertices are inside the rectangle
-                // (this catches cases where polygon edge cuts through rectangle)
                 for (const pt of polygon.points) {
                     if (pt.x > left && pt.x < right && pt.y > top && pt.y < bottom) {
                         return false; // Polygon vertex inside rectangle = bad
                     }
+                }
+                
+                // Check no polygon edges intersect rectangle edges (concave polygon fix)
+                if (polygonIntersectsRectangle(polygon, left, top, right, bottom)) {
+                    return false;
                 }
                 
                 return true;
