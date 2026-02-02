@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.9.4</title>
+    <title>The Sweet Spot v1.9.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -96,6 +96,11 @@
         }
         .btn-white:hover {
             background: #e2e8f0;
+        }
+        
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 11px;
         }
         
         .btn-dark {
@@ -335,7 +340,13 @@
         </header>
         
         <main class="max-w-4xl mx-auto p-4">
-            <p id="instructionText" class="text-center text-gray-400 mb-2 text-sm">Change the text color if needed, then click to place the text.</p>
+            <div class="flex flex-wrap items-center justify-center gap-4 mb-2">
+                <p id="instructionText" class="text-gray-400 text-sm">Change the text color if needed, then click to place the text.</p>
+                <div id="gameControls" class="flex gap-2">
+                    <button id="changeColorBtn" class="btn btn-sm btn-white">Change to Black</button>
+                    <button id="noGoodSpotBtn" class="btn btn-sm btn-magenta">No Good Spot</button>
+                </div>
+            </div>
             
             <div class="panel p-2 mb-2">
                 <div id="gameContainer" class="rounded-lg overflow-hidden">
@@ -345,11 +356,6 @@
             </div>
             
             <div id="feedbackArea" class="feedback-text mb-2 text-center text-lg font-bold"></div>
-            
-            <div id="gameControls" class="flex flex-wrap gap-3 justify-center">
-                <button id="changeColorBtn" class="btn btn-white">Change to Black</button>
-                <button id="noGoodSpotBtn" class="btn btn-magenta">No Good Spot</button>
-            </div>
             
             <div id="nextControls" class="hidden flex justify-center mt-2">
                 <button id="nextLevelBtn" class="btn btn-cyan">Next Level →</button>
@@ -742,12 +748,20 @@
                     isCorrect = false;
                     points = 0;
                     
+                    // Check if click is in the OTHER color's zones
                     const otherColor = currentTextColor === 'white' ? 'black' : 'white';
                     const otherGood = currentImage.goodZones[otherColor] || [];
-                    const clickRect = { x: clickPercent.x, y: clickPercent.y, width: 0.1, height: 0.1 };
+                    const otherPerfect = currentImage.perfectZones[otherColor] || [];
                     
-                    if (otherGood.some(z => calculateOverlapPercentage(clickRect, z) > 0)) {
-                        message = '<p class="feedback-bad">✗ Good spot, wrong color!</p><p class="feedback-hint">Try the other text color here.</p>';
+                    // Check if click point is in any of the other color's zones
+                    const isInOtherGood = otherGood.some(z => pointInZone(clickPercent.x, clickPercent.y, z));
+                    const isInOtherPerfect = otherPerfect.some(z => 
+                        clickPercent.x >= z.x && clickPercent.x <= z.x + z.width &&
+                        clickPercent.y >= z.y && clickPercent.y <= z.y + z.height
+                    );
+                    
+                    if (isInOtherGood || isInOtherPerfect) {
+                        message = '<p class="feedback-bad">✗ Good spot, wrong color!</p><p class="feedback-hint">Try ' + otherColor + ' text here.</p>';
                         feedbackColor = otherColor;
                     } else if (currentImage.feedback) {
                         message = `<p class="feedback-bad">${currentImage.feedback}</p>`;
