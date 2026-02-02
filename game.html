@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.8.3</title>
+    <title>The Sweet Spot v1.9.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -131,6 +131,7 @@
             line-height: 1.1;
             text-align: center;
             transition: opacity 0.15s ease;
+            white-space: nowrap;
         }
         
         .feedback-zone {
@@ -464,19 +465,6 @@
                        textRect.y >= zone.y &&
                        textRect.x + textRect.width <= zone.x + zone.width &&
                        textRect.y + textRect.height <= zone.y + zone.height;
-            }
-        }
-        
-        // Check if any part of the text rectangle overlaps with a zone (for partial credit feedback)
-        function textOverlapsZone(textRect, zone) {
-            if (isPolygonZone(zone)) {
-                // For polygons, check if text center is inside
-                const centerX = textRect.x + textRect.width / 2;
-                const centerY = textRect.y + textRect.height / 2;
-                return pointInPolygon(centerX, centerY, zone);
-            } else {
-                // For rectangles, use overlap percentage
-                return calculateOverlapPercentage(textRect, zone) > 0;
             }
         }
         
