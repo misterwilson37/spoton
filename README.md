@@ -2,7 +2,7 @@
 
 An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
 
-**Current Version:** v1.9.3
+**Current Version:** v1.9.4
 
 ---
 
@@ -170,9 +170,13 @@ When saving, the editor validates your zone sets:
 
 Automatically places a perfect zone inside a selected good zone:
 1. Tries to center at polygon centroid first
-2. If centroid doesn't fit, searches for best position
-3. Checks that no polygon vertices intrude into the rectangle
-4. Reports error if zone is too small/narrow for text
+2. If centroid doesn't fit, searches for best position via grid sampling
+3. Reports error if zone is too small/narrow for text
+
+**Collision Detection** (three checks):
+- All 4 rectangle corners must be inside the polygon
+- No polygon vertices can be inside the rectangle
+- No polygon edges can intersect rectangle edges (handles concave shapes)
 
 ### Text Size Measurement
 
@@ -295,7 +299,12 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### v1.9.3 (Current)
+### v1.9.4 (Current)
+- Fixed concave polygon edge case in Auto Perfect algorithm
+- Added line segment intersection detection
+- Rectangle placement now checks for polygon edges crossing through
+
+### v1.9.3
 - Added redo functionality (`Ctrl+Y` / `Cmd+Shift+Z`)
 - Added save validation (warns about empty zone sets, misplaced perfect zones)
 - Added unsaved changes protection:
@@ -357,7 +366,9 @@ Items identified during code review that could be addressed:
 1. ~~**No redo functionality**~~ - ✅ Implemented in v1.9.3
 2. ~~**No save validation**~~ - ✅ Implemented in v1.9.3
 3. ~~**Text size sync**~~ - ✅ Implemented in v1.9.3
-4. **Concave polygon edge cases** - Very acute angles might allow edge-through-rectangle issues in Auto Perfect
+4. ~~**Concave polygon edge cases**~~ - ✅ Fixed in v1.9.4
+
+All identified issues have been addressed!
 
 ---
 
