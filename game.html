@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.9.2</title>
+    <title>The Sweet Spot v1.9.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -126,7 +126,7 @@
             pointer-events: none;
             user-select: none;
             font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            font-size: 3.5rem;
+            font-size: 3.5rem; /* Fallback, will be overridden by JS */
             font-weight: 800;
             line-height: 1.1;
             text-align: center;
@@ -565,11 +565,8 @@
             gameOverScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             
-            // Measure text overlay
-            textOverlay.style.opacity = '1';
-            textOverlay.style.display = 'block';
-            textBoundingBox = textOverlay.getBoundingClientRect();
-            textOverlay.style.display = 'none';
+            // Set text size based on container and measure bounding box
+            updateTextSize();
             
             loadRound();
         }
@@ -992,6 +989,22 @@
             return boxAArea > 0 ? (overlapArea / boxAArea) * 100 : 0;
         }
         
+        // Update text size to match admin panel (9% of container height)
+        function updateTextSize() {
+            const rect = gameContainer.getBoundingClientRect();
+            const fontSize = rect.height * 0.09;
+            textOverlay.style.fontSize = fontSize + 'px';
+            
+            // Re-measure bounding box after size change
+            const wasVisible = textOverlay.style.display !== 'none';
+            const wasOpaque = textOverlay.style.opacity;
+            textOverlay.style.display = 'block';
+            textOverlay.style.opacity = '1';
+            textBoundingBox = textOverlay.getBoundingClientRect();
+            if (!wasVisible) textOverlay.style.display = 'none';
+            textOverlay.style.opacity = wasOpaque;
+        }
+        
         // ============================================
         // EVENT LISTENERS
         // ============================================
@@ -1042,6 +1055,13 @@
                 e.preventDefault();
                 currentImageIndex++;
                 loadRound();
+            }
+        });
+        
+        // Update text size on window resize
+        window.addEventListener('resize', () => {
+            if (gameActive) {
+                updateTextSize();
             }
         });
         
