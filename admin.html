@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.9.0</title>
+    <title>The Sweet Spot - Level Editor v1.9.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -558,6 +558,7 @@
         let tempZone = null;
         let polygonPoints = []; // Points being drawn for new polygon
         let zonesVisible = true; // Toggle for zone visibility
+        let hiddenSets = new Set(); // Track which sets are hidden (UI only, not saved)
         
         // Undo history
         let undoHistory = [];
@@ -1230,6 +1231,7 @@
             // If zones are hidden, only draw text previews
             if (!zonesVisible) {
                 currentLevel.zoneSets.forEach(set => {
+                    if (hiddenSets.has(set.id)) return; // Skip hidden sets
                     if (set.perfectZone) {
                         drawTextPreview(set.perfectZone, set.color);
                     }
@@ -1240,6 +1242,7 @@
             // Draw non-selected sets first (faded)
             currentLevel.zoneSets.forEach(set => {
                 if (set.id === selectedSetId) return; // Skip selected set for now
+                if (hiddenSets.has(set.id)) return; // Skip hidden sets
                 
                 // Draw faded good zones
                 set.goodZones.forEach((zone, idx) => {
@@ -1252,9 +1255,9 @@
                 }
             });
             
-            // Draw selected set on top (full opacity)
+            // Draw selected set on top (full opacity) - unless hidden
             const selectedSet = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-            if (selectedSet) {
+            if (selectedSet && !hiddenSets.has(selectedSet.id)) {
                 // Draw good zones
                 selectedSet.goodZones.forEach((zone, idx) => {
                     drawZone(zone, 'good', selectedSet.color, selectedZoneType === 'good' && selectedZoneIndex === idx, false);
@@ -2683,13 +2686,14 @@
             }
             
             container.innerHTML = currentLevel.zoneSets.map(set => `
-                <div class="zone-set-item ${set.color}-set ${set.id === selectedSetId ? 'selected' : ''}" data-set-id="${set.id}">
+                <div class="zone-set-item ${set.color}-set ${set.id === selectedSetId ? 'selected' : ''} ${hiddenSets.has(set.id) ? 'opacity-50' : ''}" data-set-id="${set.id}">
                     <div class="flex items-center justify-between">
                         <div>
                             <strong class="text-sm">${set.name || 'Unnamed Set'}</strong>
                             <span class="text-xs text-gray-400 ml-2">(${set.color})</span>
                         </div>
                         <div class="flex gap-1">
+                            <button class="visibility-set-btn text-xs px-2 py-1 ${hiddenSets.has(set.id) ? 'bg-yellow-800 hover:bg-yellow-700' : 'bg-gray-700 hover:bg-gray-600'} rounded" title="${hiddenSets.has(set.id) ? 'Show this set' : 'Hide this set'}">${hiddenSets.has(set.id) ? '👁‍🗨' : '👁'}</button>
                             <button class="duplicate-set-btn text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded" title="Duplicate this set">⧉</button>
                             <button class="delete-set-btn text-xs px-2 py-1 bg-red-900 hover:bg-red-800 rounded" title="Delete this set">×</button>
                         </div>
@@ -2734,6 +2738,19 @@
                         redrawOverlay();
                         showToast('Set duplicated!', 'success');
                     }
+                });
+                
+                // Visibility toggle button
+                item.querySelector('.visibility-set-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const setId = item.dataset.setId;
+                    if (hiddenSets.has(setId)) {
+                        hiddenSets.delete(setId);
+                    } else {
+                        hiddenSets.add(setId);
+                    }
+                    updateZoneSetsList();
+                    redrawOverlay();
                 });
                 
                 // Delete button
@@ -3034,6 +3051,7 @@
             document.getElementById('zoneSetEditor').classList.add('hidden');
             selectedSetId = null;
             loadedImage = null;
+            hiddenSets.clear(); // Clear any hidden set state
             
             // Clear both views
             cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
@@ -3051,6 +3069,7 @@
         
         async function loadLevel(levelId) {
             showLoading('Loading...');
+            hiddenSets.clear(); // Clear any hidden set state
             try {
                 const docSnap = await getDoc(doc(db, 'levels', levelId));
                 if (!docSnap.exists()) throw new Error('Not found');
