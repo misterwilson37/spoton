@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.8.9</title>
+    <title>The Sweet Spot - Level Editor v1.9.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -1935,10 +1935,63 @@
             }
             
             if (editorMode === 'select') {
-                // Don't allow zone manipulation when zones are hidden
-                if (!zonesVisible) return;
+                // When zones are hidden, only allow moving the perfect zone (text)
+                if (!zonesVisible) {
+                    if (selectedSetId) {
+                        const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                        if (set && set.perfectZone) {
+                            const zone = set.perfectZone;
+                            const zoneRect = percentToPixel(zone);
+                            if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
+                                y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                                saveUndoState('text move');
+                                dragHandle = 'move';
+                                drawStart = { x, y, zone: { ...zone } };
+                                selectedZoneType = 'perfect';
+                                selectedZoneIndex = null;
+                                return;
+                            }
+                        }
+                    }
+                    return;
+                }
                 
-                // Check if clicking on a polygon vertex first
+                // FIRST: Check if clicking on the perfect zone (takes priority)
+                if (selectedSetId) {
+                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
+                    if (set && set.perfectZone) {
+                        const zone = set.perfectZone;
+                        const zoneRect = percentToPixel(zone);
+                        const handles = getHandlePositions(zoneRect);
+                        
+                        // Check handles
+                        for (const h of handles) {
+                            if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
+                                saveUndoState('perfect zone resize');
+                                dragHandle = h.id;
+                                drawStart = { x, y, zone: { ...zone } };
+                                selectedZoneType = 'perfect';
+                                selectedZoneIndex = null;
+                                redrawOverlay();
+                                return;
+                            }
+                        }
+                        
+                        // Check if inside perfect zone for move/select
+                        if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
+                            y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
+                            saveUndoState('perfect zone move');
+                            dragHandle = 'move';
+                            drawStart = { x, y, zone: { ...zone } };
+                            selectedZoneType = 'perfect';
+                            selectedZoneIndex = null;
+                            redrawOverlay();
+                            return;
+                        }
+                    }
+                }
+                
+                // SECOND: Check if clicking on a polygon vertex
                 if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
@@ -1963,35 +2016,7 @@
                     }
                 }
                 
-                // Check if clicking on rectangle handles (for perfect zones)
-                if (selectedSetId && selectedZoneType === 'perfect') {
-                    const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
-                    if (set && set.perfectZone) {
-                        const zone = set.perfectZone;
-                        const zoneRect = percentToPixel(zone);
-                        const handles = getHandlePositions(zoneRect);
-                        
-                        for (const h of handles) {
-                            if (Math.abs(x - h.x) < 8 && Math.abs(y - h.y) < 8) {
-                                saveUndoState('perfect zone resize');
-                                dragHandle = h.id;
-                                drawStart = { x, y, zone: { ...zone } };
-                                return;
-                            }
-                        }
-                        
-                        // Check if inside for move
-                        if (x >= zoneRect.x && x <= zoneRect.x + zoneRect.w &&
-                            y >= zoneRect.y && y <= zoneRect.y + zoneRect.h) {
-                            saveUndoState('perfect zone move');
-                            dragHandle = 'move';
-                            drawStart = { x, y, zone: { ...zone } };
-                            return;
-                        }
-                    }
-                }
-                
-                // Check if clicking inside a polygon (for move)
+                // THIRD: Check if clicking inside a polygon (for move)
                 if (selectedSetId && selectedZoneType === 'good' && selectedZoneIndex !== null) {
                     const set = currentLevel.zoneSets.find(s => s.id === selectedSetId);
                     if (set) {
@@ -2005,7 +2030,7 @@
                     }
                 }
                 
-                // Check if clicking on a zone to select it
+                // FOURTH: Check if clicking on any zone to select it
                 const clicked = findZoneAt(x, y);
                 if (clicked) {
                     selectedSetId = clicked.setId;
@@ -2016,12 +2041,10 @@
                     updateZoneSetEditor();
                     redrawOverlay();
                 } else {
-                    // Deselect
-                    selectedSetId = null;
+                    // Clicked outside all zones - only deselect zone, not set
                     selectedZoneType = null;
                     selectedZoneIndex = null;
                     selectedVertexIndex = null;
-                    document.getElementById('zoneSetEditor').classList.add('hidden');
                     redrawOverlay();
                 }
             }
