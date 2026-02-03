@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find the Center v1.0.0</title>
+    <title>Find the Center v1.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -21,9 +21,6 @@
             cursor: crosshair;
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .feedback-text {
-            min-height: 2.5rem;
         }
         
         /* Auth styles */
@@ -178,21 +175,23 @@
                     <canvas id="gameCanvas"></canvas>
                 </div>
 
-                <!-- Scoring Display -->
+                <!-- Scoring Display with Feedback in Center -->
                 <div class="flex justify-between items-center mb-4 px-2">
-                    <div class="text-left">
-                        <p class="text-slate-600 font-medium">Round</p>
+                    <div class="text-left w-24">
+                        <p class="text-slate-600 font-medium text-sm">Round</p>
                         <p class="text-2xl font-bold text-slate-800"><span id="roundCounter">1</span> / 10</p>
                     </div>
-                    <div class="text-right">
-                        <p class="text-slate-600 font-medium">Total Score</p>
+                    <div class="text-center flex-1">
+                        <p id="feedbackText" class="text-xl font-bold text-slate-700">Find the center...</p>
+                    </div>
+                    <div class="text-right w-24">
+                        <p class="text-slate-600 font-medium text-sm">Total</p>
                         <p class="text-2xl font-bold text-slate-800" id="totalScore">0</p>
                     </div>
                 </div>
 
-                <!-- Feedback and Controls -->
-                <div class="flex flex-col items-center justify-center gap-4">
-                    <p id="feedbackText" class="text-xl font-medium text-slate-700 feedback-text">Good luck!</p>
+                <!-- Next Button -->
+                <div class="flex justify-center">
                     <button id="nextButton" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors hidden">
                         Next Shape
                     </button>
@@ -242,7 +241,7 @@
             
         </div>
         <footer class="text-center mt-6 text-sm text-slate-500">
-            <p>Originally coded by Gemini, enhanced with ❤️</p>
+            <p>Originally coded by Gemini, leaderboard by Claude</p>
         </footer>
     </div>
 
@@ -544,7 +543,7 @@
             gameActive = true;
             roundCounterEl.textContent = roundNumber;
             feedbackEl.textContent = "Find the center...";
-            feedbackEl.className = 'text-xl font-medium text-slate-700 feedback-text';
+            feedbackEl.className = 'text-xl font-bold text-slate-700';
             nextButton.classList.add('hidden');
             
             generateShape();
@@ -650,7 +649,7 @@
 
             if (!isPointInShape(clickPoint, currentShape)) {
                 feedbackEl.textContent = "Please click inside the shape!";
-                feedbackEl.className = 'text-xl font-medium text-red-500 feedback-text';
+                feedbackEl.className = 'text-xl font-bold text-red-500';
                 return;
             }
 
@@ -664,22 +663,22 @@
             let feedbackText, feedbackClass;
             if (score >= 95) {
                 feedbackText = `Perfect! +${score}`;
-                feedbackClass = 'text-2xl font-bold feedback-text text-green-500';
+                feedbackClass = 'text-xl font-bold text-green-500';
             } else if (score >= 90) {
                 feedbackText = `Excellent! +${score}`;
-                feedbackClass = 'text-2xl font-bold feedback-text text-green-500';
+                feedbackClass = 'text-xl font-bold text-green-500';
             } else if (score >= 80) {
                 feedbackText = `Great! +${score}`;
-                feedbackClass = 'text-2xl font-bold feedback-text text-blue-600';
+                feedbackClass = 'text-xl font-bold text-blue-600';
             } else if (score >= 70) {
                 feedbackText = `Good! +${score}`;
-                feedbackClass = 'text-2xl font-bold feedback-text text-blue-600';
+                feedbackClass = 'text-xl font-bold text-blue-600';
             } else if (score >= 60) {
                 feedbackText = `Okay. +${score}`;
-                feedbackClass = 'text-2xl font-bold feedback-text text-amber-500';
+                feedbackClass = 'text-xl font-bold text-amber-500';
             } else {
                 feedbackText = `+${score}`;
-                feedbackClass = 'text-2xl font-bold feedback-text text-slate-600';
+                feedbackClass = 'text-xl font-bold text-slate-600';
             }
             
             feedbackEl.textContent = feedbackText;
