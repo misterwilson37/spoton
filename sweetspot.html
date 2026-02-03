@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v2.0.0</title>
+    <title>The Sweet Spot v2.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -348,6 +348,7 @@
         
         .feedback-good { color: #7BAFD4; }
         .feedback-bad { color: #e74c3c; }
+        .feedback-meh { color: #f59e0b; }
         .feedback-hint { color: #94a3b8; font-style: italic; font-size: 0.9rem; }
         
         /* Confetti animation for great scores */
@@ -740,6 +741,7 @@
         async function loadLeaderboard() {
             try {
                 const snapshot = await db.collection('scores')
+                    .where('gameId', '==', 'sweet-spot')
                     .orderBy('score', 'desc')
                     .limit(10)
                     .get();
@@ -783,6 +785,7 @@
         async function getPlayerRank(playerScore) {
             try {
                 const snapshot = await db.collection('scores')
+                    .where('gameId', '==', 'sweet-spot')
                     .where('score', '>', playerScore)
                     .get();
                 return snapshot.size + 1;
@@ -797,6 +800,7 @@
             
             try {
                 const scoreData = {
+                    gameId: 'sweet-spot',
                     initials: initials.toUpperCase(),
                     score: score,
                     email: currentUser.email,
@@ -1059,7 +1063,22 @@
                         isCorrect = false;
                         message = '<p class="feedback-bad">✗ Too much text outside the safe zone.</p>';
                     } else {
-                        message = `<p class="feedback-good">✓ Good placement! +${points}</p>`;
+                        // Tiered feedback based on score
+                        let feedback;
+                        if (points >= 95) {
+                            feedback = '✓ Perfect!';
+                        } else if (points >= 90) {
+                            feedback = '✓ Excellent!';
+                        } else if (points >= 80) {
+                            feedback = '✓ Great placement!';
+                        } else if (points >= 70) {
+                            feedback = '✓ Good placement!';
+                        } else if (points >= 60) {
+                            feedback = '• Okay, but could be better.';
+                        } else {
+                            feedback = '• Needs improvement.';
+                        }
+                        message = `<p class="${points >= 70 ? 'feedback-good' : 'feedback-meh'}">${feedback} +${points}</p>`;
                     }
                     
                 } else {
