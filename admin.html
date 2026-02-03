@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v2.0.0</title>
+    <title>The Sweet Spot - Level Editor v2.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -277,7 +277,7 @@
                     <span id="userName" class="text-sm text-gray-400"></span>
                     <button id="signOutBtn" class="text-xs text-gray-500 hover:text-red-400">Sign Out</button>
                 </div>
-                <a href="game.html" class="btn btn-outline btn-sm">Play Game →</a>
+                <a href="sweetspot.html" class="btn btn-outline btn-sm">Play Game →</a>
             </div>
         </div>
     </header>
@@ -488,7 +488,7 @@
         <div id="scoresTab" class="tab-content hidden">
             <div class="panel p-6">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-bold heading">Leaderboard Scores</h2>
+                    <h2 class="text-xl font-bold heading">🏆 Leaderboard</h2>
                     <div class="flex gap-2">
                         <button id="refreshScoresBtn" class="btn btn-outline btn-sm">↻ Refresh</button>
                         <button id="exportScoresBtn" class="btn btn-cyan btn-sm">Export CSV</button>
@@ -498,7 +498,18 @@
                 <!-- Filters -->
                 <div class="flex flex-wrap gap-4 mb-4">
                     <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-400">Show:</label>
+                        <label class="text-sm text-gray-400">Game:</label>
+                        <select id="scoresGameFilter" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1">
+                            <option value="all">All Games</option>
+                            <option value="sweet-spot">Sweet Spot</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-400">Player:</label>
+                        <input type="text" id="scoresPlayerSearch" placeholder="Search email or name..." class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1 w-48">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-400">Status:</label>
                         <select id="scoresFilter" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1">
                             <option value="all">All Scores</option>
                             <option value="flagged">Flagged Only</option>
@@ -522,6 +533,7 @@
                         <thead>
                             <tr class="border-b border-gray-700 text-left">
                                 <th class="py-3 px-2 w-16">Rank</th>
+                                <th class="py-3 px-2 w-28">Game</th>
                                 <th class="py-3 px-2 w-20">Initials</th>
                                 <th class="py-3 px-2 w-20">Score</th>
                                 <th class="py-3 px-2">Email</th>
@@ -531,7 +543,7 @@
                             </tr>
                         </thead>
                         <tbody id="scoresTableBody">
-                            <tr><td colspan="7" class="py-8 text-center text-gray-500">Loading scores...</td></tr>
+                            <tr><td colspan="8" class="py-8 text-center text-gray-500">Loading scores...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -3452,49 +3464,88 @@
         // ============================================
         // SCORES LIST
         // ============================================
+        
+        // Map gameId to display name
+        const GAME_NAMES = {
+            'sweet-spot': 'Sweet Spot',
+            // Add more games here as they're created
+        };
+        
+        function getGameDisplayName(gameId) {
+            return GAME_NAMES[gameId] || gameId || 'Unknown';
+        }
+        
         async function loadScoresList() {
             const tbody = document.getElementById('scoresTableBody');
             const totalCount = document.getElementById('scoresTotalCount');
             
             if (!firebaseReady) {
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">Sign in first</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">Sign in first</td></tr>';
                 return;
             }
             
             try {
-                const filterVal = document.getElementById('scoresFilter').value;
+                const gameFilter = document.getElementById('scoresGameFilter').value;
+                const playerSearch = document.getElementById('scoresPlayerSearch').value.toLowerCase().trim();
+                const statusFilter = document.getElementById('scoresFilter').value;
                 const limitVal = parseInt(document.getElementById('scoresLimit').value);
                 
-                let q = query(
-                    collection(db, 'scores'),
-                    orderBy('score', 'desc'),
-                    limit(limitVal)
-                );
+                // Build query - can filter by gameId in Firestore
+                let q;
+                if (gameFilter !== 'all') {
+                    q = query(
+                        collection(db, 'scores'),
+                        where('gameId', '==', gameFilter),
+                        orderBy('score', 'desc'),
+                        limit(limitVal)
+                    );
+                } else {
+                    q = query(
+                        collection(db, 'scores'),
+                        orderBy('score', 'desc'),
+                        limit(limitVal)
+                    );
+                }
                 
-                // Note: Firestore doesn't allow != queries, so we filter in JS for flagged/unflagged
                 const snapshot = await getDocs(q);
                 
                 if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No scores yet</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">No scores found</td></tr>';
                     totalCount.textContent = '';
                     return;
                 }
                 
                 let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
                 
-                // Apply filter
-                if (filterVal === 'flagged') {
+                // Apply status filter (JS side)
+                if (statusFilter === 'flagged') {
                     scores = scores.filter(s => s.flagged);
-                } else if (filterVal === 'unflagged') {
+                } else if (statusFilter === 'unflagged') {
                     scores = scores.filter(s => !s.flagged);
+                }
+                
+                // Apply player search (JS side - searches email and name)
+                if (playerSearch) {
+                    scores = scores.filter(s => 
+                        (s.email && s.email.toLowerCase().includes(playerSearch)) ||
+                        (s.displayName && s.displayName.toLowerCase().includes(playerSearch))
+                    );
+                }
+                
+                if (scores.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">No matching scores</td></tr>';
+                    totalCount.textContent = '';
+                    return;
                 }
                 
                 tbody.innerHTML = scores.map((s, i) => {
                     const date = s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : 'N/A';
                     const flaggedClass = s.flagged ? 'bg-yellow-900/30' : '';
+                    const gameName = getGameDisplayName(s.gameId);
                     return `
                         <tr class="border-b border-gray-800 hover:bg-gray-800/50 ${flaggedClass}" data-id="${s.id}">
                             <td class="py-3 px-2 font-bold text-gray-400">#${i + 1}</td>
+                            <td class="py-3 px-2 text-xs text-gray-300">${escapeHtml(gameName)}</td>
                             <td class="py-3 px-2 font-bold">${escapeHtml(s.initials || '???')}</td>
                             <td class="py-3 px-2 font-bold text-cyan-400">${s.score}</td>
                             <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(s.email || '')}</td>
@@ -3536,7 +3587,7 @@
                 
             } catch (err) {
                 console.error('Load scores error:', err);
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-400">Error loading scores</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-red-400">Error loading scores</td></tr>';
             }
         }
         
@@ -3555,11 +3606,28 @@
             try {
                 showLoading('Exporting...');
                 
-                const snapshot = await getDocs(query(
-                    collection(db, 'scores'),
-                    orderBy('score', 'desc'),
-                    limit(1000)
-                ));
+                const gameFilter = document.getElementById('scoresGameFilter').value;
+                const playerSearch = document.getElementById('scoresPlayerSearch').value.toLowerCase().trim();
+                const statusFilter = document.getElementById('scoresFilter').value;
+                
+                // Build query
+                let q;
+                if (gameFilter !== 'all') {
+                    q = query(
+                        collection(db, 'scores'),
+                        where('gameId', '==', gameFilter),
+                        orderBy('score', 'desc'),
+                        limit(1000)
+                    );
+                } else {
+                    q = query(
+                        collection(db, 'scores'),
+                        orderBy('score', 'desc'),
+                        limit(1000)
+                    );
+                }
+                
+                const snapshot = await getDocs(q);
                 
                 if (snapshot.empty) {
                     hideLoading();
@@ -3567,14 +3635,35 @@
                     return;
                 }
                 
-                const scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                
+                // Apply filters
+                if (statusFilter === 'flagged') {
+                    scores = scores.filter(s => s.flagged);
+                } else if (statusFilter === 'unflagged') {
+                    scores = scores.filter(s => !s.flagged);
+                }
+                
+                if (playerSearch) {
+                    scores = scores.filter(s => 
+                        (s.email && s.email.toLowerCase().includes(playerSearch)) ||
+                        (s.displayName && s.displayName.toLowerCase().includes(playerSearch))
+                    );
+                }
+                
+                if (scores.length === 0) {
+                    hideLoading();
+                    showToast('No matching scores to export', 'info');
+                    return;
+                }
                 
                 // Create CSV
-                const headers = ['Rank', 'Initials', 'Score', 'Email', 'Name', 'Date', 'Levels', 'Flagged'];
+                const headers = ['Rank', 'Game', 'Initials', 'Score', 'Email', 'Name', 'Date', 'Levels', 'Flagged'];
                 const rows = scores.map((s, i) => {
                     const date = s.timestamp?.toDate ? s.timestamp.toDate().toISOString() : '';
                     return [
                         i + 1,
+                        `"${(getGameDisplayName(s.gameId)).replace(/"/g, '""')}"`,
                         `"${(s.initials || '').replace(/"/g, '""')}"`,
                         s.score,
                         `"${(s.email || '').replace(/"/g, '""')}"`,
@@ -3587,17 +3676,18 @@
                 
                 const csv = [headers.join(','), ...rows].join('\n');
                 
-                // Download
+                // Download with date and filter info in filename
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `sweet-spot-scores-${new Date().toISOString().split('T')[0]}.csv`;
+                const filterSuffix = gameFilter !== 'all' ? `-${gameFilter}` : '-all-games';
+                a.download = `leaderboard${filterSuffix}-${new Date().toISOString().split('T')[0]}.csv`;
                 a.click();
                 URL.revokeObjectURL(url);
                 
                 hideLoading();
-                showToast('Exported!', 'success');
+                showToast(`Exported ${scores.length} scores!`, 'success');
             } catch (err) {
                 hideLoading();
                 console.error('Export error:', err);
@@ -3607,8 +3697,23 @@
         
         document.getElementById('refreshScoresBtn').addEventListener('click', loadScoresList);
         document.getElementById('exportScoresBtn').addEventListener('click', exportScoresCSV);
+        document.getElementById('scoresGameFilter').addEventListener('change', loadScoresList);
+        document.getElementById('scoresPlayerSearch').addEventListener('input', debounce(loadScoresList, 300));
         document.getElementById('scoresFilter').addEventListener('change', loadScoresList);
         document.getElementById('scoresLimit').addEventListener('change', loadScoresList);
+        
+        // Debounce helper for search input
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
         // ============================================
         // MIGRATION (same as before, condensed)
