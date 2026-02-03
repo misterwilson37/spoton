@@ -3,8 +3,14 @@
 A collection of educational games testing visual perception, alignment, and attention to detail. Originally built around "Sweet Spot" (text placement on images), now expanded to include multiple game types.
 
 **Current Versions:**
-- admin.html: v2.0.5
-- sweetspot.html: v2.0.2
+- index.html: v1.0.1
+- leaderboard.html: v1.0.0 (NEW)
+- admin.html: v2.2.0
+- sweetspot.html: v2.0.3
+- findthecenter.html: v1.0.2
+- perfectalignment.html: v1.0.1
+- balancedplacement.html: v1.0.1
+- pictureperfect.html: v1.0.1
 - findthecenter.html: v1.0.1
 - perfectalignment.html: v1.0.0
 - balancedplacement.html: v1.0.0
@@ -484,7 +490,36 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 - Removed "THE" from title (now just "Sweet Spot")
 - Removed admin link from start screen (now in index.html)
 
-### Admin v2.0.5 (Current)
+### Admin v2.2.0 (Current)
+- **Major Tab Restructure**: Now organized as Sweet Spot → Picture Perfect → Leaderboards
+- Sweet Spot has sub-tabs: Level Editor and All Levels
+- Picture Perfect tab manages PP images
+- Leaderboards tab for score management
+- Sub-tabs bar appears only when Sweet Spot is active
+
+### All Games v1.0.x Updates
+- Added navigation links: "← All Games" and "🏆 Leaderboard" 
+- Toned down glow effects for better readability
+- Consistent design across all games
+
+### Leaderboard v1.0.0 (NEW)
+- Student-facing public leaderboard page
+- Filter by game with color-coded badges
+- Shows only rank, initials, game, and score (no email/admin features)
+- Top 100 scores displayed
+
+### Index v1.0.1
+- Added leaderboard link in header
+- Toned down glow effect
+
+### Admin v2.1.0
+- **Rebranded**: "Sweet Spot Level Editor" → "Spot On! Admin"
+- Updated login overlay and header to show "SPOT ON!" branding
+- Changed "EDITOR" badge to "ADMIN"
+- "Play Game" button now links to index.html ("Back to Games")
+- Fixed duplicate escapeHtml function causing potential errors
+
+### Admin v2.0.5
 - Added Picture Perfect to game dropdown and GAME_NAMES map
 - New "PP Images" tab for managing Picture Perfect images
 - Add images by URL (supports Pexels, Unsplash, any direct image link)
