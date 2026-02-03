@@ -2,7 +2,7 @@
 
 An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
 
-**Current Version:** v1.9.7
+**Current Version:** v2.0.0
 
 ---
 
@@ -12,12 +12,13 @@ An educational game teaching students to identify optimal text placement on imag
 2. [Firebase Setup](#firebase-setup)
 3. [Configuration Options](#configuration-options)
 4. [Admin Panel Guide](#admin-panel-guide)
-5. [Zone System](#zone-system)
-6. [Keyboard Shortcuts](#keyboard-shortcuts)
-7. [How Scoring Works](#how-scoring-works)
-8. [Technical Notes](#technical-notes)
-9. [Troubleshooting](#troubleshooting)
-10. [Version History](#version-history)
+5. [Leaderboard System](#leaderboard-system)
+6. [Zone System](#zone-system)
+7. [Keyboard Shortcuts](#keyboard-shortcuts)
+8. [How Scoring Works](#how-scoring-works)
+9. [Technical Notes](#technical-notes)
+10. [Troubleshooting](#troubleshooting)
+11. [Version History](#version-history)
 
 ---
 
@@ -25,8 +26,8 @@ An educational game teaching students to identify optimal text placement on imag
 
 ```
 sweet-spot-game/
-├── admin.html          # Level editor (3,300+ lines)
-├── game.html           # Student-facing game (1,050+ lines)
+├── admin.html          # Level editor + score management (~3,700 lines)
+├── game.html           # Student-facing game with leaderboard (~1,500 lines)
 ├── firebase-config.js  # Firebase credentials (YOU CREATE THIS)
 └── README.md           # This file
 ```
@@ -51,8 +52,8 @@ const firebaseConfig = {
 ## Firebase Setup
 
 ### Required Services
-- **Authentication**: Google Sign-In (for admin panel)
-- **Firestore**: Database for level data
+- **Authentication**: Google Sign-In (for admin panel and player leaderboard)
+- **Firestore**: Database for levels and scores
 - **Storage**: Image file storage
 
 ### Firestore Structure
@@ -70,6 +71,17 @@ levels/
         ├── zoneSets: []  # Raw editor data
         ├── createdAt: timestamp
         └── updatedAt: timestamp
+
+scores/
+  └── {scoreId}/
+        ├── initials: string (1-3 chars)
+        ├── score: number
+        ├── email: string
+        ├── displayName: string
+        ├── uid: string
+        ├── levelCount: number
+        ├── timestamp: timestamp
+        └── flagged: boolean
 ```
 
 ---
@@ -112,7 +124,8 @@ const DEBUG = false;  // Set to true for verbose logging
 
 1. **Level Editor**: Main editing interface
 2. **All Levels**: Browse/load/delete existing levels
-3. **Migration**: (Hidden unless DEBUG=true) Bulk operations
+3. **Scores**: View and manage leaderboard scores
+4. **Migration**: (Hidden unless DEBUG=true) Bulk operations
 
 ### Zone Sets
 
@@ -150,6 +163,55 @@ When saving, the editor validates your zone sets:
 - Warns if a zone set has no good zones
 - Warns if a perfect zone center is outside all good zones in its set
 - You can still save with warnings (after confirmation)
+
+---
+
+## Leaderboard System
+
+### Player Experience (game.html)
+
+**Before Playing:**
+- Optional Google Sign-in on start screen
+- Can play without signing in, but won't save score
+
+**After Game:**
+- Signed-in players enter 3-letter initials
+- Built-in profanity filter rejects common bad words
+- Score saved to Firestore with rank display
+- Top 10 leaderboard shown on game over screen
+
+### Admin Experience (admin.html)
+
+**Scores Tab Features:**
+- View all scores with rank, initials, score, email, name, date
+- Filter: All / Flagged Only / Unflagged Only
+- Limit: 50, 100, 500, or 1000 scores
+- Flag suspicious entries (🚩 button)
+- Delete entries (× button)
+- Export to CSV (up to 1000 scores)
+
+**Automatic Flagging:**
+Scores are auto-flagged if initials match profanity patterns, but still saved. Admin can review flagged entries and delete if needed.
+
+### Firestore Structure
+
+```
+scores/
+  └── {scoreId}/
+        ├── initials: "ABC"
+        ├── score: 847
+        ├── email: "student@school.edu"
+        ├── displayName: "Student Name"
+        ├── photoURL: "..."
+        ├── uid: "firebase-user-id"
+        ├── levelCount: 10
+        ├── timestamp: serverTimestamp
+        └── flagged: false
+```
+
+### Profanity Filter
+
+The filter checks initials against ~40 common inappropriate patterns. It's intentionally conservative - some borderline cases may get through but will be auto-flagged for admin review.
 
 ---
 
@@ -309,7 +371,21 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### v1.9.7 (Current)
+### v2.0.0 (Current) 🎉
+**Major Feature: Leaderboard System**
+- Google Sign-in for players (optional, needed to save score)
+- 3-letter initials entry after game
+- Built-in profanity filter with ~40 blocked patterns
+- Top 10 leaderboard display on game over screen
+- Player rank display ("Your rank: #47")
+- Admin "Scores" tab with full score management
+- Filter scores: All, Flagged Only, Unflagged Only
+- Flag/unflag suspicious entries
+- Delete individual scores
+- Export up to 1000 scores to CSV
+- Auto-flagging of scores with suspicious initials
+
+### v1.9.7
 - Added scoring penalty for text outside good zones
 - Score is reduced by the percentage of text falling outside any good zone
 - Uses grid sampling (10x10) to calculate text coverage in polygon zones
