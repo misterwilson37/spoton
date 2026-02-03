@@ -2,7 +2,7 @@
 
 An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
 
-**Current Version:** v2.0.0
+**Current Version:** v2.0.1
 
 ---
 
@@ -26,8 +26,8 @@ An educational game teaching students to identify optimal text placement on imag
 
 ```
 sweet-spot-game/
-├── admin.html          # Level editor + score management (~3,700 lines)
-├── game.html           # Student-facing game with leaderboard (~1,500 lines)
+├── admin.html          # Level editor + score management (~3,800 lines)
+├── sweetspot.html      # Student-facing game with leaderboard (~1,500 lines)
 ├── firebase-config.js  # Firebase credentials (YOU CREATE THIS)
 └── README.md           # This file
 ```
@@ -168,7 +168,7 @@ When saving, the editor validates your zone sets:
 
 ## Leaderboard System
 
-### Player Experience (game.html)
+### Player Experience (sweetspot.html)
 
 **Before Playing:**
 - Optional Google Sign-in on start screen
@@ -177,18 +177,40 @@ When saving, the editor validates your zone sets:
 **After Game:**
 - Signed-in players enter 3-letter initials
 - Built-in profanity filter rejects common bad words
-- Score saved to Firestore with rank display
-- Top 10 leaderboard shown on game over screen
+- Score saved to Firestore with `gameId: 'sweet-spot'`
+- Top 10 leaderboard shown (filtered to Sweet Spot only)
+- Personal rank displayed
+
+**Tiered Feedback:**
+| Score | Feedback | Color |
+|-------|----------|-------|
+| 95+ | "✓ Perfect!" | Blue |
+| 90-94 | "✓ Excellent!" | Blue |
+| 80-89 | "✓ Great placement!" | Blue |
+| 70-79 | "✓ Good placement!" | Blue |
+| 60-69 | "• Okay, but could be better." | Orange |
+| <60 | "• Needs improvement." | Orange |
 
 ### Admin Experience (admin.html)
 
-**Scores Tab Features:**
-- View all scores with rank, initials, score, email, name, date
-- Filter: All / Flagged Only / Unflagged Only
-- Limit: 50, 100, 500, or 1000 scores
-- Flag suspicious entries (🚩 button)
-- Delete entries (× button)
-- Export to CSV (up to 1000 scores)
+**Universal Leaderboard Tab:**
+
+Supports multiple games from a single interface.
+
+| Filter | Options |
+|--------|---------|
+| Game | All Games / Sweet Spot / (future games) |
+| Player | Search by email or name |
+| Status | All / Flagged Only / Unflagged Only |
+| Limit | 50, 100, 500, or 1000 |
+
+**Table Columns:**
+Rank, Game, Initials, Score, Email, Name, Date, Actions
+
+**Actions:**
+- 🚩 Flag/unflag suspicious entries
+- × Delete individual scores
+- Export CSV (respects current filters)
 
 **Automatic Flagging:**
 Scores are auto-flagged if initials match profanity patterns, but still saved. Admin can review flagged entries and delete if needed.
@@ -198,6 +220,7 @@ Scores are auto-flagged if initials match profanity patterns, but still saved. A
 ```
 scores/
   └── {scoreId}/
+        ├── gameId: "sweet-spot"     # Identifies which game
         ├── initials: "ABC"
         ├── score: 847
         ├── email: "student@school.edu"
@@ -371,7 +394,25 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### v2.0.0 (Current) 🎉
+### v2.0.1 (Current)
+- Renamed game.html to sweetspot.html for multi-game support
+- Added `gameId: 'sweet-spot'` to all score submissions
+- Leaderboard now filters by game (ready for additional games)
+- Universal admin Leaderboard tab with:
+  - Game filter dropdown
+  - Player search (searches email and name)
+  - Status filter (All/Flagged/Unflagged)
+  - Limit selector
+- Tiered feedback messages based on score:
+  - 95+: "Perfect!"
+  - 90-94: "Excellent!"
+  - 80-89: "Great placement!"
+  - 70-79: "Good placement!"
+  - 60-69: "Okay, but could be better." (orange text)
+  - Below 60: "Needs improvement." (orange text)
+- CSV export respects current filters and includes Game column
+
+### v2.0.0 🎉
 **Major Feature: Leaderboard System**
 - Google Sign-in for players (optional, needed to save score)
 - 3-letter initials entry after game
