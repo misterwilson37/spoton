@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.9.5</title>
+    <title>The Sweet Spot v1.9.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -723,26 +723,42 @@
                 if (isClickInPerfect || isClickInGood) {
                     isCorrect = true;
                     
+                    // Calculate what percentage of text is inside good zones
+                    const insideGoodPercent = calculateTextInsideGoodZonesPercent(textRect, goodZones);
+                    const outsideGoodPercent = 100 - insideGoodPercent;
+                    
                     if (isClickInPerfect) {
                         const overlap = calculateOverlapPercentage(textRect, closestPerfectZone);
                         const idealCenter = { x: closestPerfectZone.x + closestPerfectZone.width / 2, y: closestPerfectZone.y + closestPerfectZone.height / 2 };
                         const distFromCenter = Math.hypot(clickPercent.x - idealCenter.x, clickPercent.y - idealCenter.y);
                         
+                        // Calculate base score from perfect zone placement
+                        let baseScore;
                         if (distFromCenter < 2) {
-                            points = 100;
+                            baseScore = 100;
                         } else if (overlap === 100) {
-                            points = 95;
+                            baseScore = 95;
                         } else if (overlap >= 75) {
-                            points = 90;
+                            baseScore = 90;
                         } else {
-                            points = 80 + Math.floor((overlap / 74) * 9);
+                            baseScore = 80 + Math.floor((overlap / 74) * 9);
                         }
+                        
+                        // Subtract penalty for text outside good zones
+                        points = Math.max(0, Math.round(baseScore - outsideGoodPercent));
                         directionalFeedback.targetZone = closestPerfectZone;
                     } else {
-                        points = 70;
+                        // In good zone but not perfect - also apply penalty
+                        points = Math.max(0, Math.round(70 - outsideGoodPercent));
                     }
                     
-                    message = `<p class="feedback-good">✓ Good placement! +${points}</p>`;
+                    // If penalty dropped score to 0, treat as incorrect
+                    if (points === 0) {
+                        isCorrect = false;
+                        message = '<p class="feedback-bad">✗ Too much text outside the safe zone.</p>';
+                    } else {
+                        message = `<p class="feedback-good">✓ Good placement! +${points}</p>`;
+                    }
                     
                 } else {
                     isCorrect = false;
@@ -1001,6 +1017,31 @@
             const overlapArea = x_overlap * y_overlap;
             const boxAArea = boxA.width * boxA.height;
             return boxAArea > 0 ? (overlapArea / boxAArea) * 100 : 0;
+        }
+        
+        // Calculate what percentage of the text rectangle is inside the good zones
+        // Uses grid sampling for polygon support
+        function calculateTextInsideGoodZonesPercent(textRect, goodZones) {
+            if (goodZones.length === 0) return 0;
+            
+            // Sample a grid of points across the text rectangle
+            const gridSize = 10; // 10x10 = 100 sample points
+            let insideCount = 0;
+            const totalPoints = gridSize * gridSize;
+            
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    // Sample point within the text rectangle
+                    const px = textRect.x + (textRect.width * (i + 0.5) / gridSize);
+                    const py = textRect.y + (textRect.height * (j + 0.5) / gridSize);
+                    
+                    // Check if this point is inside ANY good zone
+                    const isInside = goodZones.some(z => pointInZone(px, py, z));
+                    if (isInside) insideCount++;
+                }
+            }
+            
+            return (insideCount / totalPoints) * 100;
         }
         
         // Update text size to match admin panel (9% of container height)
