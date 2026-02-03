@@ -2,7 +2,7 @@
 
 An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
 
-**Current Version:** v1.9.4
+**Current Version:** v1.9.7
 
 ---
 
@@ -138,6 +138,7 @@ The "ZONES" button toggles between:
 ### Unsaved Changes Protection
 
 The editor tracks when you've made changes that haven't been saved:
+- **Switch Tabs**: Prompts when leaving editor tab (e.g., to "All Levels")
 - **New Level**: Prompts if you have unsaved changes
 - **Load Level**: Prompts if you have unsaved changes
 - **Close Tab/Browser**: Browser shows a warning dialog
@@ -214,8 +215,9 @@ The admin panel dynamically measures rendered text to ensure:
 
 ### Placement Scoring (game.html)
 
-| Placement | Points |
-|-----------|--------|
+**Base Scores:**
+| Placement | Base Points |
+|-----------|-------------|
 | Perfect zone, dead center (< 2% from center) | 100 |
 | Perfect zone, fully inside | 95 |
 | Perfect zone, 75%+ overlap | 90 |
@@ -223,6 +225,14 @@ The admin panel dynamically measures rendered text to ensure:
 | Good zone only | 70 |
 | Wrong color (would work with other color) | 0 + hint |
 | Outside all zones | 0 |
+
+**Outside Penalty:**
+The score is reduced by the percentage of text that falls outside any good zone.
+
+Example: Text overlaps perfect zone (base score 82) but 43% is outside good zones:
+- Final score = 82 - 43 = **39 points**
+
+If the penalty reduces the score to 0, it's treated as an incorrect placement.
 
 ### "No Good Spot" Scoring
 
@@ -299,7 +309,23 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### v1.9.4 (Current)
+### v1.9.7 (Current)
+- Added scoring penalty for text outside good zones
+- Score is reduced by the percentage of text falling outside any good zone
+- Uses grid sampling (10x10) to calculate text coverage in polygon zones
+- If penalty reduces score to 0, placement is treated as incorrect
+
+### v1.9.6
+- Added unsaved changes prompt when switching away from editor tab
+- Fixes issue where clicking "All Levels" didn't warn about unsaved work
+
+### v1.9.5
+- Fixed "wrong color" detection to work with polygon zones
+- Now checks both good zones AND perfect zones for other color
+- Moved game buttons up next to instructions for better visibility
+- Feedback now says "Try black text here" instead of generic "other color"
+
+### v1.9.4
 - Fixed concave polygon edge case in Auto Perfect algorithm
 - Added line segment intersection detection
 - Rectangle placement now checks for polygon edges crossing through
