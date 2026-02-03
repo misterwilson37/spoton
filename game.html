@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v1.9.7</title>
+    <title>The Sweet Spot v2.0.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
@@ -110,6 +111,98 @@
         }
         .btn-dark:hover {
             background: #2a2a3e;
+        }
+        
+        .btn-google {
+            background: white;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .btn-google:hover {
+            background: #f0f0f0;
+        }
+        
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-panel);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .user-badge img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .initials-input {
+            background: var(--bg-panel);
+            border: 2px solid var(--accent-primary);
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            width: 120px;
+            padding: 12px;
+            border-radius: 8px;
+            letter-spacing: 8px;
+        }
+        .initials-input:focus {
+            outline: none;
+            box-shadow: 0 0 20px var(--accent-primary);
+        }
+        
+        .leaderboard {
+            background: var(--bg-panel);
+            border-radius: 12px;
+            padding: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .leaderboard-row:nth-child(odd) {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .leaderboard-row.highlight {
+            background: rgba(123, 175, 212, 0.2);
+            border: 1px solid var(--accent-primary);
+        }
+        
+        .leaderboard-rank {
+            font-weight: bold;
+            width: 30px;
+            color: var(--accent-grey);
+        }
+        
+        .leaderboard-row:nth-child(1) .leaderboard-rank { color: gold; }
+        .leaderboard-row:nth-child(2) .leaderboard-rank { color: silver; }
+        .leaderboard-row:nth-child(3) .leaderboard-rank { color: #cd7f32; }
+        
+        .leaderboard-initials {
+            font-weight: bold;
+            flex: 1;
+            margin-left: 12px;
+        }
+        
+        .leaderboard-score {
+            font-weight: bold;
+            color: var(--accent-primary);
         }
         
         #gameContainer {
@@ -306,7 +399,24 @@
     <!-- Start Screen -->
     <div id="startScreen" class="start-screen hidden">
         <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">THE SWEET SPOT</h1>
-        <p class="text-gray-400 mb-8 max-w-md text-center">Find the perfect placement for text on images. Choose the right color and position for maximum readability.</p>
+        <p class="text-gray-400 mb-6 max-w-md text-center">Find the perfect placement for text on images. Choose the right color and position for maximum readability.</p>
+        
+        <!-- User status -->
+        <div id="userStatus" class="mb-6">
+            <button id="signInBtn" class="btn btn-google">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
+            <p class="text-gray-500 text-xs mt-2">Sign in to save your score to the leaderboard</p>
+        </div>
+        <div id="userSignedIn" class="mb-6 hidden">
+            <div class="user-badge">
+                <img id="userPhoto" src="" alt="">
+                <span id="userName">Player</span>
+                <button id="signOutBtn" class="text-gray-400 hover:text-white ml-2 text-xs">✕</button>
+            </div>
+        </div>
+        
         <button id="startGameBtn" class="btn btn-cyan text-lg px-12 py-4">Start Game</button>
         <a href="admin.html" class="text-gray-500 mt-6 text-sm hover:text-cyan-400 transition-colors">Level Editor →</a>
     </div>
@@ -315,7 +425,37 @@
     <div id="gameOverScreen" class="game-over-screen hidden">
         <h2 class="text-4xl md:text-6xl font-bold heading glow-grey mb-4">GAME OVER</h2>
         <p class="text-gray-400 mb-2">Final Score</p>
-        <p id="finalScore" class="text-6xl font-bold heading text-white mb-8">0</p>
+        <p id="finalScore" class="text-6xl font-bold heading text-white mb-4">0</p>
+        
+        <!-- Initials Entry (shown if signed in) -->
+        <div id="initialsEntry" class="mb-6 hidden">
+            <p class="text-gray-400 mb-2">Enter your initials for the leaderboard:</p>
+            <div class="flex items-center gap-4 justify-center">
+                <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
+                <button id="submitScoreBtn" class="btn btn-cyan">Submit</button>
+            </div>
+            <p id="initialsError" class="text-red-400 text-sm mt-2 hidden">Please choose different initials.</p>
+        </div>
+        
+        <!-- Score submitted confirmation -->
+        <div id="scoreSubmitted" class="mb-6 hidden">
+            <p class="text-green-400 mb-2">✓ Score saved!</p>
+            <p id="playerRank" class="text-gray-400 text-lg"></p>
+        </div>
+        
+        <!-- Not signed in message -->
+        <div id="notSignedInMsg" class="mb-6 hidden">
+            <p class="text-gray-500 text-sm">Sign in before playing to save your score!</p>
+        </div>
+        
+        <!-- Leaderboard -->
+        <div class="leaderboard mb-6">
+            <h3 class="text-center text-lg font-bold mb-4 text-gray-300">🏆 Top 10 Scores</h3>
+            <div id="leaderboardList">
+                <p class="text-gray-500 text-center py-4">Loading...</p>
+            </div>
+        </div>
+        
         <div class="flex gap-4">
             <button id="playAgainBtn" class="btn btn-cyan">Play Again</button>
         </div>
@@ -369,7 +509,8 @@
         // FIREBASE & STATE
         // ============================================
         
-        let db, storage;
+        let db, storage, auth;
+        let currentUser = null;
         let allLevels = []; // All loaded levels from Firebase
         let gameImages = []; // Levels for current game (shuffled subset)
         
@@ -384,6 +525,14 @@
         };
         
         let textBoundingBox = {};
+        
+        // Profanity filter - common bad words and patterns
+        const PROFANITY_LIST = [
+            'ass', 'cum', 'fag', 'fuk', 'fuc', 'fck', 'dik', 'dic', 'cok', 'kok',
+            'tit', 'nig', 'ngg', 'cnt', 'pis', 'sht', 'shi', 'dam', 'wtf', 'stf',
+            'sex', 'xxx', 'gay', 'lez', 'jew', 'joo', 'kik', 'kkk', 'naz', 'poo',
+            'cra', 'bit', 'hor', 'slu', 'who', 'whr', 'ped', 'rap', 'rac', 'hat'
+        ];
         
         // ============================================
         // DOM ELEMENTS
@@ -412,6 +561,24 @@
         const nextLevelBtn = document.getElementById('nextLevelBtn');
         const startGameBtn = document.getElementById('startGameBtn');
         const playAgainBtn = document.getElementById('playAgainBtn');
+        
+        // Auth elements
+        const signInBtn = document.getElementById('signInBtn');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const userStatus = document.getElementById('userStatus');
+        const userSignedIn = document.getElementById('userSignedIn');
+        const userPhoto = document.getElementById('userPhoto');
+        const userName = document.getElementById('userName');
+        
+        // Leaderboard elements
+        const initialsEntry = document.getElementById('initialsEntry');
+        const initialsInput = document.getElementById('initialsInput');
+        const initialsError = document.getElementById('initialsError');
+        const submitScoreBtn = document.getElementById('submitScoreBtn');
+        const scoreSubmitted = document.getElementById('scoreSubmitted');
+        const playerRank = document.getElementById('playerRank');
+        const notSignedInMsg = document.getElementById('notSignedInMsg');
+        const leaderboardList = document.getElementById('leaderboardList');
         
         // ============================================
         // INITIALIZATION
@@ -491,6 +658,13 @@
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 storage = firebase.storage();
+                auth = firebase.auth();
+                
+                // Set up auth state listener
+                auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    updateAuthUI();
+                });
                 
                 statusText.textContent = 'Loading levels...';
                 await loadLevels();
@@ -511,6 +685,134 @@
                 } else {
                     statusText.textContent = `Error: ${error.message}`;
                 }
+            }
+        }
+        
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        
+        function updateAuthUI() {
+            if (currentUser) {
+                userStatus.classList.add('hidden');
+                userSignedIn.classList.remove('hidden');
+                userPhoto.src = currentUser.photoURL || '';
+                userName.textContent = currentUser.displayName || currentUser.email.split('@')[0];
+            } else {
+                userStatus.classList.remove('hidden');
+                userSignedIn.classList.add('hidden');
+            }
+        }
+        
+        async function signInWithGoogle() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    console.error('Sign in error:', error);
+                    alert('Sign in failed: ' + error.message);
+                }
+            }
+        }
+        
+        async function signOut() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+        }
+        
+        // ============================================
+        // PROFANITY FILTER
+        // ============================================
+        
+        function containsProfanity(text) {
+            const lower = text.toLowerCase();
+            return PROFANITY_LIST.some(word => lower.includes(word));
+        }
+        
+        // ============================================
+        // LEADERBOARD
+        // ============================================
+        
+        async function loadLeaderboard() {
+            try {
+                const snapshot = await db.collection('scores')
+                    .orderBy('score', 'desc')
+                    .limit(10)
+                    .get();
+                
+                if (snapshot.empty) {
+                    leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">No scores yet. Be the first!</p>';
+                    return [];
+                }
+                
+                const scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderLeaderboard(scores);
+                return scores;
+            } catch (error) {
+                console.error('Load leaderboard error:', error);
+                leaderboardList.innerHTML = '<p class="text-red-400 text-center py-4">Error loading leaderboard</p>';
+                return [];
+            }
+        }
+        
+        function renderLeaderboard(scores, highlightId = null) {
+            if (scores.length === 0) {
+                leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">No scores yet. Be the first!</p>';
+                return;
+            }
+            
+            leaderboardList.innerHTML = scores.map((s, i) => `
+                <div class="leaderboard-row ${s.id === highlightId ? 'highlight' : ''}">
+                    <span class="leaderboard-rank">#${i + 1}</span>
+                    <span class="leaderboard-initials">${escapeHtml(s.initials)}</span>
+                    <span class="leaderboard-score">${s.score}</span>
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function getPlayerRank(playerScore) {
+            try {
+                const snapshot = await db.collection('scores')
+                    .where('score', '>', playerScore)
+                    .get();
+                return snapshot.size + 1;
+            } catch (error) {
+                console.error('Get rank error:', error);
+                return null;
+            }
+        }
+        
+        async function submitScore(initials) {
+            if (!currentUser) return null;
+            
+            try {
+                const scoreData = {
+                    initials: initials.toUpperCase(),
+                    score: score,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName || '',
+                    photoURL: currentUser.photoURL || '',
+                    uid: currentUser.uid,
+                    levelCount: gameImages.length,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    flagged: containsProfanity(initials) // Auto-flag suspicious initials
+                };
+                
+                const docRef = await db.collection('scores').add(scoreData);
+                return docRef.id;
+            } catch (error) {
+                console.error('Submit score error:', error);
+                return null;
             }
         }
         
@@ -866,10 +1168,73 @@
             }
         }
         
-        function endGame() {
+        async function endGame() {
             gameScreen.classList.add('hidden');
             gameOverScreen.classList.remove('hidden');
             finalScoreEl.textContent = score;
+            
+            // Reset UI state
+            initialsEntry.classList.add('hidden');
+            scoreSubmitted.classList.add('hidden');
+            notSignedInMsg.classList.add('hidden');
+            initialsError.classList.add('hidden');
+            initialsInput.value = '';
+            
+            // Load leaderboard
+            await loadLeaderboard();
+            
+            // Show appropriate UI based on auth state
+            if (currentUser) {
+                initialsEntry.classList.remove('hidden');
+                initialsInput.focus();
+            } else {
+                notSignedInMsg.classList.remove('hidden');
+            }
+        }
+        
+        async function handleScoreSubmit() {
+            const initials = initialsInput.value.trim().toUpperCase();
+            
+            // Validate initials
+            if (initials.length < 1 || initials.length > 3) {
+                initialsError.textContent = 'Enter 1-3 characters.';
+                initialsError.classList.remove('hidden');
+                return;
+            }
+            
+            // Check for profanity (hard reject common ones)
+            if (containsProfanity(initials)) {
+                initialsError.textContent = 'Please choose different initials.';
+                initialsError.classList.remove('hidden');
+                return;
+            }
+            
+            // Submit score
+            submitScoreBtn.disabled = true;
+            submitScoreBtn.textContent = 'Saving...';
+            
+            const scoreId = await submitScore(initials);
+            
+            if (scoreId) {
+                initialsEntry.classList.add('hidden');
+                scoreSubmitted.classList.remove('hidden');
+                
+                // Get and display rank
+                const rank = await getPlayerRank(score);
+                if (rank) {
+                    playerRank.textContent = `Your rank: #${rank}`;
+                }
+                
+                // Reload leaderboard with highlight
+                const scores = await loadLeaderboard();
+                renderLeaderboard(scores, scoreId);
+            } else {
+                initialsError.textContent = 'Failed to save score. Try again.';
+                initialsError.classList.remove('hidden');
+            }
+            
+            submitScoreBtn.disabled = false;
+            submitScoreBtn.textContent = 'Submit';
         }
         
         function showFeedback(isCorrect, clickPercent, points, color, directionalFeedback, isNoGoodSpotClick) {
@@ -1064,6 +1429,22 @@
         // EVENT LISTENERS
         // ============================================
         
+        // Auth listeners
+        signInBtn.addEventListener('click', signInWithGoogle);
+        signOutBtn.addEventListener('click', signOut);
+        
+        // Score submission
+        submitScoreBtn.addEventListener('click', handleScoreSubmit);
+        initialsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleScoreSubmit();
+        });
+        initialsInput.addEventListener('input', () => {
+            // Force uppercase and clear error
+            initialsInput.value = initialsInput.value.toUpperCase();
+            initialsError.classList.add('hidden');
+        });
+        
+        // Game listeners
         startGameBtn.addEventListener('click', startGame);
         playAgainBtn.addEventListener('click', startGame);
         
