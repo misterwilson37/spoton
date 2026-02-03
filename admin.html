@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.9.7</title>
+    <title>The Sweet Spot - Level Editor v2.0.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -287,6 +287,7 @@
         <div class="max-w-7xl mx-auto flex">
             <button class="tab-btn active" data-tab="editor">Level Editor</button>
             <button class="tab-btn" data-tab="levels">All Levels</button>
+            <button class="tab-btn" data-tab="scores">Scores</button>
             <button class="tab-btn hidden" data-tab="migrate" id="migrateTabBtn">Migration</button>
         </div>
     </div>
@@ -482,6 +483,62 @@
                 <button id="startMigrationBtn" class="btn btn-magenta">Start Migration</button>
             </div>
         </div>
+        
+        <!-- Scores Tab -->
+        <div id="scoresTab" class="tab-content hidden">
+            <div class="panel p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold heading">Leaderboard Scores</h2>
+                    <div class="flex gap-2">
+                        <button id="refreshScoresBtn" class="btn btn-outline btn-sm">↻ Refresh</button>
+                        <button id="exportScoresBtn" class="btn btn-cyan btn-sm">Export CSV</button>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="flex flex-wrap gap-4 mb-4">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-400">Show:</label>
+                        <select id="scoresFilter" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1">
+                            <option value="all">All Scores</option>
+                            <option value="flagged">Flagged Only</option>
+                            <option value="unflagged">Unflagged Only</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-400">Limit:</label>
+                        <select id="scoresLimit" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1">
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Scores Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-left">
+                                <th class="py-3 px-2 w-16">Rank</th>
+                                <th class="py-3 px-2 w-20">Initials</th>
+                                <th class="py-3 px-2 w-20">Score</th>
+                                <th class="py-3 px-2">Email</th>
+                                <th class="py-3 px-2">Name</th>
+                                <th class="py-3 px-2 w-36">Date</th>
+                                <th class="py-3 px-2 w-24">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoresTableBody">
+                            <tr><td colspan="7" class="py-8 text-center text-gray-500">Loading scores...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <p id="scoresTotalCount" class="text-sm text-gray-500 mt-4"></p>
+            </div>
+        </div>
     </main>
 
     <script type="module">
@@ -490,7 +547,7 @@
         // ============================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // ============================================
@@ -1074,6 +1131,7 @@
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.tab + 'Tab').classList.remove('hidden');
                 if (btn.dataset.tab === 'levels') loadLevelsList();
+                if (btn.dataset.tab === 'scores') loadScoresList();
                 if (btn.dataset.tab === 'editor') newLevel(); // Start fresh when going to editor
             });
         });
@@ -3390,6 +3448,167 @@
         }
         
         document.getElementById('refreshLevelsBtn').addEventListener('click', loadLevelsList);
+
+        // ============================================
+        // SCORES LIST
+        // ============================================
+        async function loadScoresList() {
+            const tbody = document.getElementById('scoresTableBody');
+            const totalCount = document.getElementById('scoresTotalCount');
+            
+            if (!firebaseReady) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">Sign in first</td></tr>';
+                return;
+            }
+            
+            try {
+                const filterVal = document.getElementById('scoresFilter').value;
+                const limitVal = parseInt(document.getElementById('scoresLimit').value);
+                
+                let q = query(
+                    collection(db, 'scores'),
+                    orderBy('score', 'desc'),
+                    limit(limitVal)
+                );
+                
+                // Note: Firestore doesn't allow != queries, so we filter in JS for flagged/unflagged
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No scores yet</td></tr>';
+                    totalCount.textContent = '';
+                    return;
+                }
+                
+                let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                
+                // Apply filter
+                if (filterVal === 'flagged') {
+                    scores = scores.filter(s => s.flagged);
+                } else if (filterVal === 'unflagged') {
+                    scores = scores.filter(s => !s.flagged);
+                }
+                
+                tbody.innerHTML = scores.map((s, i) => {
+                    const date = s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : 'N/A';
+                    const flaggedClass = s.flagged ? 'bg-yellow-900/30' : '';
+                    return `
+                        <tr class="border-b border-gray-800 hover:bg-gray-800/50 ${flaggedClass}" data-id="${s.id}">
+                            <td class="py-3 px-2 font-bold text-gray-400">#${i + 1}</td>
+                            <td class="py-3 px-2 font-bold">${escapeHtml(s.initials || '???')}</td>
+                            <td class="py-3 px-2 font-bold text-cyan-400">${s.score}</td>
+                            <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(s.email || '')}</td>
+                            <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(s.displayName || '')}</td>
+                            <td class="py-3 px-2 text-gray-500 text-xs">${date}</td>
+                            <td class="py-3 px-2">
+                                <div class="flex gap-1">
+                                    <button class="btn btn-outline btn-sm flag-btn" title="${s.flagged ? 'Unflag' : 'Flag'}">${s.flagged ? '🚩' : '⚑'}</button>
+                                    <button class="btn btn-danger btn-sm del-score-btn" title="Delete">×</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                totalCount.textContent = `Showing ${scores.length} scores`;
+                
+                // Add event listeners to buttons
+                tbody.querySelectorAll('.flag-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const row = e.target.closest('tr');
+                        const id = row.dataset.id;
+                        const isFlagged = btn.textContent === '🚩';
+                        await updateDoc(doc(db, 'scores', id), { flagged: !isFlagged });
+                        loadScoresList();
+                    });
+                });
+                
+                tbody.querySelectorAll('.del-score-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const row = e.target.closest('tr');
+                        const id = row.dataset.id;
+                        if (confirm('Delete this score?')) {
+                            await deleteDoc(doc(db, 'scores', id));
+                            loadScoresList();
+                        }
+                    });
+                });
+                
+            } catch (err) {
+                console.error('Load scores error:', err);
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-400">Error loading scores</td></tr>';
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function exportScoresCSV() {
+            if (!firebaseReady) {
+                showToast('Sign in first', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Exporting...');
+                
+                const snapshot = await getDocs(query(
+                    collection(db, 'scores'),
+                    orderBy('score', 'desc'),
+                    limit(1000)
+                ));
+                
+                if (snapshot.empty) {
+                    hideLoading();
+                    showToast('No scores to export', 'info');
+                    return;
+                }
+                
+                const scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                
+                // Create CSV
+                const headers = ['Rank', 'Initials', 'Score', 'Email', 'Name', 'Date', 'Levels', 'Flagged'];
+                const rows = scores.map((s, i) => {
+                    const date = s.timestamp?.toDate ? s.timestamp.toDate().toISOString() : '';
+                    return [
+                        i + 1,
+                        `"${(s.initials || '').replace(/"/g, '""')}"`,
+                        s.score,
+                        `"${(s.email || '').replace(/"/g, '""')}"`,
+                        `"${(s.displayName || '').replace(/"/g, '""')}"`,
+                        date,
+                        s.levelCount || '',
+                        s.flagged ? 'Yes' : ''
+                    ].join(',');
+                });
+                
+                const csv = [headers.join(','), ...rows].join('\n');
+                
+                // Download
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sweet-spot-scores-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                hideLoading();
+                showToast('Exported!', 'success');
+            } catch (err) {
+                hideLoading();
+                console.error('Export error:', err);
+                showToast('Export failed', 'error');
+            }
+        }
+        
+        document.getElementById('refreshScoresBtn').addEventListener('click', loadScoresList);
+        document.getElementById('exportScoresBtn').addEventListener('click', exportScoresCSV);
+        document.getElementById('scoresFilter').addEventListener('change', loadScoresList);
+        document.getElementById('scoresLimit').addEventListener('change', loadScoresList);
 
         // ============================================
         // MIGRATION (same as before, condensed)
