@@ -2,7 +2,11 @@
 
 An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
 
-**Current Version:** v2.0.1
+**Current Versions:**
+- admin.html: v2.0.3
+- sweetspot.html: v2.0.1
+- findthecenter.html: v1.0.1
+- perfectalignment.html: v1.0.0
 
 ---
 
@@ -12,13 +16,14 @@ An educational game teaching students to identify optimal text placement on imag
 2. [Firebase Setup](#firebase-setup)
 3. [Configuration Options](#configuration-options)
 4. [Admin Panel Guide](#admin-panel-guide)
-5. [Leaderboard System](#leaderboard-system)
-6. [Zone System](#zone-system)
-7. [Keyboard Shortcuts](#keyboard-shortcuts)
-8. [How Scoring Works](#how-scoring-works)
-9. [Technical Notes](#technical-notes)
-10. [Troubleshooting](#troubleshooting)
-11. [Version History](#version-history)
+5. [Games](#games)
+6. [Leaderboard System](#leaderboard-system)
+7. [Zone System](#zone-system)
+8. [Keyboard Shortcuts](#keyboard-shortcuts)
+9. [How Scoring Works](#how-scoring-works)
+10. [Technical Notes](#technical-notes)
+11. [Troubleshooting](#troubleshooting)
+12. [Version History](#version-history)
 
 ---
 
@@ -26,10 +31,12 @@ An educational game teaching students to identify optimal text placement on imag
 
 ```
 sweet-spot-game/
-├── admin.html          # Level editor + score management (~3,800 lines)
-├── sweetspot.html      # Student-facing game with leaderboard (~1,500 lines)
-├── firebase-config.js  # Firebase credentials (YOU CREATE THIS)
-└── README.md           # This file
+├── admin.html            # Level editor + score management (~3,800 lines)
+├── sweetspot.html        # Sweet Spot game (~1,500 lines)
+├── findthecenter.html    # Find the Center game (~760 lines)
+├── perfectalignment.html # Perfect Alignment game (~780 lines)
+├── firebase-config.js    # Firebase credentials (YOU CREATE THIS)
+└── README.md             # This file
 ```
 
 ### Required: firebase-config.js
@@ -163,6 +170,34 @@ When saving, the editor validates your zone sets:
 - Warns if a zone set has no good zones
 - Warns if a perfect zone center is outside all good zones in its set
 - You can still save with warnings (after confirmation)
+
+---
+
+## Games
+
+### Sweet Spot (sweetspot.html)
+An educational game teaching students to identify optimal text placement on images. Students click to place text, choosing between white and black text colors for readability.
+
+- 10 randomly selected levels per game
+- Scoring based on placement precision (0-100 per level)
+- Requires admin-created levels via Level Editor
+
+### Find the Center (findthecenter.html)
+A simple geometry game where players click to find the centroid of randomly generated quadrilaterals.
+
+- 10 rounds of random shapes
+- Perfect click = 100 points
+- Points decrease by 0.5 per pixel from true center
+- No admin setup required - shapes are procedurally generated
+
+### Perfect Alignment (perfectalignment.html)
+A drag-and-drop game where players align shapes by their centers. Sequel to Find the Center with progressive difficulty.
+
+- 10 rounds of increasing difficulty
+- Drag the blue shape to align with the gray target
+- Shapes get smaller and mismatched in later rounds
+- Points decrease by 0.75 per pixel from perfect alignment
+- No admin setup required - shapes are procedurally generated
 
 ---
 
@@ -394,7 +429,26 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### v2.0.1 (Current)
+### Admin v2.0.3 (Current)
+- Added Perfect Alignment to game dropdown and GAME_NAMES map
+
+### Perfect Alignment v1.0.0
+- New game: drag shapes to align their centers
+- Start screen with Google sign-in
+- Leaderboard with `gameId: 'perfect-alignment'`
+- Tiered feedback and directional hints
+- Layout optimized (feedback in center row, no page shift)
+
+### Find the Center v1.0.1
+- Fixed layout shift when feedback appears
+- Moved feedback display between Round and Total Score
+- Updated footer credit: "Originally coded by Gemini, leaderboard by Claude"
+
+### Admin v2.0.2
+- Added Find the Center to game dropdown and GAME_NAMES map
+- Individual file versioning now in effect
+
+### Sweet Spot v2.0.1
 - Renamed game.html to sweetspot.html for multi-game support
 - Added `gameId: 'sweet-spot'` to all score submissions
 - Leaderboard now filters by game (ready for additional games)
@@ -411,6 +465,15 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
   - 60-69: "Okay, but could be better." (orange text)
   - Below 60: "Needs improvement." (orange text)
 - CSV export respects current filters and includes Game column
+- **Added Find the Center game** (findthecenter.html)
+  - Originally created by Gemini, enhanced with leaderboard
+  - Uses `gameId: 'find-the-center'`
+  - Light theme (complements Sweet Spot's dark theme)
+
+### Find the Center v1.0.1
+- Fixed layout shift when feedback appears
+- Moved feedback display between Round and Total Score
+- Updated footer credit: "Originally coded by Gemini, leaderboard by Claude"
 
 ### v2.0.0 🎉
 **Major Feature: Leaderboard System**
