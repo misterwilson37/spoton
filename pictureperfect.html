@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picture Perfect v1.0.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        canvas {
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn-choice {
+            background-color: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .btn-choice:hover:not(:disabled) {
+            background-color: #e2e8f0;
+        }
+        .btn-choice.selected {
+            background-color: #cbd5e1;
+            border-color: #94a3b8;
+        }
+        .btn-choice.correct {
+            background-color: #d1fae5;
+            border-color: #10B981;
+        }
+        .btn-choice.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .btn-choice:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        /* Auth styles */
+        .btn-google {
+            background: white;
+            color: #333;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-google:hover {
+            background: #f5f5f5;
+        }
+        
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .user-badge img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        /* Initials input */
+        .initials-input {
+            background: #f1f5f9;
+            border: 2px solid #3b82f6;
+            color: #1e293b;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            width: 100px;
+            padding: 8px;
+            border-radius: 8px;
+            letter-spacing: 6px;
+        }
+        .initials-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Leaderboard */
+        .leaderboard {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            text-align: left;
+        }
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        .leaderboard-row:nth-child(odd) {
+            background: rgba(0,0,0,0.03);
+        }
+        .leaderboard-row.highlight {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid #3b82f6;
+        }
+        .leaderboard-rank {
+            font-weight: bold;
+            width: 30px;
+            color: #64748b;
+        }
+        .leaderboard-row:nth-child(1) .leaderboard-rank { color: #eab308; }
+        .leaderboard-row:nth-child(2) .leaderboard-rank { color: #9ca3af; }
+        .leaderboard-row:nth-child(3) .leaderboard-rank { color: #cd7f32; }
+        .leaderboard-initials {
+            font-weight: bold;
+            flex: 1;
+            margin-left: 12px;
+            color: #1e293b;
+        }
+        .leaderboard-score {
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        
+        /* Screen transitions */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 text-center">
+            
+            <!-- Start Screen -->
+            <div id="startScreen" class="screen active">
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Picture Perfect</h1>
+                <p class="text-slate-500 mt-2 mb-6">Can you spot what's wrong with each image?</p>
+                
+                <div class="bg-slate-50 rounded-lg p-4 mb-6 text-left max-w-sm mx-auto">
+                    <h3 class="font-semibold text-slate-700 mb-2">How to Play:</h3>
+                    <ul class="text-sm text-slate-600 space-y-1">
+                        <li>• 10 rounds of image inspection</li>
+                        <li>• Each image may be correct, stretched, or pixelated</li>
+                        <li>• Identify the issue (or confirm it's correct)</li>
+                        <li>• 100 points per correct answer</li>
+                    </ul>
+                </div>
+                
+                <!-- User status -->
+                <div id="userStatus" class="mb-6">
+                    <button id="signInBtn" class="btn-google">
+                        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Sign in with Google
+                    </button>
+                    <p class="text-slate-400 text-xs mt-2">Sign in to save your score to the leaderboard</p>
+                </div>
+                <div id="userSignedIn" class="mb-6 hidden">
+                    <div class="user-badge inline-flex">
+                        <img id="userPhoto" src="" alt="">
+                        <span id="userName">Player</span>
+                        <button id="signOutBtn" class="text-slate-400 hover:text-slate-600 ml-2 text-xs">✕</button>
+                    </div>
+                </div>
+                
+                <button id="startGameBtn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-lg">
+                    Start Game
+                </button>
+                
+                <p id="imageCountInfo" class="text-slate-400 text-xs mt-4"></p>
+            </div>
+            
+            <!-- Game Screen -->
+            <div id="gameScreen" class="screen">
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Picture Perfect</h1>
+                <p id="instructionText" class="text-slate-500 mt-2">Is this image correct, stretched, or pixelated?</p>
+                
+                <!-- Game Canvas -->
+                <div class="relative w-full max-w-xl mx-auto aspect-[4/3] bg-slate-200 border-2 border-slate-300 rounded-lg overflow-hidden my-6 flex items-center justify-center">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+
+                <!-- Choice Buttons -->
+                <div id="choice-container" class="grid grid-cols-2 md:grid-cols-4 justify-center items-center gap-3 mb-4">
+                    <button class="btn-choice w-full font-semibold py-3 px-4 rounded-lg" data-choice="correct">✓ Correct</button>
+                    <button class="btn-choice w-full font-semibold py-3 px-4 rounded-lg" data-choice="pixelated">▓ Pixelated</button>
+                    <button class="btn-choice w-full font-semibold py-3 px-4 rounded-lg" data-choice="horizontal">↔ Stretched</button>
+                    <button class="btn-choice w-full font-semibold py-3 px-4 rounded-lg" data-choice="vertical">↕ Stretched</button>
+                </div>
+
+                <!-- Scoring Display with Feedback in Center -->
+                <div class="flex justify-between items-center mb-2 px-2">
+                    <div class="text-left w-24">
+                        <p class="text-slate-600 font-medium text-sm">Round</p>
+                        <p class="text-2xl font-bold text-slate-800"><span id="roundCounter">1</span> / 10</p>
+                    </div>
+                    <div class="text-center flex-1">
+                        <p id="feedbackText" class="text-xl font-bold text-slate-700">Pick your answer!</p>
+                    </div>
+                    <div class="text-right w-24">
+                        <p class="text-slate-600 font-medium text-sm">Score</p>
+                        <p class="text-2xl font-bold text-slate-800" id="totalScore">0</p>
+                    </div>
+                </div>
+
+                <!-- Next Button -->
+                <div class="flex justify-center mt-2">
+                    <button id="nextButton" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-blue-700 transition-colors hidden">
+                        Next Round
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="screen">
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-2">Game Over!</h1>
+                <p class="text-slate-500">Final Score</p>
+                <p id="finalScore" class="text-5xl font-bold text-slate-800 mb-2">0</p>
+                <p id="averageScore" class="text-lg text-slate-600 mb-4"></p>
+                
+                <!-- Initials Entry -->
+                <div id="initialsEntry" class="mb-6 hidden">
+                    <p class="text-slate-600 mb-2">Enter your initials:</p>
+                    <div class="flex items-center gap-3 justify-center">
+                        <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
+                        <button id="submitScoreBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition-colors">Submit</button>
+                    </div>
+                    <p id="initialsError" class="text-red-500 text-sm mt-2 hidden">Please choose different initials.</p>
+                </div>
+                
+                <!-- Score submitted confirmation -->
+                <div id="scoreSubmitted" class="mb-4 hidden">
+                    <p class="text-green-600 font-medium">✓ Score saved!</p>
+                    <p id="playerRank" class="text-slate-600"></p>
+                </div>
+                
+                <!-- Not signed in message -->
+                <div id="notSignedInMsg" class="mb-4 hidden">
+                    <p class="text-slate-400 text-sm">Sign in before playing to save your score!</p>
+                </div>
+                
+                <!-- Leaderboard -->
+                <div class="leaderboard">
+                    <h3 class="text-center font-bold text-slate-700 mb-3">🏆 Top 10 Scores</h3>
+                    <div id="leaderboardList">
+                        <p class="text-slate-400 text-center py-4">Loading...</p>
+                    </div>
+                </div>
+                
+                <button id="playAgainButton" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors mt-6">
+                    Play Again
+                </button>
+            </div>
+            
+        </div>
+        <footer class="text-center mt-6 text-sm text-slate-500">
+            <p>Originally by Gemini, enhanced by Claude</p>
+        </footer>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        // ============================================
+        // FIREBASE & AUTH
+        // ============================================
+        let db, auth;
+        let currentUser = null;
+        
+        const PROFANITY_LIST = [
+            'ass', 'cum', 'fag', 'fuk', 'fuc', 'fck', 'dik', 'dic', 'cok', 'kok',
+            'tit', 'nig', 'ngg', 'cnt', 'pis', 'sht', 'shi', 'dam', 'wtf', 'stf',
+            'sex', 'xxx', 'gay', 'lez', 'jew', 'joo', 'kik', 'kkk', 'naz', 'poo',
+            'cra', 'bit', 'hor', 'slu', 'who', 'whr', 'ped', 'rap', 'rac', 'hat'
+        ];
+        
+        function containsProfanity(text) {
+            const lower = text.toLowerCase();
+            return PROFANITY_LIST.some(word => lower.includes(word));
+        }
+        
+        async function initFirebase() {
+            try {
+                if (typeof firebaseConfig === 'undefined') {
+                    console.warn('Firebase config not found');
+                    return false;
+                }
+                
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                
+                auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    updateAuthUI();
+                });
+                
+                // Load images and update count
+                await loadImages();
+                
+                return true;
+            } catch (error) {
+                console.error('Firebase init error:', error);
+                return false;
+            }
+        }
+        
+        function updateAuthUI() {
+            const userStatus = document.getElementById('userStatus');
+            const userSignedIn = document.getElementById('userSignedIn');
+            const userPhoto = document.getElementById('userPhoto');
+            const userName = document.getElementById('userName');
+            
+            if (currentUser) {
+                userStatus.classList.add('hidden');
+                userSignedIn.classList.remove('hidden');
+                userPhoto.src = currentUser.photoURL || '';
+                userName.textContent = currentUser.displayName || currentUser.email.split('@')[0];
+            } else {
+                userStatus.classList.remove('hidden');
+                userSignedIn.classList.add('hidden');
+            }
+        }
+        
+        async function signInWithGoogle() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    console.error('Sign in error:', error);
+                }
+            }
+        }
+        
+        async function signOut() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+        }
+        
+        // ============================================
+        // LEADERBOARD
+        // ============================================
+        async function loadLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            
+            if (!db) {
+                leaderboardList.innerHTML = '<p class="text-slate-400 text-center py-4">Leaderboard unavailable</p>';
+                return [];
+            }
+            
+            try {
+                const snapshot = await db.collection('scores')
+                    .where('gameId', '==', 'picture-perfect')
+                    .orderBy('score', 'desc')
+                    .limit(10)
+                    .get();
+                
+                if (snapshot.empty) {
+                    leaderboardList.innerHTML = '<p class="text-slate-400 text-center py-4">No scores yet. Be the first!</p>';
+                    return [];
+                }
+                
+                const scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderLeaderboard(scores);
+                return scores;
+            } catch (error) {
+                console.error('Load leaderboard error:', error);
+                leaderboardList.innerHTML = '<p class="text-red-400 text-center py-4">Error loading leaderboard</p>';
+                return [];
+            }
+        }
+        
+        function renderLeaderboard(scores, highlightId = null) {
+            const leaderboardList = document.getElementById('leaderboardList');
+            
+            if (scores.length === 0) {
+                leaderboardList.innerHTML = '<p class="text-slate-400 text-center py-4">No scores yet. Be the first!</p>';
+                return;
+            }
+            
+            leaderboardList.innerHTML = scores.map((s, i) => `
+                <div class="leaderboard-row ${s.id === highlightId ? 'highlight' : ''}">
+                    <span class="leaderboard-rank">#${i + 1}</span>
+                    <span class="leaderboard-initials">${escapeHtml(s.initials)}</span>
+                    <span class="leaderboard-score">${s.score}</span>
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function getPlayerRank(playerScore) {
+            if (!db) return null;
+            
+            try {
+                const snapshot = await db.collection('scores')
+                    .where('gameId', '==', 'picture-perfect')
+                    .where('score', '>', playerScore)
+                    .get();
+                return snapshot.size + 1;
+            } catch (error) {
+                console.error('Get rank error:', error);
+                return null;
+            }
+        }
+        
+        async function submitScore(initials) {
+            if (!currentUser || !db) return null;
+            
+            try {
+                const scoreData = {
+                    gameId: 'picture-perfect',
+                    initials: initials.toUpperCase(),
+                    score: totalScore,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName || '',
+                    photoURL: currentUser.photoURL || '',
+                    uid: currentUser.uid,
+                    roundCount: MAX_ROUNDS,
+                    correctAnswers: Math.round(totalScore / 100),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    flagged: containsProfanity(initials)
+                };
+                
+                const docRef = await db.collection('scores').add(scoreData);
+                return docRef.id;
+            } catch (error) {
+                console.error('Submit score error:', error);
+                return null;
+            }
+        }
+        
+        async function handleScoreSubmit() {
+            const initialsInput = document.getElementById('initialsInput');
+            const initialsError = document.getElementById('initialsError');
+            const submitScoreBtn = document.getElementById('submitScoreBtn');
+            const initialsEntry = document.getElementById('initialsEntry');
+            const scoreSubmitted = document.getElementById('scoreSubmitted');
+            const playerRank = document.getElementById('playerRank');
+            
+            const initials = initialsInput.value.trim().toUpperCase();
+            
+            if (initials.length < 1 || initials.length > 3) {
+                initialsError.textContent = 'Enter 1-3 characters.';
+                initialsError.classList.remove('hidden');
+                return;
+            }
+            
+            if (containsProfanity(initials)) {
+                initialsError.textContent = 'Please choose different initials.';
+                initialsError.classList.remove('hidden');
+                return;
+            }
+            
+            submitScoreBtn.disabled = true;
+            submitScoreBtn.textContent = 'Saving...';
+            
+            const scoreId = await submitScore(initials);
+            
+            if (scoreId) {
+                initialsEntry.classList.add('hidden');
+                scoreSubmitted.classList.remove('hidden');
+                
+                const rank = await getPlayerRank(totalScore);
+                if (rank) {
+                    playerRank.textContent = `Your rank: #${rank}`;
+                }
+                
+                const scores = await loadLeaderboard();
+                renderLeaderboard(scores, scoreId);
+            } else {
+                initialsError.textContent = 'Failed to save score. Try again.';
+                initialsError.classList.remove('hidden');
+            }
+            
+            submitScoreBtn.disabled = false;
+            submitScoreBtn.textContent = 'Submit';
+        }
+        
+        // ============================================
+        // IMAGE LOADING FROM FIRESTORE
+        // ============================================
+        let gameImages = [];
+        
+        async function loadImages() {
+            const imageCountInfo = document.getElementById('imageCountInfo');
+            
+            if (!db) {
+                // Fallback to hardcoded images if no Firebase
+                gameImages = fallbackImages.map(url => ({ imageUrl: url }));
+                imageCountInfo.textContent = `${gameImages.length} images loaded (fallback mode)`;
+                return;
+            }
+            
+            try {
+                const snapshot = await db.collection('picture-perfect-images')
+                    .where('enabled', '==', true)
+                    .get();
+                
+                if (snapshot.empty) {
+                    // Use fallback images
+                    gameImages = fallbackImages.map(url => ({ imageUrl: url }));
+                    imageCountInfo.textContent = `${gameImages.length} images (run migration in admin)`;
+                } else {
+                    gameImages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    imageCountInfo.textContent = `${gameImages.length} images loaded`;
+                }
+            } catch (error) {
+                console.error('Load images error:', error);
+                gameImages = fallbackImages.map(url => ({ imageUrl: url }));
+                imageCountInfo.textContent = `${gameImages.length} images (fallback mode)`;
+            }
+        }
+        
+        // Fallback images (original Pexels URLs)
+        const fallbackImages = [
+            'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1559486/pexels-photo-1559486.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/846741/pexels-photo-846741.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+        ];
+        
+        // ============================================
+        // GAME VARIABLES
+        // ============================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let roundNumber = 0;
+        let totalScore = 0;
+        const MAX_ROUNDS = 10;
+        let gameActive = false;
+        let currentImage = null;
+        let correctChoice = null;
+        let roundPlan = [];
+        let shuffledImages = [];
+        let currentImageIndex = 0;
+        const DISTORTION_AMOUNT = 1.15;
+
+        const choiceContainer = document.getElementById('choice-container');
+        const nextButton = document.getElementById('nextButton');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const roundCounterEl = document.getElementById('roundCounter');
+        const totalScoreEl = document.getElementById('totalScore');
+        const feedbackEl = document.getElementById('feedbackText');
+
+        // ============================================
+        // SCREENS
+        // ============================================
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // ============================================
+        // GAME SETUP
+        // ============================================
+        function setupCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        function startGame() {
+            if (gameImages.length === 0) {
+                alert('No images available. Please add images in the admin panel.');
+                return;
+            }
+            
+            showScreen('gameScreen');
+            setupCanvas();
+            
+            roundNumber = 0;
+            totalScore = 0;
+            totalScoreEl.textContent = totalScore;
+            
+            // Shuffle images for this game
+            shuffledImages = [...gameImages].sort(() => Math.random() - 0.5);
+            currentImageIndex = 0;
+
+            // Create balanced round plan
+            const baseChoices = ['correct', 'vertical', 'horizontal', 'pixelated'];
+            roundPlan = [...baseChoices, ...baseChoices];
+            for (let i = 0; i < 2; i++) {
+                roundPlan.push(baseChoices[Math.floor(Math.random() * baseChoices.length)]);
+            }
+            // Shuffle the plan
+            for (let i = roundPlan.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [roundPlan[i], roundPlan[j]] = [roundPlan[j], roundPlan[i]];
+            }
+
+            newRound();
+        }
+
+        function newRound() {
+            roundNumber++;
+            if (roundNumber > MAX_ROUNDS) {
+                endGame();
+                return;
+            }
+            
+            gameActive = true;
+            roundCounterEl.textContent = roundNumber;
+            feedbackEl.textContent = "Pick your answer!";
+            feedbackEl.className = 'text-xl font-bold text-slate-700';
+            
+            choiceContainer.querySelectorAll('.btn-choice').forEach(btn => {
+                btn.classList.remove('selected', 'correct', 'incorrect');
+                btn.disabled = false;
+            });
+
+            nextButton.classList.add('hidden');
+            
+            loadImageForRound();
+        }
+        
+        async function endGame() {
+            gameActive = false;
+            showScreen('gameOverScreen');
+            
+            const finalScoreEl = document.getElementById('finalScore');
+            const averageScoreEl = document.getElementById('averageScore');
+            const initialsEntry = document.getElementById('initialsEntry');
+            const scoreSubmitted = document.getElementById('scoreSubmitted');
+            const notSignedInMsg = document.getElementById('notSignedInMsg');
+            const initialsInput = document.getElementById('initialsInput');
+            const initialsError = document.getElementById('initialsError');
+            
+            finalScoreEl.textContent = totalScore;
+            
+            const correctAnswers = Math.round(totalScore / 100);
+            let gradeText = '';
+            if (correctAnswers >= 9) {
+                gradeText = `${correctAnswers}/10 correct — <span class="text-green-600">Excellent!</span>`;
+            } else if (correctAnswers >= 8) {
+                gradeText = `${correctAnswers}/10 correct — <span class="text-blue-600">Great Job!</span>`;
+            } else if (correctAnswers >= 7) {
+                gradeText = `${correctAnswers}/10 correct — <span class="text-amber-600">Good Effort!</span>`;
+            } else {
+                gradeText = `${correctAnswers}/10 correct — Keep practicing!`;
+            }
+            averageScoreEl.innerHTML = gradeText;
+            
+            // Reset UI state
+            initialsEntry.classList.add('hidden');
+            scoreSubmitted.classList.add('hidden');
+            notSignedInMsg.classList.add('hidden');
+            initialsError.classList.add('hidden');
+            initialsInput.value = '';
+            
+            // Load leaderboard
+            await loadLeaderboard();
+            
+            // Show appropriate UI based on auth state
+            if (currentUser) {
+                initialsEntry.classList.remove('hidden');
+                initialsInput.focus();
+            } else {
+                notSignedInMsg.classList.remove('hidden');
+            }
+        }
+
+        function loadImageForRound() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#475569';
+            ctx.font = "16px 'Inter', sans-serif";
+            ctx.textAlign = 'center';
+            ctx.fillText("Loading image...", canvas.width / 2, canvas.height / 2);
+
+            correctChoice = roundPlan[roundNumber - 1];
+
+            // Get next image (cycle through if needed)
+            const imageData = shuffledImages[currentImageIndex % shuffledImages.length];
+            currentImageIndex++;
+            
+            currentImage = new Image();
+            currentImage.crossOrigin = "Anonymous";
+            
+            let imageUrl = imageData.imageUrl;
+            // For pixelated, request smaller image if it's a Pexels URL
+            if (correctChoice === 'pixelated' && imageUrl.includes('pexels.com')) {
+                imageUrl = imageUrl.replace(/w=\d+/, 'w=200');
+            }
+            currentImage.src = imageUrl;
+            
+            currentImage.onload = () => {
+                drawImage();
+            };
+            currentImage.onerror = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#be123c';
+                ctx.fillText("Error loading image. Trying next...", canvas.width / 2, canvas.height / 2);
+                setTimeout(loadImageForRound, 1000);
+            };
+        }
+
+        function drawImage(showCorrect = false) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const choiceToDraw = showCorrect ? 'correct' : correctChoice;
+            
+            // Handle pixelation
+            if (choiceToDraw === 'pixelated') {
+                ctx.imageSmoothingEnabled = false;
+                ctx.mozImageSmoothingEnabled = false;
+                ctx.webkitImageSmoothingEnabled = false;
+                ctx.msImageSmoothingEnabled = false;
+            } else {
+                ctx.imageSmoothingEnabled = true;
+            }
+
+            const canvasRatio = canvas.width / canvas.height;
+            const imageRatio = currentImage.width / currentImage.height;
+            let drawWidth, drawHeight;
+
+            if (canvasRatio > imageRatio) {
+                drawHeight = canvas.height * 0.9;
+                drawWidth = drawHeight * imageRatio;
+            } else {
+                drawWidth = canvas.width * 0.9;
+                drawHeight = drawWidth / imageRatio;
+            }
+
+            let finalWidth = drawWidth;
+            let finalHeight = drawHeight;
+
+            if (choiceToDraw === 'vertical') {
+                finalHeight *= DISTORTION_AMOUNT;
+            } else if (choiceToDraw === 'horizontal') {
+                finalWidth *= DISTORTION_AMOUNT;
+            }
+
+            const x = (canvas.width - finalWidth) / 2;
+            const y = (canvas.height - finalHeight) / 2;
+            
+            ctx.drawImage(currentImage, x, y, finalWidth, finalHeight);
+        }
+
+        function checkAnswer(selection) {
+            if (!gameActive) return;
+            gameActive = false;
+
+            const selectedBtn = choiceContainer.querySelector(`[data-choice="${selection}"]`);
+            const correctBtn = choiceContainer.querySelector(`[data-choice="${correctChoice}"]`);
+
+            if (selection === correctChoice) {
+                totalScore += 100;
+                selectedBtn.classList.add('correct');
+                feedbackEl.textContent = "Correct! +100";
+                feedbackEl.className = 'text-xl font-bold text-green-500';
+            } else {
+                selectedBtn.classList.add('incorrect');
+                correctBtn.classList.add('correct');
+                
+                let correctAnswerText = '';
+                switch (correctChoice) {
+                    case 'correct': correctAnswerText = 'The image was correct'; break;
+                    case 'vertical': correctAnswerText = 'It was stretched vertically'; break;
+                    case 'horizontal': correctAnswerText = 'It was stretched horizontally'; break;
+                    case 'pixelated': correctAnswerText = 'It was pixelated'; break;
+                }
+                
+                feedbackEl.textContent = correctAnswerText;
+                feedbackEl.className = 'text-xl font-bold text-red-500';
+                drawImage(true);
+            }
+            
+            totalScoreEl.textContent = totalScore;
+            choiceContainer.querySelectorAll('.btn-choice').forEach(btn => btn.disabled = true);
+            nextButton.classList.remove('hidden');
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        document.getElementById('signInBtn').addEventListener('click', signInWithGoogle);
+        document.getElementById('signOutBtn').addEventListener('click', signOut);
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('submitScoreBtn').addEventListener('click', handleScoreSubmit);
+        
+        document.getElementById('initialsInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleScoreSubmit();
+        });
+        document.getElementById('initialsInput').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
+            document.getElementById('initialsError').classList.add('hidden');
+        });
+
+        choiceContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-choice');
+            if (btn && gameActive) {
+                checkAnswer(btn.dataset.choice);
+            }
+        });
+        
+        nextButton.addEventListener('click', newRound);
+        playAgainButton.addEventListener('click', startGame);
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('gameScreen').classList.contains('active')) {
+                setupCanvas();
+                if (currentImage && currentImage.complete) drawImage();
+            }
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                event.preventDefault();
+                if (!nextButton.classList.contains('hidden')) {
+                    newRound();
+                } else if (document.getElementById('gameOverScreen').classList.contains('active')) {
+                    startGame();
+                } else if (document.getElementById('startScreen').classList.contains('active')) {
+                    startGame();
+                }
+            }
+            // Number keys for quick answers during gameplay
+            if (gameActive) {
+                if (e.key === '1') checkAnswer('correct');
+                if (e.key === '2') checkAnswer('pixelated');
+                if (e.key === '3') checkAnswer('horizontal');
+                if (e.key === '4') checkAnswer('vertical');
+            }
+        });
+
+        // ============================================
+        // INIT
+        // ============================================
+        initFirebase();
+    </script>
+</body>
+</html>
