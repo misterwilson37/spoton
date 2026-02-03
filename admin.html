@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v2.0.1</title>
+    <title>The Sweet Spot - Level Editor v2.0.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -502,6 +502,7 @@
                         <select id="scoresGameFilter" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1">
                             <option value="all">All Games</option>
                             <option value="sweet-spot">Sweet Spot</option>
+                            <option value="find-the-center">Find the Center</option>
                         </select>
                     </div>
                     <div class="flex items-center gap-2">
@@ -3468,6 +3469,7 @@
         // Map gameId to display name
         const GAME_NAMES = {
             'sweet-spot': 'Sweet Spot',
+            'find-the-center': 'Find the Center',
             // Add more games here as they're created
         };
         
