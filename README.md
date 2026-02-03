@@ -1,42 +1,49 @@
-# The Sweet Spot Game
+# Spot On! - Perception Games
 
-An educational game teaching students to identify optimal text placement on images. Students learn to find areas where text is readable against the background.
+A collection of educational games testing visual perception, alignment, and attention to detail. Originally built around "Sweet Spot" (text placement on images), now expanded to include multiple game types.
 
 **Current Versions:**
-- admin.html: v2.0.3
-- sweetspot.html: v2.0.1
+- admin.html: v2.0.5
+- sweetspot.html: v2.0.2
 - findthecenter.html: v1.0.1
 - perfectalignment.html: v1.0.0
+- balancedplacement.html: v1.0.0
+- pictureperfect.html: v1.0.0
+- index.html: v1.0.0
 
 ---
 
 ## Table of Contents
 
 1. [File Structure](#file-structure)
-2. [Firebase Setup](#firebase-setup)
-3. [Configuration Options](#configuration-options)
-4. [Admin Panel Guide](#admin-panel-guide)
-5. [Games](#games)
-6. [Leaderboard System](#leaderboard-system)
-7. [Zone System](#zone-system)
-8. [Keyboard Shortcuts](#keyboard-shortcuts)
-9. [How Scoring Works](#how-scoring-works)
-10. [Technical Notes](#technical-notes)
-11. [Troubleshooting](#troubleshooting)
-12. [Version History](#version-history)
+2. [Index Page](#index-page)
+3. [Firebase Setup](#firebase-setup)
+4. [Configuration Options](#configuration-options)
+5. [Admin Panel Guide](#admin-panel-guide)
+6. [Games](#games)
+7. [Leaderboard System](#leaderboard-system)
+8. [Zone System](#zone-system)
+9. [Keyboard Shortcuts](#keyboard-shortcuts)
+10. [How Scoring Works](#how-scoring-works)
+11. [Technical Notes](#technical-notes)
+12. [Troubleshooting](#troubleshooting)
+13. [Version History](#version-history)
 
 ---
 
 ## File Structure
 
 ```
-sweet-spot-game/
-├── admin.html            # Level editor + score management (~3,800 lines)
-├── sweetspot.html        # Sweet Spot game (~1,500 lines)
-├── findthecenter.html    # Find the Center game (~760 lines)
-├── perfectalignment.html # Perfect Alignment game (~780 lines)
-├── firebase-config.js    # Firebase credentials (YOU CREATE THIS)
-└── README.md             # This file
+spot-on-games/
+├── index.html             # Landing page with all games (~200 lines)
+├── admin.html             # Level editor + score management (~4,000 lines)
+├── sweetspot.html         # Sweet Spot game (~1,500 lines)
+├── findthecenter.html     # Find the Center game (~760 lines)
+├── perfectalignment.html  # Perfect Alignment game (~780 lines)
+├── balancedplacement.html # Balanced Placement game (~780 lines)
+├── pictureperfect.html    # Picture Perfect game (~780 lines)
+├── firebase-config.js     # Firebase credentials (YOU CREATE THIS)
+└── README.md              # This file
 ```
 
 ### Required: firebase-config.js
@@ -53,6 +60,21 @@ const firebaseConfig = {
     appId: "YOUR_APP_ID"
 };
 ```
+
+---
+
+## Index Page
+
+The `index.html` file is the main landing page for all games. It features:
+
+- **Project branding** with carolina blue accents
+- **Game cards** organized by category:
+  - Alignment & Placement Games (Sweet Spot, Find the Center, Perfect Alignment, Balanced Placement)
+  - Visual Perception Games (Picture Perfect)
+- **Coming Soon placeholders** for future games
+- **Discreet admin link** (⚙ icon in footer)
+
+The index page uses a dark theme with black/grey/white base colors and carolina blue (#7BAFD4) as the accent color.
 
 ---
 
@@ -198,6 +220,27 @@ A drag-and-drop game where players align shapes by their centers. Sequel to Find
 - Shapes get smaller and mismatched in later rounds
 - Points decrease by 0.75 per pixel from perfect alignment
 - No admin setup required - shapes are procedurally generated
+
+### Balanced Placement (balancedplacement.html)
+A spacing and centering game where players position two shapes equally within a container.
+
+- 10 rounds with randomly oriented containers (wide or tall)
+- Drag both shapes into the rectangle
+- Space them equally along the long side
+- Center them on the short side
+- Points based on total distance from ideal positions
+- No admin setup required - containers are procedurally generated
+
+### Picture Perfect (pictureperfect.html)
+An image inspection game where players identify distorted images. Originally "Aspect Ratio Detective".
+
+- 10 rounds with different images
+- Each image is shown either correctly, stretched horizontally, stretched vertically, or pixelated
+- Players must identify what's wrong (or confirm it's correct)
+- 100 points per correct answer
+- **Requires admin setup**: Add images via the "PP Images" tab in admin.html
+- Images stored in Firestore `picture-perfect-images` collection
+- Supports any image URL (Pexels, Unsplash, Firebase Storage, etc.)
 
 ---
 
@@ -429,7 +472,47 @@ Set `DEBUG = true` to show it. It's hidden by default since migration is typical
 
 ## Version History
 
-### Admin v2.0.3 (Current)
+### Index v1.0.0
+- New landing page for all games
+- Dark theme with carolina blue accents
+- Game cards organized by category
+- Coming Soon placeholders for future games
+- Discreet admin link in footer
+
+### Sweet Spot v2.0.2
+- Added "How to Play" box to match other games
+- Removed "THE" from title (now just "Sweet Spot")
+- Removed admin link from start screen (now in index.html)
+
+### Admin v2.0.5 (Current)
+- Added Picture Perfect to game dropdown and GAME_NAMES map
+- New "PP Images" tab for managing Picture Perfect images
+- Add images by URL (supports Pexels, Unsplash, any direct image link)
+- Enable/disable individual images
+- "Seed Default Images" button to add 10 starter portrait images
+- Image grid with hover controls
+
+### Picture Perfect v1.0.0
+- New game: identify if images are correct, stretched, or pixelated
+- Renamed from "Aspect Ratio Detective"
+- Start screen with Google sign-in
+- Leaderboard with `gameId: 'picture-perfect'`
+- Loads images from Firestore `picture-perfect-images` collection
+- Fallback to hardcoded images if Firestore is empty
+- Keyboard shortcuts: 1-4 for quick answers, Space for next
+- Shows correct answer when wrong (redraws image correctly)
+
+### Admin v2.0.4
+- Added Balanced Placement to game dropdown and GAME_NAMES map
+
+### Balanced Placement v1.0.0
+- New game: place two shapes with equal spacing in a container
+- Start screen with Google sign-in
+- Leaderboard with `gameId: 'balanced-placement'`
+- Tiered feedback and per-shape directional hints
+- Layout optimized (feedback in center row, no page shift)
+
+### Admin v2.0.3
 - Added Perfect Alignment to game dropdown and GAME_NAMES map
 
 ### Perfect Alignment v1.0.0
