@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot - Level Editor v1.9.4</title>
+    <title>The Sweet Spot - Level Editor v1.9.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -1057,6 +1057,18 @@
         // ============================================
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                const currentTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+                const targetTab = btn.dataset.tab;
+                
+                // If leaving editor tab with unsaved changes, prompt
+                if (currentTab === 'editor' && targetTab !== 'editor' && isDirty) {
+                    if (!confirm('You have unsaved changes. Leave without saving?')) {
+                        return; // Stay on editor tab
+                    }
+                    // User confirmed leaving - clear dirty flag so we don't prompt again
+                    isDirty = false;
+                }
+                
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
                 btn.classList.add('active');
