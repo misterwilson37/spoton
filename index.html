@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spot On! - Perception Games</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --carolina-blue: #7BAFD4;
+            --carolina-light: #a8d1f0;
+            --bg-dark: #1a1a1a;
+            --bg-card: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-muted: #9ca3af;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .glow {
+            text-shadow: 0 0 30px var(--carolina-blue), 0 0 60px var(--carolina-blue);
+        }
+        
+        .game-card {
+            background: var(--bg-card);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--carolina-blue);
+            box-shadow: 0 8px 30px rgba(123, 175, 212, 0.2);
+        }
+        
+        .game-card h3 {
+            color: var(--carolina-blue);
+        }
+        
+        .btn-play {
+            background: var(--carolina-blue);
+            color: var(--bg-dark);
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        
+        .btn-play:hover {
+            box-shadow: 0 0 20px var(--carolina-blue);
+            transform: translateY(-1px);
+        }
+        
+        .category-label {
+            color: var(--carolina-blue);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .admin-link {
+            color: #555;
+            font-size: 11px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .admin-link:hover {
+            color: var(--carolina-blue);
+        }
+        
+        .coming-soon {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .coming-soon .btn-play {
+            background: #444;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="text-center py-12 px-4">
+            <h1 class="text-5xl md:text-6xl font-extrabold glow mb-4" style="color: var(--carolina-blue);">
+                Spot On!
+            </h1>
+            <p class="text-xl text-gray-400 max-w-xl mx-auto">
+                Test your visual perception with games that challenge your eye for alignment, spacing, and detail.
+            </p>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="flex-1 max-w-6xl mx-auto px-4 pb-12 w-full">
+            
+            <!-- Alignment Games -->
+            <section class="mb-12">
+                <h2 class="category-label">Alignment & Placement Games</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Sweet Spot -->
+                    <div class="game-card">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">Sweet Spot</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Find the perfect placement for text on images. Navigate through curated levels with scoring zones.
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10+ Levels</span>
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Curated Images</span>
+                            </div>
+                        </div>
+                        <a href="sweetspot.html" class="btn-play text-center">Play</a>
+                    </div>
+                    
+                    <!-- Find the Center -->
+                    <div class="game-card">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">Find the Center</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Click to find the exact center of randomly generated quadrilaterals. Simple concept, tricky execution.
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Procedural</span>
+                            </div>
+                        </div>
+                        <a href="findthecenter.html" class="btn-play text-center">Play</a>
+                    </div>
+                    
+                    <!-- Perfect Alignment -->
+                    <div class="game-card">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">Perfect Alignment</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Drag shapes to align their centers perfectly. Shapes get smaller and mismatched as rounds progress.
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Progressive</span>
+                            </div>
+                        </div>
+                        <a href="perfectalignment.html" class="btn-play text-center">Play</a>
+                    </div>
+                    
+                    <!-- Balanced Placement -->
+                    <div class="game-card">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">Balanced Placement</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Position two shapes with equal spacing inside containers. Test your sense of balance and symmetry.
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Procedural</span>
+                            </div>
+                        </div>
+                        <a href="balancedplacement.html" class="btn-play text-center">Play</a>
+                    </div>
+                    
+                    <!-- Coming Soon Placeholder -->
+                    <div class="game-card coming-soon">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">??? Coming Soon</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Another alignment challenge is in development. Stay tuned!
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">In Progress</span>
+                            </div>
+                        </div>
+                        <span class="btn-play text-center">Coming Soon</span>
+                    </div>
+                    
+                </div>
+            </section>
+            
+            <!-- Perception Games -->
+            <section class="mb-12">
+                <h2 class="category-label">Visual Perception Games</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Picture Perfect -->
+                    <div class="game-card">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">Picture Perfect</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Spot the defects! Is each image correct, stretched, or pixelated? Train your eye for image quality.
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Curated Images</span>
+                            </div>
+                        </div>
+                        <a href="pictureperfect.html" class="btn-play text-center">Play</a>
+                    </div>
+                    
+                    <!-- Placeholder for future perception games -->
+                    <div class="game-card coming-soon">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold mb-2">??? Coming Soon</h3>
+                            <p class="text-gray-400 text-sm mb-4">
+                                More perception challenges are planned. Check back later!
+                            </p>
+                            <div class="text-xs text-gray-500 mb-4">
+                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Planned</span>
+                            </div>
+                        </div>
+                        <span class="btn-play text-center">Coming Soon</span>
+                    </div>
+                    
+                </div>
+            </section>
+            
+        </main>
+        
+        <!-- Footer -->
+        <footer class="text-center py-6 border-t border-gray-800">
+            <p class="text-gray-500 text-sm mb-2">
+                Games created with Gemini & Claude • Enhanced for the classroom
+            </p>
+            <a href="admin.html" class="admin-link">⚙</a>
+        </footer>
+    </div>
+</body>
+</html>
