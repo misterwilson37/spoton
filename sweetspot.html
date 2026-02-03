@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sweet Spot v2.0.1</title>
+    <title>Sweet Spot v2.0.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -399,8 +399,19 @@
     
     <!-- Start Screen -->
     <div id="startScreen" class="start-screen hidden">
-        <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">THE SWEET SPOT</h1>
-        <p class="text-gray-400 mb-6 max-w-md text-center">Find the perfect placement for text on images. Choose the right color and position for maximum readability.</p>
+        <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">SWEET SPOT</h1>
+        <p class="text-gray-400 mb-6 max-w-md text-center">Find the perfect placement for text on images.</p>
+        
+        <!-- How to Play -->
+        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 mb-6 text-left max-w-sm">
+            <h3 class="font-semibold text-gray-300 mb-2">How to Play:</h3>
+            <ul class="text-sm text-gray-400 space-y-1">
+                <li>• Click to place text on each image</li>
+                <li>• Choose white or black text color</li>
+                <li>• Find zones with best readability</li>
+                <li>• Perfect placement = 100 points</li>
+            </ul>
+        </div>
         
         <!-- User status -->
         <div id="userStatus" class="mb-6">
@@ -419,7 +430,6 @@
         </div>
         
         <button id="startGameBtn" class="btn btn-cyan text-lg px-12 py-4">Start Game</button>
-        <a href="admin.html" class="text-gray-500 mt-6 text-sm hover:text-cyan-400 transition-colors">Level Editor →</a>
     </div>
     
     <!-- Game Over Screen -->
@@ -466,7 +476,7 @@
     <div id="gameScreen" class="hidden">
         <header class="border-b border-gray-800 py-4 px-6">
             <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <h1 class="text-xl font-bold heading glow-primary">THE SWEET SPOT</h1>
+                <h1 class="text-xl font-bold heading glow-primary">SWEET SPOT</h1>
                 <div class="flex items-center gap-6">
                     <div class="stat-box py-2 px-4">
                         <span class="stat-label">Level</span>
