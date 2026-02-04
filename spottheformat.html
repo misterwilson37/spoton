@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot the Format v1.0.3</title>
+    <title>Spot the Format v1.0.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -619,6 +619,62 @@
         let gameActive = false;
         let selections = { v: null, h: null, s: null, i: null };
         let correctAnswers = { v: null, h: null, s: null, i: null };
+        let preGeneratedRounds = [];
+        
+        // ============================================
+        // BALANCED ROUND GENERATION
+        // ============================================
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        
+        function generateBalancedArray(options, count, minEach) {
+            // Start with minimum required of each option
+            let result = [];
+            options.forEach(opt => {
+                for (let i = 0; i < minEach; i++) {
+                    result.push(opt);
+                }
+            });
+            
+            // Fill remaining slots randomly
+            while (result.length < count) {
+                result.push(options[Math.floor(Math.random() * options.length)]);
+            }
+            
+            return shuffleArray(result);
+        }
+        
+        function preGenerateRounds() {
+            // Generate balanced arrays for each category
+            // At least 2 of each option must appear
+            const hAligns = generateBalancedArray(['left', 'center', 'right', 'justify'], MAX_ROUNDS, 2);
+            const vAligns = generateBalancedArray(['top', 'center', 'bottom'], MAX_ROUNDS, 2);
+            const spacings = generateBalancedArray([1, 1.5, 2], MAX_ROUNDS, 2);
+            const indents = generateBalancedArray(['none', 'first', 'paragraph'], MAX_ROUNDS, 2);
+            
+            preGeneratedRounds = [];
+            for (let i = 0; i < MAX_ROUNDS; i++) {
+                let round = {
+                    h: hAligns[i],
+                    v: vAligns[i],
+                    s: spacings[i],
+                    i: indents[i]
+                };
+                
+                // Indentation doesn't make sense with right alignment
+                if ((round.i === 'paragraph' || round.i === 'first') && round.h === 'right') {
+                    round.i = 'none';
+                }
+                
+                preGeneratedRounds.push(round);
+            }
+        }
 
         // UI Elements
         const vAlignGroup = document.getElementById('v-align-group');
@@ -670,6 +726,9 @@
             categoryScores = { h: 0, v: 0, s: 0, i: 0 };
             totalScoreEl.textContent = totalScore;
             updateStreakDisplay();
+            
+            // Pre-generate balanced rounds
+            preGenerateRounds();
             
             newRound();
         }
@@ -784,20 +843,8 @@
         function generateAndDrawText() {
             const text = TEXT_SAMPLES[Math.floor(Math.random() * TEXT_SAMPLES.length)];
             
-            // Generate random formatting
-            correctAnswers = {
-                v: ['top', 'center', 'bottom'][Math.floor(Math.random() * 3)],
-                h: ['left', 'center', 'right', 'justify'][Math.floor(Math.random() * 4)],
-                s: [1, 1.5, 2][Math.floor(Math.random() * 3)],
-                i: ['none', 'first', 'paragraph'][Math.floor(Math.random() * 3)]
-            };
-            
-            // Indentation doesn't make sense with right alignment
-            // But center + indent is valid (shifts the center point)
-            if ((correctAnswers.i === 'paragraph' || correctAnswers.i === 'first') && 
-                correctAnswers.h === 'right') {
-                correctAnswers.i = 'none';
-            }
+            // Use pre-generated formatting for this round (balanced distribution)
+            correctAnswers = { ...preGeneratedRounds[roundNumber - 1] };
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#ffffff';
