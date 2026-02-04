@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Format Frenzy v1.0.3</title>
+    <title>Format Frenzy v1.0.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -412,6 +412,9 @@
                 <button id="defuseButton" class="btn-defuse text-white rounded-lg shadow">
                     💣 DEFUSE
                 </button>
+                <button id="nextRoundButton" class="btn-defuse text-white rounded-lg shadow hidden" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-color: #22c55e;">
+                    ✓ NEXT ROUND
+                </button>
             </div>
             
             <!-- Game Over Screen -->
@@ -694,10 +697,77 @@
         let selections = { v: null, h: null, s: null, i: null };
         let correctAnswers = { v: null, h: null, s: null, i: null };
         let survivorMode = false;
+        let preGeneratedRounds = [];
         
         const MAX_ROUNDS = 10;
         const START_TIME = 20; // seconds for round 1
         const MIN_TIME = 8;    // minimum seconds (reached and sustained in survivor mode)
+        
+        // ============================================
+        // BALANCED ROUND GENERATION
+        // ============================================
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        
+        function generateBalancedArray(options, count, minEach) {
+            let result = [];
+            options.forEach(opt => {
+                for (let i = 0; i < minEach; i++) {
+                    result.push(opt);
+                }
+            });
+            while (result.length < count) {
+                result.push(options[Math.floor(Math.random() * options.length)]);
+            }
+            return shuffleArray(result);
+        }
+        
+        function preGenerateRounds(numRounds = MAX_ROUNDS) {
+            const hAligns = generateBalancedArray(['left', 'center', 'right', 'justify'], numRounds, 2);
+            const vAligns = generateBalancedArray(['top', 'center', 'bottom'], numRounds, 2);
+            const spacings = generateBalancedArray([1, 1.5, 2], numRounds, 2);
+            const indents = generateBalancedArray(['none', 'first', 'paragraph'], numRounds, 2);
+            
+            preGeneratedRounds = [];
+            for (let i = 0; i < numRounds; i++) {
+                let round = {
+                    h: hAligns[i],
+                    v: vAligns[i],
+                    s: spacings[i],
+                    i: indents[i]
+                };
+                
+                // Indentation doesn't work with right alignment
+                if ((round.i === 'paragraph' || round.i === 'first') && round.h === 'right') {
+                    round.i = 'none';
+                }
+                
+                preGeneratedRounds.push(round);
+            }
+        }
+        
+        function getNextRoundAnswers() {
+            // For survivor mode, generate on the fly after initial 10 rounds
+            if (roundNumber > preGeneratedRounds.length) {
+                let round = {
+                    h: ['left', 'center', 'right', 'justify'][Math.floor(Math.random() * 4)],
+                    v: ['top', 'center', 'bottom'][Math.floor(Math.random() * 3)],
+                    s: [1, 1.5, 2][Math.floor(Math.random() * 3)],
+                    i: ['none', 'first', 'paragraph'][Math.floor(Math.random() * 3)]
+                };
+                if ((round.i === 'paragraph' || round.i === 'first') && round.h === 'right') {
+                    round.i = 'none';
+                }
+                return round;
+            }
+            return { ...preGeneratedRounds[roundNumber - 1] };
+        }
         
         function getRoundTime(round) {
             // Decrease from START_TIME, but never below MIN_TIME
@@ -743,6 +813,9 @@
             survivorMode = false;
             totalScoreEl.textContent = '0.0';
             
+            // Pre-generate balanced rounds
+            preGenerateRounds();
+            
             newRound();
         }
 
@@ -773,6 +846,10 @@
             
             defuseButton.disabled = false;
             defuseButton.textContent = '💣 DEFUSE';
+            defuseButton.classList.remove('hidden');
+            
+            // Hide next round button
+            document.getElementById('nextRoundButton').classList.add('hidden');
             
             selections = { v: null, h: null, s: null, i: null };
             generateAndDrawText();
@@ -930,17 +1007,18 @@
                 group.querySelectorAll('.btn-tool').forEach(btn => btn.disabled = true);
             });
             defuseButton.disabled = true;
+            defuseButton.classList.add('hidden');
+            
+            // Show Next Round button
+            const nextRoundButton = document.getElementById('nextRoundButton');
+            nextRoundButton.classList.remove('hidden');
             
             // Success animation
             canvasContainer.classList.remove('vibrate-light', 'vibrate-medium', 'vibrate-heavy', 'vibrate-critical', 'danger', 'critical');
             canvasContainer.classList.add('defused');
             
-            feedbackEl.innerHTML = `✅ Defused! +${currentTimer.toFixed(1)}s`;
-            feedbackEl.className = 'text-lg font-bold mb-4 h-7 text-green-500';
-            
-            setTimeout(() => {
-                newRound();
-            }, 1500);
+            feedbackEl.innerHTML = `✅ Defused! +${currentTimer.toFixed(1)}s — Press SPACE or click Next`;
+            feedbackEl.className = 'text-lg font-bold mb-4 text-green-500';
         }
         
         function showCorrectAnswers() {
@@ -1027,19 +1105,8 @@
         function generateAndDrawText() {
             const text = TEXT_SAMPLES[Math.floor(Math.random() * TEXT_SAMPLES.length)];
             
-            correctAnswers = {
-                v: ['top', 'center', 'bottom'][Math.floor(Math.random() * 3)],
-                h: ['left', 'center', 'right', 'justify'][Math.floor(Math.random() * 4)],
-                s: [1, 1.5, 2][Math.floor(Math.random() * 3)],
-                i: ['none', 'first', 'paragraph'][Math.floor(Math.random() * 3)]
-            };
-            
-            // Indentation doesn't make sense with right alignment
-            // But center + indent is valid (shifts the center point)
-            if ((correctAnswers.i === 'paragraph' || correctAnswers.i === 'first') && 
-                correctAnswers.h === 'right') {
-                correctAnswers.i = 'none';
-            }
+            // Use pre-generated or dynamically generated formatting (balanced distribution)
+            correctAnswers = getNextRoundAnswers();
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#111111';
@@ -1175,6 +1242,7 @@
         document.getElementById('playAgainButton').addEventListener('click', startGame);
         document.getElementById('submitScoreBtn').addEventListener('click', handleScoreSubmit);
         defuseButton.addEventListener('click', attemptDefuse);
+        document.getElementById('nextRoundButton').addEventListener('click', newRound);
         
         document.getElementById('initialsInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') handleScoreSubmit();
@@ -1214,8 +1282,12 @@
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
+                const nextRoundBtn = document.getElementById('nextRoundButton');
                 if (gameActive) {
                     attemptDefuse();
+                } else if (!nextRoundBtn.classList.contains('hidden')) {
+                    // Next round button is visible - advance to next round
+                    newRound();
                 } else if (document.getElementById('gameOverScreen').classList.contains('active')) {
                     startGame();
                 } else if (document.getElementById('startScreen').classList.contains('active')) {
