@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.3.0</title>
+    <title>Spot On! Admin v2.4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -368,6 +368,7 @@
         <div class="max-w-7xl mx-auto flex">
             <button class="tab-btn active" data-tab="sweetspot">Sweet Spot</button>
             <button class="tab-btn" data-tab="pictureperfect">Picture Perfect</button>
+            <button class="tab-btn" data-tab="siteconfig">Site / Index</button>
             <button class="tab-btn" data-tab="leaderboards">Leaderboards</button>
             <button class="tab-btn hidden" data-tab="migrate" id="migrateTabBtn">Migration</button>
         </div>
@@ -716,6 +717,100 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Site Config Tab -->
+        <div id="siteconfigTab" class="tab-content hidden">
+            <div class="panel p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold glow-primary">Index Page Configuration</h2>
+                    <div class="flex gap-2">
+                        <button id="siteConfigSeedBtn" class="btn btn-outline btn-sm">Seed from Current</button>
+                        <button id="siteConfigRefreshBtn" class="btn btn-outline btn-sm">Refresh</button>
+                    </div>
+                </div>
+                
+                <!-- Categories Section -->
+                <div class="mb-8">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <span>Categories</span>
+                        <button id="addCategoryBtn" class="btn btn-cyan btn-sm">+ Add Category</button>
+                    </h3>
+                    <div id="categoriesList" class="space-y-2">
+                        <p class="text-gray-500 py-4">Loading categories...</p>
+                    </div>
+                </div>
+                
+                <!-- Games Section -->
+                <div>
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <span>Games</span>
+                        <button id="addGameBtn" class="btn btn-cyan btn-sm">+ Add Game</button>
+                    </h3>
+                    <div id="gamesList" class="space-y-2">
+                        <p class="text-gray-500 py-4">Loading games...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Edit Modal -->
+        <div id="categoryModal" class="pp-modal-overlay hidden">
+            <div class="pp-modal" style="max-width: 500px;">
+                <div class="pp-modal-header">
+                    <h3 class="font-bold text-lg" id="categoryModalTitle">Add Category</h3>
+                    <button id="categoryModalCloseBtn" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                </div>
+                <div class="pp-modal-body">
+                    <label for="categoryNameInput">Category Name</label>
+                    <input type="text" id="categoryNameInput" placeholder="e.g., Alignment Games">
+                </div>
+                <div class="pp-modal-footer">
+                    <button id="categoryModalCancelBtn" class="btn btn-outline">Cancel</button>
+                    <button id="categoryModalSaveBtn" class="btn btn-cyan">Save</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Edit Modal -->
+        <div id="gameModal" class="pp-modal-overlay hidden">
+            <div class="pp-modal" style="max-width: 600px;">
+                <div class="pp-modal-header">
+                    <h3 class="font-bold text-lg" id="gameModalTitle">Add Game</h3>
+                    <button id="gameModalCloseBtn" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                </div>
+                <div class="pp-modal-body">
+                    <label for="gameNameInput">Game Name</label>
+                    <input type="text" id="gameNameInput" placeholder="e.g., Sweet Spot">
+                    
+                    <label for="gameUrlInput">URL (filename)</label>
+                    <input type="text" id="gameUrlInput" placeholder="e.g., sweetspot.html">
+                    
+                    <label for="gameDescInput">Description</label>
+                    <textarea id="gameDescInput" rows="2" placeholder="Brief description of the game"></textarea>
+                    
+                    <label for="gameCategorySelect">Category</label>
+                    <select id="gameCategorySelect"></select>
+                    
+                    <label for="gameTagsInput">Tags <span class="text-gray-600">(comma-separated)</span></label>
+                    <input type="text" id="gameTagsInput" placeholder="e.g., 10 Rounds, Procedural">
+                    
+                    <div class="flex gap-4 mt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="gameEnabledCheck" checked class="w-4 h-4">
+                            <span class="text-sm">Enabled</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="gameSpecialCheck" class="w-4 h-4">
+                            <span class="text-sm">Special Style (red/fire theme)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="pp-modal-footer">
+                    <button id="gameModalCancelBtn" class="btn btn-outline">Cancel</button>
+                    <button id="gameModalSaveBtn" class="btn btn-cyan">Save</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script type="module">
@@ -724,7 +819,7 @@
         // ============================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // ============================================
@@ -1325,6 +1420,7 @@
                 // Load data based on tab
                 if (targetTab === 'leaderboards') loadScoresList();
                 if (targetTab === 'pictureperfect') loadPPImagesList();
+                if (targetTab === 'siteconfig') loadSiteConfig();
             });
         });
         
@@ -4241,6 +4337,463 @@
         
         document.getElementById('ppRefreshBtn').addEventListener('click', loadPPImagesList);
         document.getElementById('ppMigrateBtn').addEventListener('click', seedPPDefaultImages);
+
+        // ============================================
+        // SITE CONFIG
+        // ============================================
+        let siteCategories = [];
+        let siteGames = [];
+        let editingCategoryId = null;
+        let editingGameId = null;
+        
+        async function loadSiteConfig() {
+            try {
+                const docRef = doc(db, 'site-config', 'index');
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    siteCategories = data.categories || [];
+                    siteGames = data.games || [];
+                } else {
+                    siteCategories = [];
+                    siteGames = [];
+                }
+                
+                renderCategories();
+                renderGames();
+            } catch (error) {
+                console.error('Load site config error:', error);
+                showToast('Failed to load site config: ' + error.message, 'error');
+            }
+        }
+        
+        async function saveSiteConfig() {
+            try {
+                const docRef = doc(db, 'site-config', 'index');
+                await updateDoc(docRef, {
+                    categories: siteCategories,
+                    games: siteGames,
+                    updatedAt: serverTimestamp()
+                }).catch(async () => {
+                    // Document doesn't exist, create it
+                    await addDoc(collection(db, 'site-config'), {
+                        categories: siteCategories,
+                        games: siteGames,
+                        updatedAt: serverTimestamp()
+                    });
+                });
+            } catch (error) {
+                console.error('Save site config error:', error);
+                throw error;
+            }
+        }
+        
+        function renderCategories() {
+            const container = document.getElementById('categoriesList');
+            
+            if (siteCategories.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 py-4">No categories yet. Click "Seed from Current" to import existing structure, or add manually.</p>';
+                return;
+            }
+            
+            // Sort by order
+            const sorted = [...siteCategories].sort((a, b) => a.order - b.order);
+            
+            container.innerHTML = sorted.map((cat, idx) => `
+                <div class="flex items-center gap-3 p-3 bg-gray-800 rounded-lg">
+                    <div class="flex flex-col gap-1">
+                        <button onclick="moveCategoryUp('${cat.id}')" class="text-gray-500 hover:text-white text-xs" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>▲</button>
+                        <button onclick="moveCategoryDown('${cat.id}')" class="text-gray-500 hover:text-white text-xs" ${idx === sorted.length - 1 ? 'disabled style="opacity:0.3"' : ''}>▼</button>
+                    </div>
+                    <div class="flex-1">
+                        <span class="font-semibold">${escapeHtml(cat.name)}</span>
+                        <span class="text-gray-500 text-sm ml-2">(${siteGames.filter(g => g.categoryId === cat.id).length} games)</span>
+                    </div>
+                    <button onclick="editCategory('${cat.id}')" class="btn btn-outline btn-sm">Edit</button>
+                    <button onclick="deleteCategory('${cat.id}')" class="btn btn-danger btn-sm">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderGames() {
+            const container = document.getElementById('gamesList');
+            
+            if (siteGames.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 py-4">No games configured yet.</p>';
+                return;
+            }
+            
+            // Group by category
+            const byCategory = {};
+            siteCategories.forEach(cat => { byCategory[cat.id] = []; });
+            byCategory['uncategorized'] = [];
+            
+            siteGames.forEach(game => {
+                const catId = game.categoryId || 'uncategorized';
+                if (!byCategory[catId]) byCategory[catId] = [];
+                byCategory[catId].push(game);
+            });
+            
+            // Sort games within each category
+            Object.keys(byCategory).forEach(catId => {
+                byCategory[catId].sort((a, b) => (a.order || 0) - (b.order || 0));
+            });
+            
+            let html = '';
+            
+            // Render by category
+            [...siteCategories].sort((a, b) => a.order - b.order).forEach(cat => {
+                const games = byCategory[cat.id] || [];
+                html += `<div class="mb-4">
+                    <div class="text-sm text-gray-400 mb-2 uppercase tracking-wide">${escapeHtml(cat.name)}</div>
+                    ${games.length === 0 ? '<p class="text-gray-600 text-sm pl-4">No games in this category</p>' : ''}
+                    ${games.map((game, idx) => renderGameRow(game, idx, games.length)).join('')}
+                </div>`;
+            });
+            
+            // Uncategorized
+            if (byCategory['uncategorized'].length > 0) {
+                html += `<div class="mb-4">
+                    <div class="text-sm text-yellow-500 mb-2 uppercase tracking-wide">⚠ Uncategorized</div>
+                    ${byCategory['uncategorized'].map((game, idx) => renderGameRow(game, idx, byCategory['uncategorized'].length)).join('')}
+                </div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function renderGameRow(game, idx, total) {
+            return `
+                <div class="flex items-center gap-3 p-3 bg-gray-800 rounded-lg mb-1 ${game.enabled === false ? 'opacity-50' : ''}">
+                    <div class="flex flex-col gap-1">
+                        <button onclick="moveGameUp('${game.id}')" class="text-gray-500 hover:text-white text-xs" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>▲</button>
+                        <button onclick="moveGameDown('${game.id}')" class="text-gray-500 hover:text-white text-xs" ${idx === total - 1 ? 'disabled style="opacity:0.3"' : ''}>▼</button>
+                    </div>
+                    <div class="flex-1">
+                        <span class="font-semibold ${game.special ? 'text-red-400' : ''}">${game.special ? '🔥 ' : ''}${escapeHtml(game.name)}</span>
+                        <span class="text-gray-600 text-sm ml-2">→ ${escapeHtml(game.url)}</span>
+                        ${game.enabled === false ? '<span class="text-yellow-500 text-xs ml-2">(disabled)</span>' : ''}
+                    </div>
+                    <button onclick="editGame('${game.id}')" class="btn btn-outline btn-sm">Edit</button>
+                    <button onclick="deleteGame('${game.id}')" class="btn btn-danger btn-sm">×</button>
+                </div>
+            `;
+        }
+        
+        // Category Modal
+        function openCategoryModal(categoryId = null) {
+            editingCategoryId = categoryId;
+            const modal = document.getElementById('categoryModal');
+            const title = document.getElementById('categoryModalTitle');
+            const nameInput = document.getElementById('categoryNameInput');
+            
+            if (categoryId) {
+                const cat = siteCategories.find(c => c.id === categoryId);
+                title.textContent = 'Edit Category';
+                nameInput.value = cat ? cat.name : '';
+            } else {
+                title.textContent = 'Add Category';
+                nameInput.value = '';
+            }
+            
+            modal.classList.remove('hidden');
+            nameInput.focus();
+        }
+        
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.add('hidden');
+            editingCategoryId = null;
+        }
+        
+        async function saveCategory() {
+            const name = document.getElementById('categoryNameInput').value.trim();
+            if (!name) {
+                showToast('Please enter a category name', 'error');
+                return;
+            }
+            
+            if (editingCategoryId) {
+                // Update existing
+                const cat = siteCategories.find(c => c.id === editingCategoryId);
+                if (cat) cat.name = name;
+            } else {
+                // Add new
+                const id = 'cat_' + Date.now();
+                const maxOrder = Math.max(-1, ...siteCategories.map(c => c.order || 0));
+                siteCategories.push({ id, name, order: maxOrder + 1 });
+            }
+            
+            try {
+                await saveSiteConfig();
+                showToast('Category saved!', 'success');
+                closeCategoryModal();
+                renderCategories();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+        
+        window.editCategory = function(id) { openCategoryModal(id); };
+        
+        window.deleteCategory = async function(id) {
+            const gamesInCat = siteGames.filter(g => g.categoryId === id);
+            if (gamesInCat.length > 0) {
+                if (!confirm(`This category has ${gamesInCat.length} games. They will become uncategorized. Continue?`)) return;
+            } else {
+                if (!confirm('Delete this category?')) return;
+            }
+            
+            siteCategories = siteCategories.filter(c => c.id !== id);
+            
+            try {
+                await saveSiteConfig();
+                showToast('Category deleted', 'success');
+                renderCategories();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to delete: ' + error.message, 'error');
+            }
+        };
+        
+        window.moveCategoryUp = async function(id) {
+            const sorted = [...siteCategories].sort((a, b) => a.order - b.order);
+            const idx = sorted.findIndex(c => c.id === id);
+            if (idx <= 0) return;
+            
+            // Swap orders
+            const temp = sorted[idx].order;
+            sorted[idx].order = sorted[idx - 1].order;
+            sorted[idx - 1].order = temp;
+            
+            try {
+                await saveSiteConfig();
+                renderCategories();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to reorder', 'error');
+            }
+        };
+        
+        window.moveCategoryDown = async function(id) {
+            const sorted = [...siteCategories].sort((a, b) => a.order - b.order);
+            const idx = sorted.findIndex(c => c.id === id);
+            if (idx < 0 || idx >= sorted.length - 1) return;
+            
+            const temp = sorted[idx].order;
+            sorted[idx].order = sorted[idx + 1].order;
+            sorted[idx + 1].order = temp;
+            
+            try {
+                await saveSiteConfig();
+                renderCategories();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to reorder', 'error');
+            }
+        };
+        
+        // Game Modal
+        function openGameModal(gameId = null) {
+            editingGameId = gameId;
+            const modal = document.getElementById('gameModal');
+            const title = document.getElementById('gameModalTitle');
+            
+            // Populate category dropdown
+            const catSelect = document.getElementById('gameCategorySelect');
+            catSelect.innerHTML = '<option value="">-- Select Category --</option>' +
+                siteCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+            
+            if (gameId) {
+                const game = siteGames.find(g => g.id === gameId);
+                title.textContent = 'Edit Game';
+                document.getElementById('gameNameInput').value = game?.name || '';
+                document.getElementById('gameUrlInput').value = game?.url || '';
+                document.getElementById('gameDescInput').value = game?.description || '';
+                document.getElementById('gameCategorySelect').value = game?.categoryId || '';
+                document.getElementById('gameTagsInput').value = (game?.tags || []).join(', ');
+                document.getElementById('gameEnabledCheck').checked = game?.enabled !== false;
+                document.getElementById('gameSpecialCheck').checked = game?.special === true;
+            } else {
+                title.textContent = 'Add Game';
+                document.getElementById('gameNameInput').value = '';
+                document.getElementById('gameUrlInput').value = '';
+                document.getElementById('gameDescInput').value = '';
+                document.getElementById('gameCategorySelect').value = '';
+                document.getElementById('gameTagsInput').value = '';
+                document.getElementById('gameEnabledCheck').checked = true;
+                document.getElementById('gameSpecialCheck').checked = false;
+            }
+            
+            modal.classList.remove('hidden');
+            document.getElementById('gameNameInput').focus();
+        }
+        
+        function closeGameModal() {
+            document.getElementById('gameModal').classList.add('hidden');
+            editingGameId = null;
+        }
+        
+        async function saveGame() {
+            const name = document.getElementById('gameNameInput').value.trim();
+            const url = document.getElementById('gameUrlInput').value.trim();
+            const description = document.getElementById('gameDescInput').value.trim();
+            const categoryId = document.getElementById('gameCategorySelect').value;
+            const tagsStr = document.getElementById('gameTagsInput').value.trim();
+            const enabled = document.getElementById('gameEnabledCheck').checked;
+            const special = document.getElementById('gameSpecialCheck').checked;
+            
+            if (!name || !url) {
+                showToast('Name and URL are required', 'error');
+                return;
+            }
+            
+            const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
+            
+            if (editingGameId) {
+                // Update existing
+                const game = siteGames.find(g => g.id === editingGameId);
+                if (game) {
+                    game.name = name;
+                    game.url = url;
+                    game.description = description;
+                    game.categoryId = categoryId;
+                    game.tags = tags;
+                    game.enabled = enabled;
+                    game.special = special;
+                }
+            } else {
+                // Add new
+                const id = 'game_' + Date.now();
+                const gamesInCat = siteGames.filter(g => g.categoryId === categoryId);
+                const maxOrder = Math.max(-1, ...gamesInCat.map(g => g.order || 0));
+                siteGames.push({ id, name, url, description, categoryId, tags, enabled, special, order: maxOrder + 1 });
+            }
+            
+            try {
+                await saveSiteConfig();
+                showToast('Game saved!', 'success');
+                closeGameModal();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+        
+        window.editGame = function(id) { openGameModal(id); };
+        
+        window.deleteGame = async function(id) {
+            if (!confirm('Delete this game?')) return;
+            
+            siteGames = siteGames.filter(g => g.id !== id);
+            
+            try {
+                await saveSiteConfig();
+                showToast('Game deleted', 'success');
+                renderGames();
+            } catch (error) {
+                showToast('Failed to delete: ' + error.message, 'error');
+            }
+        };
+        
+        window.moveGameUp = async function(id) {
+            const game = siteGames.find(g => g.id === id);
+            if (!game) return;
+            
+            const sameCategory = siteGames.filter(g => g.categoryId === game.categoryId).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const idx = sameCategory.findIndex(g => g.id === id);
+            if (idx <= 0) return;
+            
+            const temp = sameCategory[idx].order;
+            sameCategory[idx].order = sameCategory[idx - 1].order;
+            sameCategory[idx - 1].order = temp;
+            
+            try {
+                await saveSiteConfig();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to reorder', 'error');
+            }
+        };
+        
+        window.moveGameDown = async function(id) {
+            const game = siteGames.find(g => g.id === id);
+            if (!game) return;
+            
+            const sameCategory = siteGames.filter(g => g.categoryId === game.categoryId).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const idx = sameCategory.findIndex(g => g.id === id);
+            if (idx < 0 || idx >= sameCategory.length - 1) return;
+            
+            const temp = sameCategory[idx].order;
+            sameCategory[idx].order = sameCategory[idx + 1].order;
+            sameCategory[idx + 1].order = temp;
+            
+            try {
+                await saveSiteConfig();
+                renderGames();
+            } catch (error) {
+                showToast('Failed to reorder', 'error');
+            }
+        };
+        
+        // Seed from current hardcoded structure
+        async function seedSiteConfig() {
+            if (siteCategories.length > 0 || siteGames.length > 0) {
+                if (!confirm('This will replace existing config. Continue?')) return;
+            }
+            
+            siteCategories = [
+                { id: 'placement', name: 'Alignment & Placement Games', order: 0 },
+                { id: 'perception', name: 'Visual Perception Games', order: 1 }
+            ];
+            
+            siteGames = [
+                { id: 'sweet-spot', categoryId: 'placement', name: 'Sweet Spot', url: 'sweetspot.html', description: 'Find the perfect placement for text on images. Navigate through curated levels with scoring zones.', tags: ['10+ Levels', 'Curated Images'], order: 0, enabled: true },
+                { id: 'find-center', categoryId: 'placement', name: 'Find the Center', url: 'findthecenter.html', description: 'Click to find the exact center of randomly generated quadrilaterals. Simple concept, tricky execution.', tags: ['10 Rounds', 'Procedural'], order: 1, enabled: true },
+                { id: 'perfect-align', categoryId: 'placement', name: 'Perfect Alignment', url: 'perfectalignment.html', description: 'Drag shapes to align their centers perfectly. Shapes get smaller and mismatched as rounds progress.', tags: ['10 Rounds', 'Progressive'], order: 2, enabled: true },
+                { id: 'balanced', categoryId: 'placement', name: 'Balanced Placement', url: 'balancedplacement.html', description: 'Position two shapes with equal spacing inside containers. Test your sense of balance and symmetry.', tags: ['10 Rounds', 'Procedural'], order: 3, enabled: true },
+                { id: 'spot-format', categoryId: 'placement', name: 'Spot the Format', url: 'spottheformat.html', description: 'Identify text formatting: horizontal/vertical alignment, line spacing, and indentation.', tags: ['10 Rounds', '4 Properties'], order: 4, enabled: true },
+                { id: 'format-frenzy', categoryId: 'placement', name: 'Format Frenzy', url: 'formatfrenzy.html', description: 'Timed challenge! Identify ALL 4 formatting properties before the bomb explodes. Timer gets faster each round!', tags: ['Timed', 'Advanced'], order: 5, enabled: true, special: true },
+                { id: 'picture-perfect', categoryId: 'perception', name: 'Picture Perfect', url: 'pictureperfect.html', description: 'Spot the defects! Is each image correct, stretched, or pixelated? Train your eye for image quality.', tags: ['10 Rounds', 'Curated Images'], order: 0, enabled: true }
+            ];
+            
+            try {
+                // Use setDoc to create/overwrite
+                await setDoc(doc(db, 'site-config', 'index'), {
+                    categories: siteCategories,
+                    games: siteGames,
+                    updatedAt: serverTimestamp()
+                });
+                
+                showToast('Config seeded!', 'success');
+                renderCategories();
+                renderGames();
+            } catch (error) {
+                console.error('Seed error:', error);
+                showToast('Failed to seed: ' + error.message, 'error');
+            }
+        }
+        
+        // Site Config event listeners
+        document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal());
+        document.getElementById('addGameBtn').addEventListener('click', () => openGameModal());
+        document.getElementById('siteConfigRefreshBtn').addEventListener('click', loadSiteConfig);
+        document.getElementById('siteConfigSeedBtn').addEventListener('click', seedSiteConfig);
+        
+        document.getElementById('categoryModalCloseBtn').addEventListener('click', closeCategoryModal);
+        document.getElementById('categoryModalCancelBtn').addEventListener('click', closeCategoryModal);
+        document.getElementById('categoryModalSaveBtn').addEventListener('click', saveCategory);
+        document.getElementById('categoryModal').addEventListener('click', (e) => {
+            if (e.target.id === 'categoryModal') closeCategoryModal();
+        });
+        
+        document.getElementById('gameModalCloseBtn').addEventListener('click', closeGameModal);
+        document.getElementById('gameModalCancelBtn').addEventListener('click', closeGameModal);
+        document.getElementById('gameModalSaveBtn').addEventListener('click', saveGame);
+        document.getElementById('gameModal').addEventListener('click', (e) => {
+            if (e.target.id === 'gameModal') closeGameModal();
+        });
 
         // ============================================
         // INIT
