@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! v1.0.3 - Perception Games</title>
+    <title>Spot On! v2.0.0 - Perception Games</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -47,6 +47,11 @@
             color: var(--carolina-blue);
         }
         
+        .game-card.special:hover {
+            border-color: #dc2626;
+            box-shadow: 0 8px 30px rgba(220, 38, 38, 0.2);
+        }
+        
         .btn-play {
             background: var(--carolina-blue);
             color: var(--bg-dark);
@@ -88,14 +93,18 @@
             color: var(--carolina-blue);
         }
         
-        .coming-soon {
-            opacity: 0.5;
-            pointer-events: none;
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-top-color: var(--carolina-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
         
-        .coming-soon .btn-play {
-            background: #444;
-            color: #888;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -115,143 +124,11 @@
         </header>
         
         <!-- Main Content -->
-        <main class="flex-1 max-w-6xl mx-auto px-4 pb-12 w-full">
-            
-            <!-- Alignment Games -->
-            <section class="mb-12">
-                <h2 class="category-label">Alignment & Placement Games</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    
-                    <!-- Sweet Spot -->
-                    <div class="game-card">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">Sweet Spot</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Find the perfect placement for text on images. Navigate through curated levels with scoring zones.
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10+ Levels</span>
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Curated Images</span>
-                            </div>
-                        </div>
-                        <a href="sweetspot.html" class="btn-play text-center">Play</a>
-                    </div>
-                    
-                    <!-- Find the Center -->
-                    <div class="game-card">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">Find the Center</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Click to find the exact center of randomly generated quadrilaterals. Simple concept, tricky execution.
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Procedural</span>
-                            </div>
-                        </div>
-                        <a href="findthecenter.html" class="btn-play text-center">Play</a>
-                    </div>
-                    
-                    <!-- Perfect Alignment -->
-                    <div class="game-card">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">Perfect Alignment</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Drag shapes to align their centers perfectly. Shapes get smaller and mismatched as rounds progress.
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Progressive</span>
-                            </div>
-                        </div>
-                        <a href="perfectalignment.html" class="btn-play text-center">Play</a>
-                    </div>
-                    
-                    <!-- Balanced Placement -->
-                    <div class="game-card">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">Balanced Placement</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Position two shapes with equal spacing inside containers. Test your sense of balance and symmetry.
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Procedural</span>
-                            </div>
-                        </div>
-                        <a href="balancedplacement.html" class="btn-play text-center">Play</a>
-                    </div>
-                    
-                    <!-- Spot the Format -->
-                    <div class="game-card">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">Spot the Format</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Identify text formatting: horizontal/vertical alignment, line spacing, and indentation.
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">4 Properties</span>
-                            </div>
-                        </div>
-                        <a href="spottheformat.html" class="btn-play text-center">Play</a>
-                    </div>
-                    
-                    <!-- Format Frenzy -->
-                    <div class="game-card" style="border-color: #991b1b;">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2" style="color: #ef4444;">🔥 Format Frenzy</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Timed challenge! Identify ALL 4 formatting properties before the bomb explodes. Timer gets faster each round!
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-red-900/50 text-red-400 rounded px-2 py-1 mr-1">Timed</span>
-                                <span class="inline-block bg-red-900/50 text-red-400 rounded px-2 py-1">Advanced</span>
-                            </div>
-                        </div>
-                        <a href="formatfrenzy.html" class="btn-play text-center" style="background: linear-gradient(135deg, #dc2626, #991b1b);">Play</a>
-                    </div>
-                    
-                </div>
-            </section>
-            
-            <!-- Perception Games -->
-            <section class="mb-12">
-                <h2 class="category-label">Visual Perception Games</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    
-                    <!-- Picture Perfect -->
-                    <div class="game-card">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">Picture Perfect</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                Spot the defects! Is each image correct, stretched, or pixelated? Train your eye for image quality.
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1 mr-1">10 Rounds</span>
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Curated Images</span>
-                            </div>
-                        </div>
-                        <a href="pictureperfect.html" class="btn-play text-center">Play</a>
-                    </div>
-                    
-                    <!-- Placeholder for future perception games -->
-                    <div class="game-card coming-soon">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-2">??? Coming Soon</h3>
-                            <p class="text-gray-400 text-sm mb-4">
-                                More perception challenges are planned. Check back later!
-                            </p>
-                            <div class="text-xs text-gray-500 mb-4">
-                                <span class="inline-block bg-gray-700 rounded px-2 py-1">Planned</span>
-                            </div>
-                        </div>
-                        <span class="btn-play text-center">Coming Soon</span>
-                    </div>
-                    
-                </div>
-            </section>
-            
+        <main id="gamesContainer" class="flex-1 max-w-6xl mx-auto px-4 pb-12 w-full">
+            <div class="text-center py-12">
+                <span class="loading-spinner"></span>
+                <p class="text-gray-500 mt-4">Loading games...</p>
+            </div>
         </main>
         
         <!-- Footer -->
@@ -262,5 +139,135 @@
             <a href="admin.html" class="admin-link">⚙</a>
         </footer>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfo45UBu-pR8nqMQhVlS_QgyYZ2kzBdvM",
+            authDomain: "ellisbell-c185c.firebaseapp.com",
+            projectId: "ellisbell-c185c",
+            storageBucket: "ellisbell-c185c.firebasestorage.app",
+            appId: "1:441560045695:web:94e51a006663404b8f474a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fallback data if Firestore fails
+        const FALLBACK_DATA = {
+            categories: [
+                { id: 'placement', name: 'Alignment & Placement Games', order: 0 },
+                { id: 'perception', name: 'Visual Perception Games', order: 1 }
+            ],
+            games: [
+                { id: 'sweet-spot', categoryId: 'placement', name: 'Sweet Spot', url: 'sweetspot.html', description: 'Find the perfect placement for text on images. Navigate through curated levels with scoring zones.', tags: ['10+ Levels', 'Curated Images'], order: 0, enabled: true },
+                { id: 'find-center', categoryId: 'placement', name: 'Find the Center', url: 'findthecenter.html', description: 'Click to find the exact center of randomly generated quadrilaterals. Simple concept, tricky execution.', tags: ['10 Rounds', 'Procedural'], order: 1, enabled: true },
+                { id: 'perfect-align', categoryId: 'placement', name: 'Perfect Alignment', url: 'perfectalignment.html', description: 'Drag shapes to align their centers perfectly. Shapes get smaller and mismatched as rounds progress.', tags: ['10 Rounds', 'Progressive'], order: 2, enabled: true },
+                { id: 'balanced', categoryId: 'placement', name: 'Balanced Placement', url: 'balancedplacement.html', description: 'Position two shapes with equal spacing inside containers. Test your sense of balance and symmetry.', tags: ['10 Rounds', 'Procedural'], order: 3, enabled: true },
+                { id: 'spot-format', categoryId: 'placement', name: 'Spot the Format', url: 'spottheformat.html', description: 'Identify text formatting: horizontal/vertical alignment, line spacing, and indentation.', tags: ['10 Rounds', '4 Properties'], order: 4, enabled: true },
+                { id: 'format-frenzy', categoryId: 'placement', name: 'Format Frenzy', url: 'formatfrenzy.html', description: 'Timed challenge! Identify ALL 4 formatting properties before the bomb explodes. Timer gets faster each round!', tags: ['Timed', 'Advanced'], order: 5, enabled: true, special: true },
+                { id: 'picture-perfect', categoryId: 'perception', name: 'Picture Perfect', url: 'pictureperfect.html', description: 'Spot the defects! Is each image correct, stretched, or pixelated? Train your eye for image quality.', tags: ['10 Rounds', 'Curated Images'], order: 0, enabled: true }
+            ]
+        };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderGameCard(game) {
+            const isSpecial = game.special === true;
+            const tags = game.tags || [];
+            
+            return \`
+                <div class="game-card \${isSpecial ? 'special' : ''}" \${isSpecial ? 'style="border-color: #991b1b;"' : ''}>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-bold mb-2" \${isSpecial ? 'style="color: #ef4444;"' : ''}>
+                            \${isSpecial ? '🔥 ' : ''}\${escapeHtml(game.name)}
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-4">
+                            \${escapeHtml(game.description || '')}
+                        </p>
+                        <div class="text-xs text-gray-500 mb-4">
+                            \${tags.map(tag => \`
+                                <span class="inline-block \${isSpecial ? 'bg-red-900/50 text-red-400' : 'bg-gray-700'} rounded px-2 py-1 mr-1 mb-1">
+                                    \${escapeHtml(tag)}
+                                </span>
+                            \`).join('')}
+                        </div>
+                    </div>
+                    <a href="\${escapeHtml(game.url)}" class="btn-play text-center" \${isSpecial ? 'style="background: linear-gradient(135deg, #dc2626, #991b1b);"' : ''}>
+                        Play
+                    </a>
+                </div>
+            \`;
+        }
+
+        function renderCategory(category, games) {
+            // Filter enabled games and sort by order
+            const categoryGames = games
+                .filter(g => g.categoryId === category.id && g.enabled !== false)
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            if (categoryGames.length === 0) return '';
+            
+            return \`
+                <section class="mb-12">
+                    <h2 class="category-label">\${escapeHtml(category.name)}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        \${categoryGames.map(game => renderGameCard(game)).join('')}
+                    </div>
+                </section>
+            \`;
+        }
+
+        function renderGames(data) {
+            const container = document.getElementById('gamesContainer');
+            
+            // Sort categories by order
+            const sortedCategories = [...data.categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            // Render all categories
+            const html = sortedCategories
+                .map(cat => renderCategory(cat, data.games))
+                .filter(html => html) // Remove empty categories
+                .join('');
+            
+            if (html) {
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-center text-gray-500 py-12">No games available.</p>';
+            }
+        }
+
+        async function loadGames() {
+            try {
+                const docRef = doc(db, 'site-config', 'index');
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.categories && data.games) {
+                        renderGames(data);
+                        return;
+                    }
+                }
+                
+                // If no data in Firestore, use fallback
+                console.log('No site config found, using fallback');
+                renderGames(FALLBACK_DATA);
+            } catch (error) {
+                console.error('Error loading site config:', error);
+                // Use fallback on error
+                renderGames(FALLBACK_DATA);
+            }
+        }
+
+        // Load games on page load
+        loadGames();
+    </script>
 </body>
 </html>
