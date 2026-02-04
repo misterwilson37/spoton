@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v1.0.1</title>
+    <title>Picture Perfect v1.0.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -146,7 +146,7 @@
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl mx-auto">
+    <div class="w-full max-w-4xl mx-auto">
         <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 text-center">
             
             <!-- Start Screen -->
@@ -197,7 +197,7 @@
                 <p id="instructionText" class="text-slate-500 mt-2">Is this image correct, stretched, or pixelated?</p>
                 
                 <!-- Game Canvas -->
-                <div class="relative w-full max-w-xl mx-auto aspect-[4/3] bg-slate-200 border-2 border-slate-300 rounded-lg overflow-hidden my-6 flex items-center justify-center">
+                <div class="relative w-full max-w-3xl mx-auto aspect-[4/3] bg-slate-200 border-2 border-slate-300 rounded-lg overflow-hidden my-6 flex items-center justify-center">
                     <canvas id="gameCanvas"></canvas>
                 </div>
 
@@ -712,10 +712,6 @@
             currentImage.crossOrigin = "Anonymous";
             
             let imageUrl = imageData.imageUrl;
-            // For pixelated, request smaller image if it's a Pexels URL
-            if (correctChoice === 'pixelated' && imageUrl.includes('pexels.com')) {
-                imageUrl = imageUrl.replace(/w=\d+/, 'w=200');
-            }
             currentImage.src = imageUrl;
             
             currentImage.onload = () => {
@@ -735,16 +731,6 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const choiceToDraw = showCorrect ? 'correct' : correctChoice;
-            
-            // Handle pixelation
-            if (choiceToDraw === 'pixelated') {
-                ctx.imageSmoothingEnabled = false;
-                ctx.mozImageSmoothingEnabled = false;
-                ctx.webkitImageSmoothingEnabled = false;
-                ctx.msImageSmoothingEnabled = false;
-            } else {
-                ctx.imageSmoothingEnabled = true;
-            }
 
             const canvasRatio = canvas.width / canvas.height;
             const imageRatio = currentImage.width / currentImage.height;
@@ -770,7 +756,31 @@
             const x = (canvas.width - finalWidth) / 2;
             const y = (canvas.height - finalHeight) / 2;
             
-            ctx.drawImage(currentImage, x, y, finalWidth, finalHeight);
+            // Handle pixelation with obvious chunky pixels
+            if (choiceToDraw === 'pixelated') {
+                // Create a tiny offscreen canvas for chunky pixelation
+                const pixelSize = 12; // Each "pixel" will be ~12x12 on final image
+                const tinyWidth = Math.ceil(finalWidth / pixelSize);
+                const tinyHeight = Math.ceil(finalHeight / pixelSize);
+                
+                const tinyCanvas = document.createElement('canvas');
+                tinyCanvas.width = tinyWidth;
+                tinyCanvas.height = tinyHeight;
+                const tinyCtx = tinyCanvas.getContext('2d');
+                
+                // Draw image to tiny canvas (this downsamples it)
+                tinyCtx.drawImage(currentImage, 0, 0, tinyWidth, tinyHeight);
+                
+                // Draw tiny canvas to main canvas with no smoothing (this upscales with blocky pixels)
+                ctx.imageSmoothingEnabled = false;
+                ctx.mozImageSmoothingEnabled = false;
+                ctx.webkitImageSmoothingEnabled = false;
+                ctx.msImageSmoothingEnabled = false;
+                ctx.drawImage(tinyCanvas, x, y, finalWidth, finalHeight);
+            } else {
+                ctx.imageSmoothingEnabled = true;
+                ctx.drawImage(currentImage, x, y, finalWidth, finalHeight);
+            }
         }
 
         function checkAnswer(selection) {
