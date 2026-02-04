@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! v2.0.1 - Perception Games</title>
+    <title>Spot On! v2.0.2 - Perception Games</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -158,16 +158,17 @@
         // Fallback data if Firestore fails
         const FALLBACK_DATA = {
             categories: [
-                { id: 'placement', name: 'Alignment & Placement Games', order: 0 },
-                { id: 'perception', name: 'Visual Perception Games', order: 1 }
+                { id: 'formatting', name: 'Alignment & Formatting Challenges!', order: 0 },
+                { id: 'centering', name: 'Centering & Layout Games!', order: 1 },
+                { id: 'perception', name: 'Visual Perception Games', order: 2 }
             ],
             games: [
-                { id: 'sweet-spot', categoryId: 'placement', name: 'Sweet Spot', url: 'sweetspot.html', description: 'Find the perfect placement for text on images. Navigate through curated levels with scoring zones.', tags: ['10+ Levels', 'Curated Images'], order: 0, enabled: true },
-                { id: 'find-center', categoryId: 'placement', name: 'Find the Center', url: 'findthecenter.html', description: 'Click to find the exact center of randomly generated quadrilaterals. Simple concept, tricky execution.', tags: ['10 Rounds', 'Procedural'], order: 1, enabled: true },
-                { id: 'perfect-align', categoryId: 'placement', name: 'Perfect Alignment', url: 'perfectalignment.html', description: 'Drag shapes to align their centers perfectly. Shapes get smaller and mismatched as rounds progress.', tags: ['10 Rounds', 'Progressive'], order: 2, enabled: true },
-                { id: 'balanced', categoryId: 'placement', name: 'Balanced Placement', url: 'balancedplacement.html', description: 'Position two shapes with equal spacing inside containers. Test your sense of balance and symmetry.', tags: ['10 Rounds', 'Procedural'], order: 3, enabled: true },
-                { id: 'spot-format', categoryId: 'placement', name: 'Spot the Format', url: 'spottheformat.html', description: 'Identify text formatting: horizontal/vertical alignment, line spacing, and indentation.', tags: ['10 Rounds', '4 Properties'], order: 4, enabled: true },
-                { id: 'format-frenzy', categoryId: 'placement', name: 'Format Frenzy', url: 'formatfrenzy.html', description: 'Timed challenge! Identify ALL 4 formatting properties before the bomb explodes. Timer gets faster each round!', tags: ['Timed', 'Advanced'], order: 5, enabled: true, special: true },
+                { id: 'spot-format', categoryId: 'formatting', name: 'Spot the Format', url: 'spottheformat.html', description: 'Identify text formatting: horizontal/vertical alignment, line spacing, and indentation.', tags: ['10 Rounds', '4 Properties'], order: 0, enabled: true },
+                { id: 'format-frenzy', categoryId: 'formatting', name: 'Format Frenzy', url: 'formatfrenzy.html', description: 'Timed challenge! Identify ALL 4 formatting properties before the bomb explodes. Timer gets faster each round!', tags: ['Timed', 'Advanced'], order: 1, enabled: true, special: true },
+                { id: 'find-center', categoryId: 'centering', name: 'Find the Center', url: 'findthecenter.html', description: 'Click to find the exact center of randomly generated quadrilaterals. Simple concept, tricky execution.', tags: ['10 Rounds', 'Procedural'], order: 0, enabled: true },
+                { id: 'perfect-align', categoryId: 'centering', name: 'Perfect Alignment', url: 'perfectalignment.html', description: 'Drag shapes to align their centers perfectly. Shapes get smaller and mismatched as rounds progress.', tags: ['10 Rounds', 'Progressive'], order: 1, enabled: true },
+                { id: 'balanced', categoryId: 'centering', name: 'Balanced Placement', url: 'balancedplacement.html', description: 'Position two shapes with equal spacing inside containers. Test your sense of balance and symmetry.', tags: ['10 Rounds', 'Procedural'], order: 2, enabled: true },
+                { id: 'sweet-spot', categoryId: 'centering', name: 'The Sweet Spot', url: 'sweetspot.html', description: 'Find the perfect placement for text on images. Navigate through curated levels with scoring zones.', tags: ['10+ Levels', 'Curated Images'], order: 3, enabled: true },
                 { id: 'picture-perfect', categoryId: 'perception', name: 'Picture Perfect', url: 'pictureperfect.html', description: 'Spot the defects! Is each image correct, stretched, or pixelated? Train your eye for image quality.', tags: ['10 Rounds', 'Curated Images'], order: 0, enabled: true }
             ]
         };
