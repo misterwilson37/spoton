@@ -8,10 +8,10 @@ A collection of educational games designed to train visual perception skills lik
 
 | Game | Version | Description |
 |------|---------|-------------|
-| **Sweet Spot** | - | Find the perfect placement for text on images. Curated levels with scoring zones. |
-| **Find the Center** | - | Click to find the exact center of randomly generated quadrilaterals. |
-| **Perfect Alignment** | - | Drag shapes to align their centers perfectly. Progressive difficulty. |
-| **Balanced Placement** | - | Position two shapes with equal spacing inside containers. |
+| **Sweet Spot** | 2.0.3 | Find the perfect placement for text on images. Curated levels with scoring zones. |
+| **Find the Center** | 1.0.2 | Click to find the exact center of randomly generated quadrilaterals. |
+| **Perfect Alignment** | 1.0.1 | Drag shapes to align their centers perfectly. Progressive difficulty. |
+| **Balanced Placement** | 1.0.1 | Position two shapes with equal spacing inside containers. |
 | **Spot the Format** | 1.1.1 | Identify text formatting: horizontal/vertical alignment, line spacing, and indentation. |
 | **Format Frenzy** | 1.1.1 | Timed challenge! Identify ALL 4 formatting properties before the bomb explodes. |
 
@@ -19,7 +19,7 @@ A collection of educational games designed to train visual perception skills lik
 
 | Game | Version | Description |
 |------|---------|-------------|
-| **Picture Perfect** | - | Spot the defects! Is each image correct, stretched, or pixelated? |
+| **Picture Perfect** | 1.0.1 | Spot the defects! Is each image correct, stretched, or pixelated? |
 
 ## Site Files
 
