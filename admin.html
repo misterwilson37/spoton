@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.2.1</title>
+    <title>Spot On! Admin v2.3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -258,6 +258,67 @@
         }
         .level-card:hover { border-color: var(--accent-primary); transform: translateY(-4px); }
         .level-card img { width: 100%; height: 150px; object-fit: cover; }
+        
+        /* Image Preview Modal */
+        .pp-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .pp-modal {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .pp-modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pp-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .pp-modal-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            background: #111;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .pp-modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .pp-modal label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .pp-modal input {
+            margin-bottom: 16px;
+        }
     </style>
 </head>
 <body>
@@ -607,9 +668,10 @@
                 <!-- Add Image Form -->
                 <div class="mb-6 p-4 bg-gray-800 rounded-lg">
                     <h3 class="font-semibold mb-3">Add New Image</h3>
-                    <div class="flex gap-3">
-                        <input type="text" id="ppNewImageUrl" placeholder="Image URL (Pexels, Unsplash, or any direct image link)" class="flex-1">
-                        <input type="text" id="ppNewImageName" placeholder="Name (optional)" class="w-48">
+                    <div class="flex gap-3 flex-wrap">
+                        <input type="text" id="ppNewImageUrl" placeholder="Image URL (direct link to image)" class="flex-1 min-w-[200px]">
+                        <input type="text" id="ppNewImageName" placeholder="Name (optional)" class="w-40">
+                        <input type="text" id="ppNewImageSource" placeholder="Source URL (optional)" class="w-48">
                         <button id="ppAddImageBtn" class="btn btn-cyan">Add Image</button>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Tip: Use Pexels.com or Unsplash.com for free, high-quality images. Right-click an image and "Copy image address".</p>
@@ -625,6 +687,32 @@
                 <!-- Images Grid -->
                 <div id="ppImagesList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <p class="text-gray-500 col-span-full text-center py-8">Loading images...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Picture Perfect Image Preview/Edit Modal -->
+        <div id="ppImageModal" class="pp-modal-overlay hidden">
+            <div class="pp-modal">
+                <div class="pp-modal-header">
+                    <h3 class="font-bold text-lg">Edit Image</h3>
+                    <button id="ppModalCloseBtn" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                </div>
+                <div class="pp-modal-body">
+                    <img id="ppModalImage" class="pp-modal-image" src="" alt="Preview">
+                    
+                    <label for="ppModalName">Image Name</label>
+                    <input type="text" id="ppModalName" placeholder="Enter a name for this image">
+                    
+                    <label for="ppModalSource">Source URL <span class="text-gray-600">(optional)</span></label>
+                    <input type="text" id="ppModalSource" placeholder="https://example.com/where-you-found-it">
+                    
+                    <label>Image URL</label>
+                    <input type="text" id="ppModalUrl" readonly class="text-gray-500 cursor-not-allowed">
+                </div>
+                <div class="pp-modal-footer">
+                    <button id="ppModalCancelBtn" class="btn btn-outline">Cancel</button>
+                    <button id="ppModalSaveBtn" class="btn btn-cyan">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -3966,20 +4054,25 @@
             container.innerHTML = ppImages.map(img => `
                 <div class="relative group rounded-lg overflow-hidden bg-gray-800 ${img.enabled === false ? 'opacity-50' : ''}">
                     <img src="${escapeHtml(img.imageUrl)}" alt="${escapeHtml(img.name || 'Image')}" 
-                         class="w-full h-32 object-cover" 
+                         class="w-full h-32 object-cover cursor-pointer" 
+                         onclick="openPPImageModal('${img.id}')"
                          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>Error</text></svg>'">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                        <button onclick="openPPImageModal('${img.id}')" class="btn btn-sm btn-cyan" title="View/Edit">✎</button>
                         <button onclick="togglePPImage('${img.id}')" class="btn btn-sm ${img.enabled === false ? 'btn-green' : 'btn-outline'}" title="${img.enabled === false ? 'Enable' : 'Disable'}">
                             ${img.enabled === false ? '✓' : '⊘'}
                         </button>
                         <button onclick="deletePPImage('${img.id}')" class="btn btn-sm btn-danger" title="Delete">✕</button>
                     </div>
-                    <div class="p-2 text-xs truncate">${escapeHtml(img.name || 'Unnamed')}</div>
+                    <div class="p-2 text-xs truncate" title="${escapeHtml(img.name || 'Unnamed')}">
+                        ${escapeHtml(img.name || 'Unnamed')}
+                        ${img.sourceUrl ? '<span class="text-gray-600 ml-1">🔗</span>' : ''}
+                    </div>
                 </div>
             `).join('');
         }
         
-        async function addPPImage(url, name) {
+        async function addPPImage(url, name, sourceUrl) {
             if (!url) {
                 showToast('Please enter an image URL', 'error');
                 return;
@@ -3997,6 +4090,7 @@
                 await addDoc(collection(db, 'picture-perfect-images'), {
                     imageUrl: url,
                     name: name || 'Unnamed',
+                    sourceUrl: sourceUrl || null,
                     enabled: true,
                     createdAt: serverTimestamp()
                 });
@@ -4004,6 +4098,7 @@
                 showToast('Image added!', 'success');
                 document.getElementById('ppNewImageUrl').value = '';
                 document.getElementById('ppNewImageName').value = '';
+                document.getElementById('ppNewImageSource').value = '';
                 loadPPImagesList();
             } catch (error) {
                 console.error('Add PP image error:', error);
@@ -4042,6 +4137,68 @@
             }
         };
         
+        // ============================================
+        // PP IMAGE MODAL
+        // ============================================
+        let currentPPModalImageId = null;
+        
+        window.openPPImageModal = function(imageId) {
+            const img = ppImages.find(i => i.id === imageId);
+            if (!img) return;
+            
+            currentPPModalImageId = imageId;
+            
+            document.getElementById('ppModalImage').src = img.imageUrl;
+            document.getElementById('ppModalName').value = img.name || '';
+            document.getElementById('ppModalSource').value = img.sourceUrl || '';
+            document.getElementById('ppModalUrl').value = img.imageUrl;
+            
+            document.getElementById('ppImageModal').classList.remove('hidden');
+        };
+        
+        function closePPImageModal() {
+            document.getElementById('ppImageModal').classList.add('hidden');
+            currentPPModalImageId = null;
+        }
+        
+        async function savePPImageModal() {
+            if (!currentPPModalImageId) return;
+            
+            const name = document.getElementById('ppModalName').value.trim();
+            const sourceUrl = document.getElementById('ppModalSource').value.trim();
+            
+            try {
+                await updateDoc(doc(db, 'picture-perfect-images', currentPPModalImageId), {
+                    name: name || 'Unnamed',
+                    sourceUrl: sourceUrl || null
+                });
+                
+                showToast('Image updated!', 'success');
+                closePPImageModal();
+                loadPPImagesList();
+            } catch (error) {
+                console.error('Save PP image error:', error);
+                showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+        
+        // Modal event listeners
+        document.getElementById('ppModalCloseBtn').addEventListener('click', closePPImageModal);
+        document.getElementById('ppModalCancelBtn').addEventListener('click', closePPImageModal);
+        document.getElementById('ppModalSaveBtn').addEventListener('click', savePPImageModal);
+        
+        // Close modal on overlay click
+        document.getElementById('ppImageModal').addEventListener('click', (e) => {
+            if (e.target.id === 'ppImageModal') closePPImageModal();
+        });
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('ppImageModal').classList.contains('hidden')) {
+                closePPImageModal();
+            }
+        });
+        
         async function seedPPDefaultImages() {
             if (!confirm('This will add 10 default portrait images. Continue?')) return;
             
@@ -4069,14 +4226,16 @@
         document.getElementById('ppAddImageBtn').addEventListener('click', () => {
             const url = document.getElementById('ppNewImageUrl').value.trim();
             const name = document.getElementById('ppNewImageName').value.trim();
-            addPPImage(url, name);
+            const sourceUrl = document.getElementById('ppNewImageSource').value.trim();
+            addPPImage(url, name, sourceUrl);
         });
         
         document.getElementById('ppNewImageUrl').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const url = document.getElementById('ppNewImageUrl').value.trim();
                 const name = document.getElementById('ppNewImageName').value.trim();
-                addPPImage(url, name);
+                const sourceUrl = document.getElementById('ppNewImageSource').value.trim();
+                addPPImage(url, name, sourceUrl);
             }
         });
         
