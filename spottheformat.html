@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot the Format v1.0.1</title>
+    <title>Spot the Format v1.0.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -792,7 +792,8 @@
                 i: ['none', 'first', 'paragraph'][Math.floor(Math.random() * 3)]
             };
             
-            // Don't allow paragraph or first-line indent with right alignment - it's invisible!
+            // Indentation doesn't make sense with right alignment
+            // But center + indent is valid (shifts the center point)
             if ((correctAnswers.i === 'paragraph' || correctAnswers.i === 'first') && 
                 correctAnswers.h === 'right') {
                 correctAnswers.i = 'none';
@@ -855,6 +856,7 @@
                 const isFirstLine = i === 0;
                 const isLastLine = i === lines.length - 1;
                 
+                // Calculate indent for this line
                 let indent = 0;
                 if (correctAnswers.i === 'first' && isFirstLine) {
                     indent = fontSize * 2;
@@ -866,11 +868,15 @@
                 ctx.textAlign = 'left';
                 
                 if (correctAnswers.h === 'left') {
+                    // Left align: indent pushes text right from left margin
                     xPos = padding + indent;
                 } else if (correctAnswers.h === 'center') {
+                    // Center align: indent shifts the center point right
+                    // This makes indented centered text visibly off-center
                     ctx.textAlign = 'center';
-                    xPos = canvas.width / 2;
+                    xPos = canvas.width / 2 + (indent / 2);
                 } else if (correctAnswers.h === 'right') {
+                    // Right align: no indent applied
                     ctx.textAlign = 'right';
                     xPos = canvas.width - padding;
                 } else if (correctAnswers.h === 'justify' && !isLastLine) {
@@ -919,6 +925,16 @@
             }
         }
 
+        // Helper to get display names for values
+        const DISPLAY_NAMES = {
+            h: { left: 'Left', center: 'Center', right: 'Right', justify: 'Justify' },
+            v: { top: 'Top', center: 'Middle', bottom: 'Bottom' },
+            s: { '1': 'Single', '1.5': '1.5', '2': 'Double' },
+            i: { none: 'None', first: 'First Line', paragraph: 'Paragraph' }
+        };
+        
+        const CATEGORY_NAMES = { h: 'Horizontal', v: 'Vertical', s: 'Spacing', i: 'Indent' };
+        
         function checkAnswers() {
             let missingSelections = [];
             if (selections.h === null) missingSelections.push("Horizontal");
@@ -934,6 +950,7 @@
             gameActive = false;
             let roundScore = 0;
             let allCorrect = true;
+            let wrongItems = [];
 
             // Disable all buttons
             [hAlignGroup, vAlignGroup, spacingGroup, indentGroup].forEach(group => {
@@ -942,8 +959,8 @@
 
             // Check each answer (25 points each)
             const checks = [
-                { key: 'v', wrapper: vAlignFeedbackWrapper, group: vAlignGroup, attr: 'data-v-align', points: 25 },
                 { key: 'h', wrapper: hAlignFeedbackWrapper, group: hAlignGroup, attr: 'data-h-align', points: 25 },
+                { key: 'v', wrapper: vAlignFeedbackWrapper, group: vAlignGroup, attr: 'data-v-align', points: 25 },
                 { key: 's', wrapper: spacingFeedbackWrapper, group: spacingGroup, attr: 'data-spacing', points: 25 },
                 { key: 'i', wrapper: indentFeedbackWrapper, group: indentGroup, attr: 'data-indent', points: 25 }
             ];
@@ -958,6 +975,8 @@
                     check.wrapper.classList.add('feedback-incorrect');
                     check.group.querySelector(`[${check.attr}="${correctAnswers[check.key]}"]`)
                         .classList.add('correct-answer-highlight');
+                    // Track what was wrong
+                    wrongItems.push(`${CATEGORY_NAMES[check.key]}: ${DISPLAY_NAMES[check.key][correctAnswers[check.key]]}`);
                 }
             });
 
@@ -973,15 +992,14 @@
             totalScore += roundScore;
             totalScoreEl.textContent = totalScore;
             
-            // Feedback text
+            // Feedback text with explanation
             if (roundScore === 100) {
                 feedbackEl.innerHTML = '<span class="text-green-500">🎉 Perfect! +100</span>';
-            } else if (roundScore >= 75) {
-                feedbackEl.innerHTML = `<span class="text-blue-500">✅ Great! +${roundScore}</span>`;
-            } else if (roundScore >= 50) {
-                feedbackEl.innerHTML = `<span class="text-amber-500">👍 Good! +${roundScore}</span>`;
             } else {
-                feedbackEl.innerHTML = `<span class="text-slate-500">+${roundScore}</span>`;
+                let scoreText = roundScore >= 75 ? `<span class="text-blue-500">✅ +${roundScore}</span>` :
+                               roundScore >= 50 ? `<span class="text-amber-500">👍 +${roundScore}</span>` :
+                               `<span class="text-slate-500">+${roundScore}</span>`;
+                feedbackEl.innerHTML = `${scoreText} <span class="text-xs text-slate-500">Correct: ${wrongItems.join(', ')}</span>`;
             }
 
             submitButton.classList.add('hidden');
