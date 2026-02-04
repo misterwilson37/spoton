@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v1.0.2</title>
+    <title>Picture Perfect v1.0.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -759,7 +759,7 @@
             // Handle pixelation with obvious chunky pixels
             if (choiceToDraw === 'pixelated') {
                 // Create a tiny offscreen canvas for chunky pixelation
-                const pixelSize = 12; // Each "pixel" will be ~12x12 on final image
+                const pixelSize = 6; // Each "pixel" will be ~6x6 on final image (was 12)
                 const tinyWidth = Math.ceil(finalWidth / pixelSize);
                 const tinyHeight = Math.ceil(finalHeight / pixelSize);
                 
