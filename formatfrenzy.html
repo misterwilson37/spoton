@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Format Frenzy v1.0.4</title>
+    <title>Format Frenzy v1.1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -1112,42 +1112,75 @@
             ctx.fillStyle = '#111111';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const fontSize = Math.max(14, Math.min(20, canvas.width / 30));
-            const padding = canvas.width * 0.12;
+            const padding = canvas.width * 0.10;
             const maxWidth = canvas.width - padding * 2;
-            const lineHeight = fontSize * 1.4 * correctAnswers.s;
-
+            
+            // Target: text block should be at most 40% of canvas height
+            // This ensures vertical alignment is clearly distinguishable
+            const maxBlockHeight = canvas.height * 0.40;
+            
+            // Find optimal font size (start large, shrink until it fits)
+            let fontSize = Math.min(24, canvas.width / 25);
+            const minFontSize = 8;
+            let lines, blockHeight, lineHeight;
+            
+            while (fontSize >= minFontSize) {
+                lineHeight = fontSize * 1.4 * correctAnswers.s;
+                ctx.font = `${fontSize}px 'Inter', sans-serif`;
+                
+                // Calculate lines at this font size
+                lines = [];
+                let currentLine = '';
+                const words = text.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    const testLine = currentLine ? currentLine + " " + word : word;
+                    
+                    let indentWidth = 0;
+                    if (correctAnswers.i === 'first' && lines.length === 0) {
+                        indentWidth = fontSize * 2;
+                    } else if (correctAnswers.i === 'paragraph') {
+                        indentWidth = fontSize * 2;
+                    }
+                    
+                    const width = ctx.measureText(testLine).width;
+                    
+                    if (width < maxWidth - indentWidth) {
+                        currentLine = testLine;
+                    } else {
+                        if (currentLine) lines.push(currentLine);
+                        currentLine = word;
+                    }
+                }
+                if (currentLine) lines.push(currentLine);
+                
+                // Calculate block height
+                blockHeight = (lines.length - 1) * lineHeight + fontSize;
+                
+                // Check if it fits
+                if (blockHeight <= maxBlockHeight) {
+                    break; // Good size found
+                }
+                
+                fontSize -= 1;
+            }
+            
+            // Ensure minimum font size
+            fontSize = Math.max(fontSize, minFontSize);
+            lineHeight = fontSize * 1.4 * correctAnswers.s;
             ctx.font = `${fontSize}px 'Inter', sans-serif`;
             ctx.fillStyle = '#e5e5e5';
-            
-            // Break text into lines
-            const words = text.split(' ');
-            let lines = [];
-            let currentLine = words[0];
-            
-            for (let i = 1; i < words.length; i++) {
-                const word = words[i];
-                const testLine = currentLine + " " + word;
-                
-                let indentWidth = 0;
-                if (correctAnswers.i === 'first' && lines.length === 0) indentWidth = fontSize * 2;
-                else if (correctAnswers.i === 'paragraph') indentWidth = fontSize * 2;
-                
-                const width = ctx.measureText(testLine).width;
-                if (width < maxWidth - indentWidth) {
-                    currentLine = testLine;
-                } else {
-                    lines.push(currentLine);
-                    currentLine = word;
-                }
-            }
-            lines.push(currentLine);
 
-            const blockHeight = (lines.length - 1) * lineHeight + fontSize;
+            // Calculate vertical position
             let startY;
-            if (correctAnswers.v === 'top') startY = padding;
-            else if (correctAnswers.v === 'center') startY = (canvas.height - blockHeight) / 2;
-            else startY = canvas.height - padding - blockHeight;
+            if (correctAnswers.v === 'top') {
+                startY = padding;
+            } else if (correctAnswers.v === 'center') {
+                startY = (canvas.height - blockHeight) / 2;
+            } else {
+                startY = canvas.height - padding - blockHeight;
+            }
             
             ctx.textBaseline = 'top';
             
