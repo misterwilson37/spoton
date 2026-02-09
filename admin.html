@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.5.2</title>
+    <title>Spot On! Admin v2.5.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -831,19 +831,19 @@
                             <label>Crop Previews</label>
                             <div class="flex gap-3 justify-center mb-2" style="min-height:110px;">
                                 <div class="text-center">
-                                    <canvas id="bp2PreviewCircle" width="100" height="100" style="background:#222; border-radius:50%; display:block;"></canvas>
+                                    <canvas id="bp2PreviewCircle" width="200" height="200" style="background:#222; border-radius:50%; display:block; width:100px; height:100px;"></canvas>
                                     <label class="flex items-center gap-1 justify-center cursor-pointer text-xs mt-1">
                                         <input type="checkbox" id="bp2ModalCropCircle" class="w-3 h-3"> Circle
                                     </label>
                                 </div>
                                 <div class="text-center">
-                                    <canvas id="bp2PreviewSquare" width="100" height="100" style="background:#222; border-radius:4px; display:block;"></canvas>
+                                    <canvas id="bp2PreviewSquare" width="200" height="200" style="background:#222; border-radius:4px; display:block; width:100px; height:100px;"></canvas>
                                     <label class="flex items-center gap-1 justify-center cursor-pointer text-xs mt-1">
                                         <input type="checkbox" id="bp2ModalCropSquare" class="w-3 h-3"> Square
                                     </label>
                                 </div>
                                 <div class="text-center">
-                                    <canvas id="bp2PreviewRect" width="130" height="85" style="background:#222; border-radius:4px; display:block;"></canvas>
+                                    <canvas id="bp2PreviewRect" width="260" height="170" style="background:#222; border-radius:4px; display:block; width:130px; height:85px;"></canvas>
                                     <label class="flex items-center gap-1 justify-center cursor-pointer text-xs mt-1">
                                         <input type="checkbox" id="bp2ModalCropRect" class="w-3 h-3"> Rectangle
                                     </label>
@@ -4649,43 +4649,42 @@
             const nw = bp2ModalImg.naturalWidth;
             const nh = bp2ModalImg.naturalHeight;
             
-            // Circle preview
+            // Circle preview (200x200 canvas → 100x100 display)
             const circCanvas = document.getElementById('bp2PreviewCircle');
             const circCtx = circCanvas.getContext('2d');
             const circSrc = getCropSourceRect(nw, nh, 'circle', bp2FocalPoint, bp2CropZoom);
-            circCtx.clearRect(0, 0, 100, 100);
+            circCtx.clearRect(0, 0, 200, 200);
             circCtx.save();
             circCtx.beginPath();
-            circCtx.arc(50, 50, 48, 0, Math.PI * 2);
+            circCtx.arc(100, 100, 96, 0, Math.PI * 2);
             circCtx.clip();
-            circCtx.drawImage(bp2ModalImg, circSrc.sx, circSrc.sy, circSrc.sw, circSrc.sh, 2, 2, 96, 96);
+            circCtx.drawImage(bp2ModalImg, circSrc.sx, circSrc.sy, circSrc.sw, circSrc.sh, 4, 4, 192, 192);
             circCtx.restore();
-            // Border
             circCtx.strokeStyle = '#7BAFD4';
-            circCtx.lineWidth = 2;
+            circCtx.lineWidth = 3;
             circCtx.beginPath();
-            circCtx.arc(50, 50, 48, 0, Math.PI * 2);
+            circCtx.arc(100, 100, 96, 0, Math.PI * 2);
             circCtx.stroke();
             
-            // Square preview
+            // Square preview (200x200 canvas → 100x100 display)
             const sqCanvas = document.getElementById('bp2PreviewSquare');
             const sqCtx = sqCanvas.getContext('2d');
             const sqSrc = getCropSourceRect(nw, nh, 'square', bp2FocalPoint, bp2CropZoom);
-            sqCtx.clearRect(0, 0, 100, 100);
-            sqCtx.drawImage(bp2ModalImg, sqSrc.sx, sqSrc.sy, sqSrc.sw, sqSrc.sh, 2, 2, 96, 96);
+            sqCtx.clearRect(0, 0, 200, 200);
+            sqCtx.drawImage(bp2ModalImg, sqSrc.sx, sqSrc.sy, sqSrc.sw, sqSrc.sh, 4, 4, 192, 192);
             sqCtx.strokeStyle = '#7BAFD4';
-            sqCtx.lineWidth = 2;
-            sqCtx.strokeRect(2, 2, 96, 96);
+            sqCtx.lineWidth = 3;
+            sqCtx.strokeRect(4, 4, 192, 192);
             
-            // Rectangle preview
+            // Rectangle preview (260x170 canvas → 130x85 display)
             const rectCanvas = document.getElementById('bp2PreviewRect');
             const rectCtx = rectCanvas.getContext('2d');
             const rectSrc = getCropSourceRect(nw, nh, 'rectangle', bp2FocalPoint, bp2CropZoom);
-            rectCtx.clearRect(0, 0, 130, 85);
-            rectCtx.drawImage(bp2ModalImg, rectSrc.sx, rectSrc.sy, rectSrc.sw, rectSrc.sh, 2, 2, 126, 81);
+            rectCtx.clearRect(0, 0, 260, 170);
+            rectCtx.drawImage(bp2ModalImg, rectSrc.sx, rectSrc.sy, rectSrc.sw, rectSrc.sh, 4, 4, 252, 162);
             rectCtx.strokeStyle = '#7BAFD4';
-            rectCtx.lineWidth = 2;
-            rectCtx.strokeRect(2, 2, 126, 81);
+            rectCtx.lineWidth = 3;
+            rectCtx.strokeRect(4, 4, 252, 162);
         }
         
         function clearBP2Previews() {
@@ -4829,11 +4828,15 @@
                 const fp = item.cropCenter;
                 const fpLabel = fp ? `📍 ${Math.round(fp.x*100)}%,${Math.round(fp.y*100)}%` : '📍 center';
                 
+                const fpX = fp ? Math.round(fp.x * 100) : 50;
+                const fpY = fp ? Math.round(fp.y * 100) : 50;
+                
                 return `
                 <div class="relative group rounded-lg overflow-hidden bg-gray-800 ${item.enabled === false ? 'opacity-50' : ''}">
                     <div class="flex">
                         <img src="${escapeHtml(item.imageUrl || '')}" alt="${escapeHtml(item.name || 'Content')}" 
                              class="w-28 h-28 object-cover flex-shrink-0 cursor-pointer" 
+                             style="object-position: ${fpX}% ${fpY}%;"
                              onclick="openBP2Modal('${item.id}')"
                              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No img</text></svg>'">
                         <div class="flex-1 p-3 min-w-0">
