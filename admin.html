@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.4.1</title>
+    <title>Spot On! Admin v2.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -368,6 +368,7 @@
         <div class="max-w-7xl mx-auto flex">
             <button class="tab-btn active" data-tab="sweetspot">Sweet Spot</button>
             <button class="tab-btn" data-tab="pictureperfect">Picture Perfect</button>
+            <button class="tab-btn" data-tab="bp2">Balanced II</button>
             <button class="tab-btn" data-tab="siteconfig">Site / Index</button>
             <button class="tab-btn" data-tab="leaderboards">Leaderboards</button>
             <button class="tab-btn hidden" data-tab="migrate" id="migrateTabBtn">Migration</button>
@@ -601,6 +602,7 @@
                             <option value="find-the-center">Find the Center</option>
                             <option value="perfect-alignment">Perfect Alignment</option>
                             <option value="balanced-placement">Balanced Placement</option>
+                            <option value="balanced-placement-ii">Balanced Placement II</option>
                             <option value="picture-perfect">Picture Perfect</option>
                             <option value="spot-the-format">Spot the Format</option>
                             <option value="format-frenzy">Format Frenzy</option>
@@ -714,6 +716,106 @@
                 <div class="pp-modal-footer">
                     <button id="ppModalCancelBtn" class="btn btn-outline">Cancel</button>
                     <button id="ppModalSaveBtn" class="btn btn-cyan">Save Changes</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Balanced Placement II Content Tab -->
+        <div id="bp2Tab" class="tab-content hidden">
+            <div class="panel p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold glow-primary">Balanced Placement II Content</h2>
+                    <div class="flex gap-2">
+                        <button id="bp2RefreshBtn" class="btn btn-outline btn-sm">Refresh</button>
+                    </div>
+                </div>
+                
+                <!-- Add Content Form -->
+                <div class="mb-6 p-4 bg-gray-800 rounded-lg">
+                    <h3 class="font-semibold mb-3">Add New Content</h3>
+                    <div class="space-y-3">
+                        <div class="flex gap-3 flex-wrap">
+                            <input type="text" id="bp2NewImageUrl" placeholder="Image URL (direct link to image)" class="flex-1 min-w-[200px]">
+                            <input type="text" id="bp2NewName" placeholder="Name (optional)" class="w-40">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs text-gray-400 uppercase">Text Passage</label>
+                                <span id="bp2CharCount" class="text-xs text-gray-500">0 / 280</span>
+                            </div>
+                            <textarea id="bp2NewText" rows="3" maxlength="280" placeholder="Enter a paragraph or a few punctuated sentences. This text will be placed alongside the image by students." class="text-sm"></textarea>
+                            <p class="help-text">Aim for 120–250 characters. Full sentences with proper punctuation work best.</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 uppercase mb-1 block">Crop Options</label>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                    <input type="checkbox" id="bp2CropCircle" checked class="w-4 h-4"> Circle
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                    <input type="checkbox" id="bp2CropSquare" checked class="w-4 h-4"> Square
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                    <input type="checkbox" id="bp2CropRect" checked class="w-4 h-4"> Rectangle
+                                </label>
+                            </div>
+                        </div>
+                        <button id="bp2AddBtn" class="btn btn-cyan">Add Content</button>
+                    </div>
+                </div>
+                
+                <!-- Content Stats -->
+                <div class="mb-4 flex gap-4 text-sm">
+                    <span id="bp2TotalCount" class="text-gray-400">Total: 0</span>
+                    <span id="bp2EnabledCount" class="text-green-400">Enabled: 0</span>
+                    <span id="bp2DisabledCount" class="text-gray-500">Disabled: 0</span>
+                </div>
+                
+                <!-- Content Grid -->
+                <div id="bp2ContentList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p class="text-gray-500 col-span-full text-center py-8">Loading content...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- BP2 Content Edit Modal -->
+        <div id="bp2Modal" class="pp-modal-overlay hidden">
+            <div class="pp-modal" style="max-width: 700px;">
+                <div class="pp-modal-header">
+                    <h3 class="font-bold text-lg">Edit Content</h3>
+                    <button id="bp2ModalCloseBtn" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                </div>
+                <div class="pp-modal-body">
+                    <img id="bp2ModalImage" class="pp-modal-image" src="" alt="Preview">
+                    
+                    <label for="bp2ModalName">Name</label>
+                    <input type="text" id="bp2ModalName" placeholder="Enter a name for this content">
+                    
+                    <label for="bp2ModalImageUrl">Image URL</label>
+                    <input type="text" id="bp2ModalImageUrl" placeholder="Direct link to image">
+                    
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="bp2ModalText">Text Passage</label>
+                        <span id="bp2ModalCharCount" class="text-xs text-gray-500">0 / 280</span>
+                    </div>
+                    <textarea id="bp2ModalText" rows="4" maxlength="280" placeholder="Enter paragraph text..." class="text-sm" style="margin-bottom: 16px;"></textarea>
+                    
+                    <label>Crop Options</label>
+                    <div class="flex gap-3 mb-4">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" id="bp2ModalCropCircle" class="w-4 h-4"> Circle
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" id="bp2ModalCropSquare" class="w-4 h-4"> Square
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" id="bp2ModalCropRect" class="w-4 h-4"> Rectangle
+                        </label>
+                    </div>
+                </div>
+                <div class="pp-modal-footer">
+                    <button id="bp2ModalCancelBtn" class="btn btn-outline">Cancel</button>
+                    <button id="bp2ModalSaveBtn" class="btn btn-cyan">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -1420,6 +1522,7 @@
                 // Load data based on tab
                 if (targetTab === 'leaderboards') loadScoresList();
                 if (targetTab === 'pictureperfect') loadPPImagesList();
+                if (targetTab === 'bp2') loadBP2ContentList();
                 if (targetTab === 'siteconfig') loadSiteConfig();
             });
         });
@@ -4293,6 +4396,9 @@
             if (e.key === 'Escape' && !document.getElementById('ppImageModal').classList.contains('hidden')) {
                 closePPImageModal();
             }
+            if (e.key === 'Escape' && !document.getElementById('bp2Modal').classList.contains('hidden')) {
+                closeBP2Modal();
+            }
         });
         
         async function seedPPDefaultImages() {
@@ -4337,6 +4443,229 @@
         
         document.getElementById('ppRefreshBtn').addEventListener('click', loadPPImagesList);
         document.getElementById('ppMigrateBtn').addEventListener('click', seedPPDefaultImages);
+
+        // ============================================
+        // BALANCED PLACEMENT II CONTENT MANAGEMENT
+        // ============================================
+        let bp2Content = [];
+        let currentBP2ModalId = null;
+        
+        // Character counter for add form
+        document.getElementById('bp2NewText').addEventListener('input', (e) => {
+            document.getElementById('bp2CharCount').textContent = `${e.target.value.length} / 280`;
+        });
+        
+        // Character counter for modal
+        document.getElementById('bp2ModalText').addEventListener('input', (e) => {
+            document.getElementById('bp2ModalCharCount').textContent = `${e.target.value.length} / 280`;
+        });
+        
+        // Update modal image preview when URL changes
+        document.getElementById('bp2ModalImageUrl').addEventListener('change', (e) => {
+            document.getElementById('bp2ModalImage').src = e.target.value;
+        });
+        
+        async function loadBP2ContentList() {
+            const container = document.getElementById('bp2ContentList');
+            container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">Loading...</p>';
+            
+            try {
+                const snapshot = await getDocs(collection(db, 'bp2-content'));
+                bp2Content = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const enabledCount = bp2Content.filter(c => c.enabled !== false).length;
+                document.getElementById('bp2TotalCount').textContent = `Total: ${bp2Content.length}`;
+                document.getElementById('bp2EnabledCount').textContent = `Enabled: ${enabledCount}`;
+                document.getElementById('bp2DisabledCount').textContent = `Disabled: ${bp2Content.length - enabledCount}`;
+                
+                if (bp2Content.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No content yet. Add image + text pairs above.</p>';
+                    return;
+                }
+                
+                renderBP2ContentList();
+            } catch (error) {
+                console.error('Load BP2 content error:', error);
+                container.innerHTML = `<p class="text-red-400 col-span-full text-center py-8">Error: ${error.message}</p>`;
+            }
+        }
+        
+        function renderBP2ContentList() {
+            const container = document.getElementById('bp2ContentList');
+            
+            container.innerHTML = bp2Content.map(item => {
+                const crops = item.cropOptions || ['circle', 'square', 'rectangle'];
+                const cropLabels = crops.map(c => c === 'rectangle' ? 'rect' : c).join(', ');
+                const textPreview = (item.text || item.textContent || '').substring(0, 100);
+                const charCount = (item.text || item.textContent || '').length;
+                
+                return `
+                <div class="relative group rounded-lg overflow-hidden bg-gray-800 ${item.enabled === false ? 'opacity-50' : ''}">
+                    <div class="flex">
+                        <img src="${escapeHtml(item.imageUrl || '')}" alt="${escapeHtml(item.name || 'Content')}" 
+                             class="w-28 h-28 object-cover flex-shrink-0 cursor-pointer" 
+                             onclick="openBP2Modal('${item.id}')"
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No img</text></svg>'">
+                        <div class="flex-1 p-3 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <span class="font-semibold text-sm truncate">${escapeHtml(item.name || 'Unnamed')}</span>
+                                <span class="text-xs text-gray-500 flex-shrink-0">${charCount} chars</span>
+                            </div>
+                            <p class="text-xs text-gray-400 line-clamp-3 mb-2" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(textPreview)}${charCount > 100 ? '…' : ''}</p>
+                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                                <span>🔲 ${cropLabels}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="openBP2Modal('${item.id}')" class="btn btn-sm btn-cyan" style="padding:4px 8px;" title="Edit">✎</button>
+                        <button onclick="toggleBP2Content('${item.id}')" class="btn btn-sm ${item.enabled === false ? 'btn-green' : 'btn-outline'}" style="padding:4px 8px;" title="${item.enabled === false ? 'Enable' : 'Disable'}">
+                            ${item.enabled === false ? '✓' : '⊘'}
+                        </button>
+                        <button onclick="deleteBP2Content('${item.id}')" class="btn btn-sm btn-danger" style="padding:4px 8px;" title="Delete">✕</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        async function addBP2Content() {
+            const imageUrl = document.getElementById('bp2NewImageUrl').value.trim();
+            const name = document.getElementById('bp2NewName').value.trim();
+            const text = document.getElementById('bp2NewText').value.trim();
+            
+            if (!imageUrl) { showToast('Please enter an image URL', 'error'); return; }
+            if (!text) { showToast('Please enter text passage', 'error'); return; }
+            if (text.length < 40) { showToast('Text should be at least 40 characters (full sentences)', 'error'); return; }
+            
+            try { new URL(imageUrl); } catch { showToast('Invalid URL format', 'error'); return; }
+            
+            // Gather crop options
+            const cropOptions = [];
+            if (document.getElementById('bp2CropCircle').checked) cropOptions.push('circle');
+            if (document.getElementById('bp2CropSquare').checked) cropOptions.push('square');
+            if (document.getElementById('bp2CropRect').checked) cropOptions.push('rectangle');
+            if (cropOptions.length === 0) { showToast('Select at least one crop option', 'error'); return; }
+            
+            try {
+                await addDoc(collection(db, 'bp2-content'), {
+                    imageUrl: imageUrl,
+                    name: name || 'Unnamed',
+                    text: text,
+                    cropOptions: cropOptions,
+                    enabled: true,
+                    createdAt: serverTimestamp()
+                });
+                
+                showToast('Content added!', 'success');
+                document.getElementById('bp2NewImageUrl').value = '';
+                document.getElementById('bp2NewName').value = '';
+                document.getElementById('bp2NewText').value = '';
+                document.getElementById('bp2CharCount').textContent = '0 / 280';
+                loadBP2ContentList();
+            } catch (error) {
+                console.error('Add BP2 content error:', error);
+                showToast('Failed to add: ' + error.message, 'error');
+            }
+        }
+        
+        window.toggleBP2Content = async function(id) {
+            try {
+                const item = bp2Content.find(c => c.id === id);
+                if (!item) return;
+                const newEnabled = item.enabled === false ? true : false;
+                await updateDoc(doc(db, 'bp2-content', id), { enabled: newEnabled });
+                showToast(newEnabled ? 'Content enabled' : 'Content disabled', 'success');
+                loadBP2ContentList();
+            } catch (error) {
+                console.error('Toggle BP2 error:', error);
+                showToast('Failed to update: ' + error.message, 'error');
+            }
+        };
+        
+        window.deleteBP2Content = async function(id) {
+            if (!confirm('Delete this content?')) return;
+            try {
+                await deleteDoc(doc(db, 'bp2-content', id));
+                showToast('Content deleted', 'success');
+                loadBP2ContentList();
+            } catch (error) {
+                console.error('Delete BP2 error:', error);
+                showToast('Failed to delete: ' + error.message, 'error');
+            }
+        };
+        
+        // BP2 Modal
+        window.openBP2Modal = function(id) {
+            const item = bp2Content.find(c => c.id === id);
+            if (!item) return;
+            
+            currentBP2ModalId = id;
+            document.getElementById('bp2ModalImage').src = item.imageUrl || '';
+            document.getElementById('bp2ModalName').value = item.name || '';
+            document.getElementById('bp2ModalImageUrl').value = item.imageUrl || '';
+            
+            const text = item.text || item.textContent || '';
+            document.getElementById('bp2ModalText').value = text;
+            document.getElementById('bp2ModalCharCount').textContent = `${text.length} / 280`;
+            
+            const crops = item.cropOptions || ['circle', 'square', 'rectangle'];
+            document.getElementById('bp2ModalCropCircle').checked = crops.includes('circle');
+            document.getElementById('bp2ModalCropSquare').checked = crops.includes('square');
+            document.getElementById('bp2ModalCropRect').checked = crops.includes('rectangle');
+            
+            document.getElementById('bp2Modal').classList.remove('hidden');
+        };
+        
+        function closeBP2Modal() {
+            document.getElementById('bp2Modal').classList.add('hidden');
+            currentBP2ModalId = null;
+        }
+        
+        async function saveBP2Modal() {
+            if (!currentBP2ModalId) return;
+            
+            const name = document.getElementById('bp2ModalName').value.trim();
+            const imageUrl = document.getElementById('bp2ModalImageUrl').value.trim();
+            const text = document.getElementById('bp2ModalText').value.trim();
+            
+            if (!imageUrl) { showToast('Image URL is required', 'error'); return; }
+            if (!text || text.length < 40) { showToast('Text must be at least 40 characters', 'error'); return; }
+            
+            const cropOptions = [];
+            if (document.getElementById('bp2ModalCropCircle').checked) cropOptions.push('circle');
+            if (document.getElementById('bp2ModalCropSquare').checked) cropOptions.push('square');
+            if (document.getElementById('bp2ModalCropRect').checked) cropOptions.push('rectangle');
+            if (cropOptions.length === 0) { showToast('Select at least one crop option', 'error'); return; }
+            
+            try {
+                await updateDoc(doc(db, 'bp2-content', currentBP2ModalId), {
+                    name: name || 'Unnamed',
+                    imageUrl: imageUrl,
+                    text: text,
+                    cropOptions: cropOptions
+                });
+                
+                showToast('Content updated!', 'success');
+                closeBP2Modal();
+                loadBP2ContentList();
+            } catch (error) {
+                console.error('Save BP2 error:', error);
+                showToast('Failed to save: ' + error.message, 'error');
+            }
+        }
+        
+        // BP2 event listeners
+        document.getElementById('bp2AddBtn').addEventListener('click', addBP2Content);
+        document.getElementById('bp2NewText').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) addBP2Content();
+        });
+        document.getElementById('bp2RefreshBtn').addEventListener('click', loadBP2ContentList);
+        document.getElementById('bp2ModalCloseBtn').addEventListener('click', closeBP2Modal);
+        document.getElementById('bp2ModalCancelBtn').addEventListener('click', closeBP2Modal);
+        document.getElementById('bp2ModalSaveBtn').addEventListener('click', saveBP2Modal);
+        document.getElementById('bp2Modal').addEventListener('click', (e) => {
+            if (e.target.id === 'bp2Modal') closeBP2Modal();
+        });
 
         // ============================================
         // SITE CONFIG
