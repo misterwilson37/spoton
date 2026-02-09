@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balanced Placement II v1.0.0</title>
+    <title>Balanced Placement II v1.0.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -454,9 +454,16 @@
                         imageUrl: data.imageUrl,
                         image: null,
                         imageLoaded: false,
+                        enabled: data.enabled,
                         cropOptions: data.cropOptions || ['circle', 'square', 'rectangle']
                     };
-                });
+                }).filter(item => item.enabled !== false);
+                
+                if (contentPool.length === 0) {
+                    console.warn('All Firestore content disabled, using demo content');
+                    buildDemoContent();
+                    return;
+                }
                 
                 const countInfo = document.getElementById('contentCountInfo');
                 if (countInfo) countInfo.textContent = `${contentPool.length} items in pool`;
@@ -647,7 +654,7 @@
             const textH = elementSize * 0.85;
             
             // Prepare text lines
-            const wrappedLines = wrapText(currentContent.text, textW - 16);
+            const wrappedLines = wrapText(currentContent.text, textW - 8);
             
             textElement = {
                 x: canvas.width * 0.88,
@@ -843,12 +850,6 @@
                 ctx.stroke();
             }
             
-            // Subtle label
-            ctx.fillStyle = 'rgba(123, 175, 212, 0.8)';
-            ctx.font = 'bold 9px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillText('IMAGE', el.x, el.y + el.height / 2 + 4);
         }
         
         function drawTextElement() {
@@ -858,29 +859,20 @@
             const left = el.x - el.width / 2;
             const top = el.y - el.height / 2;
             
-            // Background
-            ctx.fillStyle = '#f0f0f0';
-            roundRect(ctx, left, top, el.width, el.height, 6);
-            ctx.fill();
-            
-            // Border
-            ctx.strokeStyle = '#7BAFD4';
-            ctx.lineWidth = 3;
-            roundRect(ctx, left, top, el.width, el.height, 6);
-            ctx.stroke();
-            
-            // Clip text area
-            ctx.save();
-            roundRect(ctx, left + 2, top + 2, el.width - 4, el.height - 4, 4);
-            ctx.clip();
-            
-            // Draw text lines
+            // Draw text lines — white text, no background box
             const fontSize = 11;
             const lineHeight = fontSize * 1.45;
-            const padding = 8;
+            const padding = 4;
             const textAreaWidth = el.width - padding * 2;
             
-            ctx.fillStyle = '#1a1a1a';
+            // Text shadow for readability against dark background
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            
+            ctx.fillStyle = '#ffffff';
             ctx.font = `${fontSize}px Inter, sans-serif`;
             ctx.textBaseline = 'top';
             
@@ -902,7 +894,6 @@
                     ctx.textAlign = 'center';
                     ctx.fillText(line, el.x, lineY);
                 } else if (el.alignment === 'justify' && !isLastLine) {
-                    // Justify: distribute words evenly
                     ctx.textAlign = 'left';
                     const words = line.split(' ');
                     if (words.length > 1) {
@@ -917,20 +908,12 @@
                         ctx.fillText(line, left + padding, lineY);
                     }
                 } else {
-                    // Justify last line → left aligned
                     ctx.textAlign = 'left';
                     ctx.fillText(line, left + padding, lineY);
                 }
             });
             
             ctx.restore();
-            
-            // Subtle label
-            ctx.fillStyle = 'rgba(123, 175, 212, 0.8)';
-            ctx.font = 'bold 9px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillText('TEXT', el.x, top + el.height + 4);
         }
         
         // ============================================
