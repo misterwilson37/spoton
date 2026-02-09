@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balanced Placement II v1.0.2</title>
+    <title>Balanced Placement II v1.0.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -425,7 +425,8 @@
                 image: generateDemoImage(DEMO_COLORS[i % DEMO_COLORS.length]),
                 imageLoaded: true,
                 cropOptions: ['circle', 'square', 'rectangle'],
-                cropCenter: { x: 0.5, y: 0.5 }
+                cropCenter: { x: 0.5, y: 0.5 },
+                cropZoom: 0
             }));
             
             const countInfo = document.getElementById('contentCountInfo');
@@ -457,7 +458,8 @@
                         imageLoaded: false,
                         enabled: data.enabled,
                         cropOptions: data.cropOptions || ['circle', 'square', 'rectangle'],
-                        cropCenter: data.cropCenter || { x: 0.5, y: 0.5 }
+                        cropCenter: data.cropCenter || { x: 0.5, y: 0.5 },
+                        cropZoom: data.cropZoom || 0
                     };
                 }).filter(item => item.enabled !== false);
                 
@@ -484,7 +486,6 @@
                 }
                 
                 const img = new Image();
-                img.crossOrigin = 'Anonymous';
                 img.onload = () => {
                     contentItem.image = img;
                     contentItem.imageLoaded = true;
@@ -649,15 +650,21 @@
                 height: imgH,
                 crop: currentCrop,
                 image: currentContent.image,
-                cropCenter: currentContent.cropCenter || { x: 0.5, y: 0.5 }
+                cropCenter: currentContent.cropCenter || { x: 0.5, y: 0.5 },
+                cropZoom: currentContent.cropZoom || 0
             };
             
             // Text element setup
             const textW = elementSize * 1.1;
-            const textH = elementSize * 0.85;
             
             // Prepare text lines
             const wrappedLines = wrapText(currentContent.text, textW - 8);
+            
+            // Height based on actual wrapped lines
+            const fontSize = 11;
+            const lineHeight = fontSize * 1.45;
+            const textPadding = 6;
+            const textH = wrappedLines.length * lineHeight + textPadding * 2;
             
             textElement = {
                 x: canvas.width * 0.88,
@@ -691,13 +698,7 @@
                     hint.textContent = 'Centered/justified text → either side works';
                 }
             } else {
-                if (currentAlignment === 'right') {
-                    hint.textContent = 'Right-aligned text → place on the top';
-                } else if (currentAlignment === 'left') {
-                    hint.textContent = 'Left-aligned text → place on the bottom';
-                } else {
-                    hint.textContent = 'Centered/justified text → either position works';
-                }
+                hint.textContent = 'Vertical layout → either position works. Focus on equal spacing!';
             }
         }
         
@@ -825,8 +826,9 @@
             const nw = el.image.naturalWidth || el.image.width;
             const nh = el.image.naturalHeight || el.image.height;
             const focal = el.cropCenter || { x: 0.5, y: 0.5 };
+            const zoomFactor = el.cropZoom || 0;
             
-            // Calculate source rectangle based on crop shape and focal point
+            // Calculate source rectangle based on crop shape, focal point, and zoom
             const destAspect = el.width / el.height;
             let sw, sh;
             if (nw / nh > destAspect) {
@@ -836,6 +838,10 @@
                 sw = nw;
                 sh = sw / destAspect;
             }
+            // Apply zoom
+            const scale = 1 - (zoomFactor / 100);
+            sw *= scale;
+            sh *= scale;
             let sx = focal.x * nw - sw / 2;
             let sy = focal.y * nh - sh / 2;
             sx = Math.max(0, Math.min(nw - sw, sx));
@@ -985,14 +991,18 @@
                 const imgDist = Math.hypot(imageElement.x - imgTarget.x, imageElement.y - imgTarget.y);
                 const txtDist = Math.hypot(textElement.x - txtTarget.x, textElement.y - txtTarget.y);
                 
-                // Text is at slot 1 (right/bottom side)
+                // Side rule only applies to wide containers (left/right makes sense)
+                // For tall containers, top/bottom doesn't map to text alignment, so either is fine
                 let sideCorrect = true;
-                if (currentAlignment === 'right') {
-                    // Right-aligned text should be at slot 0, but here text is at slot 1 → wrong
-                    sideCorrect = false;
+                if (isWide) {
+                    if (currentAlignment === 'right') {
+                        // Right-aligned text should be at slot 0 (left), but here text is at slot 1 (right) → wrong
+                        sideCorrect = false;
+                    }
+                    if (currentAlignment === 'left') {
+                        // Left-aligned text at slot 1 (right) → correct
+                    }
                 }
-                // Left-aligned text at slot 1 (right/bottom) → correct
-                // Center/justify at any slot → correct
                 
                 candidates.push({ imgDist, txtDist, sideCorrect, imgTarget, txtTarget });
             }
@@ -1004,14 +1014,13 @@
                 const imgDist = Math.hypot(imageElement.x - imgTarget.x, imageElement.y - imgTarget.y);
                 const txtDist = Math.hypot(textElement.x - txtTarget.x, textElement.y - txtTarget.y);
                 
-                // Text is at slot 0 (left/top side)
                 let sideCorrect = true;
-                if (currentAlignment === 'left') {
-                    // Left-aligned text should be at slot 1, but here text is at slot 0 → wrong
-                    sideCorrect = false;
+                if (isWide) {
+                    if (currentAlignment === 'left') {
+                        // Left-aligned text should be at slot 1 (right), but here text is at slot 0 (left) → wrong
+                        sideCorrect = false;
+                    }
                 }
-                // Right-aligned text at slot 0 (left/top) → correct
-                // Center/justify at any slot → correct
                 
                 candidates.push({ imgDist, txtDist, sideCorrect, imgTarget, txtTarget });
             }
@@ -1087,11 +1096,20 @@
         function getDirectionalHint(element, target, name) {
             const dx = element.x - target.x;
             const dy = element.y - target.y;
-            const threshold = 8;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist < 5) return `${name}: spot on!`;
+            
             const parts = [];
-            if (Math.abs(dx) > threshold) parts.push(dx > 0 ? '→' : '←');
-            if (Math.abs(dy) > threshold) parts.push(dy > 0 ? '↓' : '↑');
-            return parts.length > 0 ? `${name}: ${parts.join('')}` : '';
+            if (Math.abs(dx) > 5) {
+                const px = Math.round(Math.abs(dx));
+                parts.push(dx > 0 ? `${px}px too far right` : `${px}px too far left`);
+            }
+            if (Math.abs(dy) > 5) {
+                const px = Math.round(Math.abs(dy));
+                parts.push(dy > 0 ? `${px}px too low` : `${px}px too high`);
+            }
+            return parts.length > 0 ? `${name}: ${parts.join(', ')}` : '';
         }
         
         // ============================================
