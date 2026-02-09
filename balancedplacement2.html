@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balanced Placement II v1.0.1</title>
+    <title>Balanced Placement II v1.0.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -424,7 +424,8 @@
                 text: text,
                 image: generateDemoImage(DEMO_COLORS[i % DEMO_COLORS.length]),
                 imageLoaded: true,
-                cropOptions: ['circle', 'square', 'rectangle']
+                cropOptions: ['circle', 'square', 'rectangle'],
+                cropCenter: { x: 0.5, y: 0.5 }
             }));
             
             const countInfo = document.getElementById('contentCountInfo');
@@ -455,7 +456,8 @@
                         image: null,
                         imageLoaded: false,
                         enabled: data.enabled,
-                        cropOptions: data.cropOptions || ['circle', 'square', 'rectangle']
+                        cropOptions: data.cropOptions || ['circle', 'square', 'rectangle'],
+                        cropCenter: data.cropCenter || { x: 0.5, y: 0.5 }
                     };
                 }).filter(item => item.enabled !== false);
                 
@@ -646,7 +648,8 @@
                 width: imgW,
                 height: imgH,
                 crop: currentCrop,
-                image: currentContent.image
+                image: currentContent.image,
+                cropCenter: currentContent.cropCenter || { x: 0.5, y: 0.5 }
             };
             
             // Text element setup
@@ -819,6 +822,24 @@
             
             const left = el.x - el.width / 2;
             const top = el.y - el.height / 2;
+            const nw = el.image.naturalWidth || el.image.width;
+            const nh = el.image.naturalHeight || el.image.height;
+            const focal = el.cropCenter || { x: 0.5, y: 0.5 };
+            
+            // Calculate source rectangle based on crop shape and focal point
+            const destAspect = el.width / el.height;
+            let sw, sh;
+            if (nw / nh > destAspect) {
+                sh = nh;
+                sw = sh * destAspect;
+            } else {
+                sw = nw;
+                sh = sw / destAspect;
+            }
+            let sx = focal.x * nw - sw / 2;
+            let sy = focal.y * nh - sh / 2;
+            sx = Math.max(0, Math.min(nw - sw, sx));
+            sy = Math.max(0, Math.min(nh - sh, sy));
             
             ctx.save();
             
@@ -827,10 +848,9 @@
                 ctx.beginPath();
                 ctx.arc(el.x, el.y, radius, 0, Math.PI * 2);
                 ctx.clip();
-                ctx.drawImage(el.image, el.x - radius, el.y - radius, radius * 2, radius * 2);
+                ctx.drawImage(el.image, sx, sy, sw, sh, el.x - radius, el.y - radius, radius * 2, radius * 2);
                 ctx.restore();
                 
-                // Border
                 ctx.strokeStyle = '#7BAFD4';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
@@ -840,16 +860,14 @@
                 const r = el.crop === 'square' ? 4 : 6;
                 roundRect(ctx, left, top, el.width, el.height, r);
                 ctx.clip();
-                ctx.drawImage(el.image, left, top, el.width, el.height);
+                ctx.drawImage(el.image, sx, sy, sw, sh, left, top, el.width, el.height);
                 ctx.restore();
                 
-                // Border
                 ctx.strokeStyle = '#7BAFD4';
                 ctx.lineWidth = 3;
                 roundRect(ctx, left, top, el.width, el.height, r);
                 ctx.stroke();
             }
-            
         }
         
         function drawTextElement() {
