@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.5.1</title>
+    <title>Spot On! Admin v2.5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -764,11 +764,20 @@
                     </div>
                 </div>
                 
-                <!-- Content Stats -->
-                <div class="mb-4 flex gap-4 text-sm">
+                <!-- Content Stats & Sort -->
+                <div class="mb-4 flex gap-4 text-sm items-center flex-wrap">
                     <span id="bp2TotalCount" class="text-gray-400">Total: 0</span>
                     <span id="bp2EnabledCount" class="text-green-400">Enabled: 0</span>
                     <span id="bp2DisabledCount" class="text-gray-500">Disabled: 0</span>
+                    <div class="ml-auto flex items-center gap-2">
+                        <label class="text-gray-400">Sort:</label>
+                        <select id="bp2SortSelect" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1" style="width:auto;">
+                            <option value="alpha">A → Z</option>
+                            <option value="alpha-desc">Z → A</option>
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <!-- Content Grid -->
@@ -809,9 +818,14 @@
                         <!-- Right column: crop preview -->
                         <div>
                             <label>Focal Point <span class="text-gray-600">— click or drag to set</span></label>
-                            <div style="position:relative; background:#111; border-radius:8px; overflow:hidden; margin-bottom:12px; border:1px solid var(--border-color);">
+                            <div style="position:relative; background:#111; border-radius:8px; overflow:hidden; margin-bottom:8px; border:1px solid var(--border-color);">
                                 <canvas id="bp2FocalCanvas" style="display:block; width:100%; cursor:crosshair;"></canvas>
                                 <p id="bp2FocalPlaceholder" class="text-gray-500 text-sm absolute inset-0 flex items-center justify-center pointer-events-none">Enter image URL</p>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <label class="text-xs text-gray-400 flex-shrink-0">Zoom:</label>
+                                <input type="range" id="bp2ZoomSlider" min="0" max="80" value="0" class="flex-1" style="accent-color: var(--accent-primary);">
+                                <span id="bp2ZoomLabel" class="text-xs text-gray-500 w-10 text-right">100%</span>
                             </div>
                             
                             <label>Crop Previews</label>
@@ -4477,6 +4491,7 @@
         let currentBP2ModalId = null;
         let bp2ModalImg = null; // loaded Image object for modal
         let bp2FocalPoint = { x: 0.5, y: 0.5 };
+        let bp2CropZoom = 0; // 0-80: percentage to zoom in (0 = no zoom, 80 = max zoom)
         let bp2FocalDragging = false;
         
         // Character counter for add form
@@ -4510,7 +4525,6 @@
             placeholder.classList.remove('hidden');
             
             const img = new Image();
-            img.crossOrigin = 'Anonymous';
             img.onload = () => {
                 bp2ModalImg = img;
                 placeholder.classList.add('hidden');
@@ -4543,26 +4557,37 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(bp2ModalImg, 0, 0, canvas.width, canvas.height);
             
-            // Dim overlay
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Show crop region for square crop (representative)
+            const nw = bp2ModalImg.naturalWidth;
+            const nh = bp2ModalImg.naturalHeight;
+            const cropSrc = getCropSourceRect(nw, nh, 'square', bp2FocalPoint, bp2CropZoom);
             
-            // Focal point crosshair
-            const fx = bp2FocalPoint.x * canvas.width;
-            const fy = bp2FocalPoint.y * canvas.height;
-            const r = 12;
+            // Map source rect to canvas coords
+            const scaleX = canvas.width / nw;
+            const scaleY = canvas.height / nh;
+            const cx = cropSrc.sx * scaleX;
+            const cy = cropSrc.sy * scaleY;
+            const cw = cropSrc.sw * scaleX;
+            const ch = cropSrc.sh * scaleY;
             
-            // Crosshair lines
-            ctx.strokeStyle = '#fff';
+            // Dim area outside crop
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            ctx.rect(0, 0, canvas.width, canvas.height);
+            ctx.rect(cx + cw, cy, -cw, ch); // counter-clockwise = cut out
+            ctx.fill('evenodd');
+            
+            // Crop region border
+            ctx.strokeStyle = '#7BAFD4';
             ctx.lineWidth = 1.5;
             ctx.setLineDash([4, 3]);
-            ctx.beginPath();
-            ctx.moveTo(fx, 0); ctx.lineTo(fx, canvas.height);
-            ctx.moveTo(0, fy); ctx.lineTo(canvas.width, fy);
-            ctx.stroke();
+            ctx.strokeRect(cx, cy, cw, ch);
             ctx.setLineDash([]);
             
-            // Center circle
+            // Focal point dot
+            const fx = bp2FocalPoint.x * canvas.width;
+            const fy = bp2FocalPoint.y * canvas.height;
+            
             ctx.fillStyle = 'rgba(123, 175, 212, 0.9)';
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
@@ -4574,37 +4599,40 @@
             // Coord label
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             const label = `${Math.round(bp2FocalPoint.x * 100)}%, ${Math.round(bp2FocalPoint.y * 100)}%`;
+            ctx.font = '11px Inter, sans-serif';
             const tw = ctx.measureText(label).width;
             const lx = Math.min(fx + 10, canvas.width - tw - 10);
             const ly = Math.max(fy - 12, 14);
             ctx.fillRect(lx - 3, ly - 11, tw + 6, 15);
             ctx.fillStyle = '#7BAFD4';
-            ctx.font = '11px Inter, sans-serif';
             ctx.fillText(label, lx, ly);
         }
         
-        // Calculate source rectangle for a crop type, given focal point
-        function getCropSourceRect(imgW, imgH, cropType, focal) {
+        // Calculate source rectangle for a crop type, given focal point and zoom
+        function getCropSourceRect(imgW, imgH, cropType, focal, zoom) {
             // Determine crop aspect ratio
             let aspectW, aspectH;
             if (cropType === 'circle' || cropType === 'square') {
                 aspectW = 1; aspectH = 1;
             } else {
-                // Rectangle: 1.3 : 0.85 ≈ 1.529 : 1
                 aspectW = 1.529; aspectH = 1;
             }
             
             // Find the largest crop region of this aspect ratio that fits the image
             let sw, sh;
             if (imgW / imgH > aspectW / aspectH) {
-                // Image is wider — height is the constraint
                 sh = imgH;
                 sw = sh * (aspectW / aspectH);
             } else {
-                // Image is taller — width is the constraint
                 sw = imgW;
                 sh = sw * (aspectH / aspectW);
             }
+            
+            // Apply zoom (0 = full size, 80 = 20% of full)
+            const zoomFactor = zoom || 0;
+            const scale = 1 - (zoomFactor / 100);
+            sw *= scale;
+            sh *= scale;
             
             // Center on focal point, clamped to image bounds
             let sx = focal.x * imgW - sw / 2;
@@ -4624,7 +4652,7 @@
             // Circle preview
             const circCanvas = document.getElementById('bp2PreviewCircle');
             const circCtx = circCanvas.getContext('2d');
-            const circSrc = getCropSourceRect(nw, nh, 'circle', bp2FocalPoint);
+            const circSrc = getCropSourceRect(nw, nh, 'circle', bp2FocalPoint, bp2CropZoom);
             circCtx.clearRect(0, 0, 100, 100);
             circCtx.save();
             circCtx.beginPath();
@@ -4642,7 +4670,7 @@
             // Square preview
             const sqCanvas = document.getElementById('bp2PreviewSquare');
             const sqCtx = sqCanvas.getContext('2d');
-            const sqSrc = getCropSourceRect(nw, nh, 'square', bp2FocalPoint);
+            const sqSrc = getCropSourceRect(nw, nh, 'square', bp2FocalPoint, bp2CropZoom);
             sqCtx.clearRect(0, 0, 100, 100);
             sqCtx.drawImage(bp2ModalImg, sqSrc.sx, sqSrc.sy, sqSrc.sw, sqSrc.sh, 2, 2, 96, 96);
             sqCtx.strokeStyle = '#7BAFD4';
@@ -4652,7 +4680,7 @@
             // Rectangle preview
             const rectCanvas = document.getElementById('bp2PreviewRect');
             const rectCtx = rectCanvas.getContext('2d');
-            const rectSrc = getCropSourceRect(nw, nh, 'rectangle', bp2FocalPoint);
+            const rectSrc = getCropSourceRect(nw, nh, 'rectangle', bp2FocalPoint, bp2CropZoom);
             rectCtx.clearRect(0, 0, 130, 85);
             rectCtx.drawImage(bp2ModalImg, rectSrc.sx, rectSrc.sy, rectSrc.sw, rectSrc.sh, 2, 2, 126, 81);
             rectCtx.strokeStyle = '#7BAFD4';
@@ -4726,6 +4754,15 @@
         
         document.addEventListener('touchend', () => { bp2FocalDragging = false; });
         
+        // Zoom slider
+        document.getElementById('bp2ZoomSlider').addEventListener('input', (e) => {
+            bp2CropZoom = parseInt(e.target.value);
+            const pct = Math.round(100 - bp2CropZoom);
+            document.getElementById('bp2ZoomLabel').textContent = `${pct}%`;
+            drawBP2FocalCanvas();
+            drawBP2Previews();
+        });
+        
         // Reload button
         document.getElementById('bp2ModalReloadImg').addEventListener('click', () => {
             loadBP2ModalImage(document.getElementById('bp2ModalImageUrl').value.trim());
@@ -4766,8 +4803,25 @@
         
         function renderBP2ContentList() {
             const container = document.getElementById('bp2ContentList');
+            const sortOrder = document.getElementById('bp2SortSelect').value;
             
-            container.innerHTML = bp2Content.map(item => {
+            // Sort a copy
+            const sorted = [...bp2Content].sort((a, b) => {
+                switch (sortOrder) {
+                    case 'alpha':
+                        return (a.name || 'Unnamed').localeCompare(b.name || 'Unnamed');
+                    case 'alpha-desc':
+                        return (b.name || 'Unnamed').localeCompare(a.name || 'Unnamed');
+                    case 'newest':
+                        return ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                    case 'oldest':
+                        return ((a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+                    default:
+                        return 0;
+                }
+            });
+            
+            container.innerHTML = sorted.map(item => {
                 const crops = item.cropOptions || ['circle', 'square', 'rectangle'];
                 const cropLabels = crops.map(c => c === 'rectangle' ? 'rect' : c).join(', ');
                 const textPreview = (item.text || item.textContent || '').substring(0, 100);
@@ -4891,8 +4945,11 @@
             document.getElementById('bp2ModalCropSquare').checked = crops.includes('square');
             document.getElementById('bp2ModalCropRect').checked = crops.includes('rectangle');
             
-            // Load focal point
+            // Load focal point and zoom
             bp2FocalPoint = item.cropCenter ? { ...item.cropCenter } : { x: 0.5, y: 0.5 };
+            bp2CropZoom = item.cropZoom || 0;
+            document.getElementById('bp2ZoomSlider').value = bp2CropZoom;
+            document.getElementById('bp2ZoomLabel').textContent = `${Math.round(100 - bp2CropZoom)}%`;
             
             document.getElementById('bp2Modal').classList.remove('hidden');
             
@@ -4928,7 +4985,8 @@
                     imageUrl: imageUrl,
                     text: text,
                     cropOptions: cropOptions,
-                    cropCenter: { x: Math.round(bp2FocalPoint.x * 1000) / 1000, y: Math.round(bp2FocalPoint.y * 1000) / 1000 }
+                    cropCenter: { x: Math.round(bp2FocalPoint.x * 1000) / 1000, y: Math.round(bp2FocalPoint.y * 1000) / 1000 },
+                    cropZoom: bp2CropZoom
                 });
                 
                 showToast('Content updated!', 'success');
@@ -4946,6 +5004,9 @@
             if (e.key === 'Enter' && e.ctrlKey) addBP2Content();
         });
         document.getElementById('bp2RefreshBtn').addEventListener('click', loadBP2ContentList);
+        document.getElementById('bp2SortSelect').addEventListener('change', () => {
+            if (bp2Content.length > 0) renderBP2ContentList();
+        });
         document.getElementById('bp2ModalCloseBtn').addEventListener('click', closeBP2Modal);
         document.getElementById('bp2ModalCancelBtn').addEventListener('click', closeBP2Modal);
         document.getElementById('bp2ModalSaveBtn').addEventListener('click', saveBP2Modal);
