@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.5.3</title>
+    <title>Spot On! Admin v2.5.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
     
@@ -4830,15 +4830,18 @@
                 
                 const fpX = fp ? Math.round(fp.x * 100) : 50;
                 const fpY = fp ? Math.round(fp.y * 100) : 50;
+                const zoom = item.cropZoom || 0;
                 
                 return `
                 <div class="relative group rounded-lg overflow-hidden bg-gray-800 ${item.enabled === false ? 'opacity-50' : ''}">
                     <div class="flex">
-                        <img src="${escapeHtml(item.imageUrl || '')}" alt="${escapeHtml(item.name || 'Content')}" 
-                             class="w-28 h-28 object-cover flex-shrink-0 cursor-pointer" 
-                             style="object-position: ${fpX}% ${fpY}%;"
+                        <canvas id="bp2Thumb_${item.id}" width="224" height="224" 
+                             class="flex-shrink-0 cursor-pointer" 
+                             style="width:112px; height:112px; background:#222; border-radius:4px 0 0 4px;"
                              onclick="openBP2Modal('${item.id}')"
-                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%22 height=%22100%22/><text fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22>No img</text></svg>'">
+                             data-src="${escapeHtml(item.imageUrl || '')}"
+                             data-fpx="${fp ? fp.x : 0.5}" data-fpy="${fp ? fp.y : 0.5}"
+                             data-zoom="${zoom}"></canvas>
                         <div class="flex-1 p-3 min-w-0">
                             <div class="flex items-start justify-between gap-2 mb-1">
                                 <span class="font-semibold text-sm truncate">${escapeHtml(item.name || 'Unnamed')}</span>
@@ -4860,6 +4863,44 @@
                     </div>
                 </div>`;
             }).join('');
+            
+            // Render canvas thumbnails with proper crop
+            renderBP2Thumbnails();
+        }
+        
+        function renderBP2Thumbnails() {
+            document.querySelectorAll('canvas[id^="bp2Thumb_"]').forEach(canvas => {
+                const src = canvas.dataset.src;
+                const fpx = parseFloat(canvas.dataset.fpx) || 0.5;
+                const fpy = parseFloat(canvas.dataset.fpy) || 0.5;
+                const zoom = parseInt(canvas.dataset.zoom) || 0;
+                const ctx = canvas.getContext('2d');
+                
+                if (!src) {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(0, 0, 224, 224);
+                    ctx.fillStyle = '#999';
+                    ctx.font = '20px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No img', 112, 118);
+                    return;
+                }
+                
+                const img = new Image();
+                img.onload = () => {
+                    const crop = getCropSourceRect(img.naturalWidth, img.naturalHeight, 'square', { x: fpx, y: fpy }, zoom);
+                    ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, 224, 224);
+                };
+                img.onerror = () => {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(0, 0, 224, 224);
+                    ctx.fillStyle = '#999';
+                    ctx.font = '20px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No img', 112, 118);
+                };
+                img.src = src;
+            });
         }
         
         async function addBP2Content() {
