@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfect Alignment v1.0.1</title>
+    <title>Perfect Alignment v1.0.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="games.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -13,137 +14,29 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            touch-action: none;
-        }
-        canvas {
-            cursor: grab;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        canvas.grabbing {
-            cursor: grabbing;
-        }
-        
-        /* Auth styles */
-        .btn-google {
-            background: white;
-            color: #333;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-google:hover {
-            background: #f5f5f5;
-        }
-        
-        .user-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: #f1f5f9;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-        .user-badge img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
-        
-        /* Initials input */
-        .initials-input {
-            background: #f1f5f9;
-            border: 2px solid #3b82f6;
-            color: #1e293b;
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            width: 100px;
-            padding: 8px;
-            border-radius: 8px;
-            letter-spacing: 6px;
-        }
-        .initials-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        
-        /* Leaderboard */
-        .leaderboard {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-            text-align: left;
-        }
-        .leaderboard-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 6px;
-        }
-        .leaderboard-row:nth-child(odd) {
-            background: rgba(0,0,0,0.03);
-        }
-        .leaderboard-row.highlight {
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid #3b82f6;
-        }
-        .leaderboard-rank {
-            font-weight: bold;
-            width: 30px;
-            color: #64748b;
-        }
-        .leaderboard-row:nth-child(1) .leaderboard-rank { color: #eab308; }
-        .leaderboard-row:nth-child(2) .leaderboard-rank { color: #9ca3af; }
-        .leaderboard-row:nth-child(3) .leaderboard-rank { color: #cd7f32; }
-        .leaderboard-initials {
-            font-weight: bold;
-            flex: 1;
-            margin-left: 12px;
-            color: #1e293b;
-        }
-        .leaderboard-score {
-            font-weight: bold;
-            color: #3b82f6;
-        }
-        
-        /* Screen transitions */
-        .screen {
-            display: none;
-        }
-        .screen.active {
-            display: block;
-        }
+        canvas { cursor: grab; }
+        canvas.grabbing { cursor: grabbing; }
+        /* Override screen display for this game's layout */
+        .screen.active { display: block; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl mx-auto">
-        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 text-center">
-            
+<body>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <!-- Persistent Navigation -->
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">← All Games</a>
+                <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+            </div>
+
             <!-- Start Screen -->
             <div id="startScreen" class="screen active">
-                <div class="flex justify-between mb-6 text-sm">
-                    <a href="index.html" class="text-slate-400 hover:text-blue-600">← All Games</a>
-                    <a href="leaderboard.html" class="text-slate-400 hover:text-blue-600">🏆 Leaderboard</a>
-                </div>
-                <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Perfect Alignment</h1>
-                <p class="text-slate-500 mt-2 mb-6">Drag shapes to align their centers perfectly.</p>
+                <h1 class="text-3xl md:text-4xl font-bold text-white">Perfect Alignment</h1>
+                <p class="text-gray-500 mt-2 mb-6">Drag shapes to align their centers perfectly.</p>
                 
-                <div class="bg-slate-50 rounded-lg p-4 mb-6 text-left max-w-sm mx-auto">
-                    <h3 class="font-semibold text-slate-700 mb-2">How to Play:</h3>
-                    <ul class="text-sm text-slate-600 space-y-1">
+                <div class="bg-[var(--bg-input)] rounded-lg p-4 mb-6 text-left max-w-sm mx-auto">
+                    <h3 class="font-semibold text-gray-200 mb-2">How to Play:</h3>
+                    <ul class="text-sm text-gray-400 space-y-1">
                         <li>• 10 rounds of increasing difficulty</li>
                         <li>• Drag the blue shape to the gray target</li>
                         <li>• Align their centers perfectly</li>
@@ -157,50 +50,50 @@
                         <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                         Sign in with Google
                     </button>
-                    <p class="text-slate-400 text-xs mt-2">Sign in to save your score to the leaderboard</p>
+                    <p class="text-gray-500 text-xs mt-2">Sign in to save your score to the leaderboard</p>
                 </div>
                 <div id="userSignedIn" class="mb-6 hidden">
                     <div class="user-badge inline-flex">
                         <img id="userPhoto" src="" alt="">
                         <span id="userName">Player</span>
-                        <button id="signOutBtn" class="text-slate-400 hover:text-slate-600 ml-2 text-xs">✕</button>
+                        <button id="signOutBtn" class="text-gray-500 hover:text-gray-400 ml-2 text-xs">✕</button>
                     </div>
                 </div>
                 
-                <button id="startGameBtn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors text-lg">
+                <button id="startGameBtn" class="btn btn-primary font-semibold py-3 px-8 rounded-lg shadow hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-50 transition-colors text-lg">
                     Start Game
                 </button>
             </div>
             
             <!-- Game Screen -->
             <div id="gameScreen" class="screen">
-                <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Perfect Alignment</h1>
-                <p id="instructionText" class="text-slate-500 mt-2">Drag the blue shape to align its center with the gray target.</p>
+                <h1 class="text-3xl md:text-4xl font-bold text-white">Perfect Alignment</h1>
+                <p id="instructionText" class="text-gray-500 mt-2">Drag the blue shape to align its center with the gray target.</p>
                 
                 <!-- Game Canvas -->
-                <div class="relative w-full max-w-xl mx-auto aspect-square bg-slate-50 border-2 border-slate-200 rounded-lg overflow-hidden my-6">
+                <div class="relative w-full max-w-xl mx-auto aspect-square bg-[var(--bg-input)] border-2 border-[var(--border)] rounded-lg overflow-hidden my-6">
                     <canvas id="gameCanvas"></canvas>
                 </div>
 
                 <!-- Scoring Display with Feedback in Center -->
                 <div class="flex justify-between items-center mb-2 px-2">
                     <div class="text-left w-24">
-                        <p class="text-slate-600 font-medium text-sm">Round</p>
-                        <p class="text-2xl font-bold text-slate-800"><span id="roundCounter">1</span> / 10</p>
+                        <p class="text-gray-400 font-medium text-sm">Round</p>
+                        <p class="text-2xl font-bold text-white"><span id="roundCounter">1</span> / 10</p>
                     </div>
                     <div class="text-center flex-1">
-                        <p id="feedbackText" class="text-xl font-bold text-slate-700">Drag the blue shape...</p>
-                        <p id="directionalFeedbackText" class="text-sm text-slate-500"></p>
+                        <p id="feedbackText" class="text-xl font-bold text-gray-200">Drag the blue shape...</p>
+                        <p id="directionalFeedbackText" class="text-sm text-gray-500"></p>
                     </div>
                     <div class="text-right w-24">
-                        <p class="text-slate-600 font-medium text-sm">Total</p>
-                        <p class="text-2xl font-bold text-slate-800" id="totalScore">0</p>
+                        <p class="text-gray-400 font-medium text-sm">Total</p>
+                        <p class="text-2xl font-bold text-white" id="totalScore">0</p>
                     </div>
                 </div>
 
                 <!-- Next Button -->
                 <div class="flex justify-center mt-2">
-                    <button id="nextButton" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors hidden">
+                    <button id="nextButton" class="btn btn-primary font-semibold py-2 px-6 rounded-lg shadow hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-50 transition-colors hidden">
                         Next Round
                     </button>
                 </div>
@@ -208,47 +101,47 @@
             
             <!-- Game Over Screen -->
             <div id="gameOverScreen" class="screen">
-                <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-2">Game Over!</h1>
-                <p class="text-slate-500">Final Score</p>
-                <p id="finalScore" class="text-5xl font-bold text-slate-800 mb-2">0</p>
-                <p id="averageScore" class="text-lg text-slate-600 mb-4"></p>
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Game Over!</h1>
+                <p class="text-gray-500">Final Score</p>
+                <p id="finalScore" class="text-5xl font-bold text-white mb-2">0</p>
+                <p id="averageScore" class="text-lg text-gray-400 mb-4"></p>
                 
                 <!-- Initials Entry -->
                 <div id="initialsEntry" class="mb-6 hidden">
-                    <p class="text-slate-600 mb-2">Enter your initials:</p>
+                    <p class="text-gray-400 mb-2">Enter your initials:</p>
                     <div class="flex items-center gap-3 justify-center">
                         <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
-                        <button id="submitScoreBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition-colors">Submit</button>
+                        <button id="submitScoreBtn" class="btn btn-primary font-semibold py-2 px-4 rounded-lg shadow hover:bg-[var(--primary-dark)] transition-colors">Submit</button>
                     </div>
-                    <p id="initialsError" class="text-red-500 text-sm mt-2 hidden">Please choose different initials.</p>
+                    <p id="initialsError" class="text-red-400 text-sm mt-2 hidden">Please choose different initials.</p>
                 </div>
                 
                 <!-- Score submitted confirmation -->
                 <div id="scoreSubmitted" class="mb-4 hidden">
-                    <p class="text-green-600 font-medium">✓ Score saved!</p>
-                    <p id="playerRank" class="text-slate-600"></p>
+                    <p class="text-green-400 font-medium">✓ Score saved!</p>
+                    <p id="playerRank" class="text-gray-400"></p>
                 </div>
                 
                 <!-- Not signed in message -->
                 <div id="notSignedInMsg" class="mb-4 hidden">
-                    <p class="text-slate-400 text-sm">Sign in before playing to save your score!</p>
+                    <p class="text-gray-500 text-sm">Sign in before playing to save your score!</p>
                 </div>
                 
                 <!-- Leaderboard -->
                 <div class="leaderboard">
-                    <h3 class="text-center font-bold text-slate-700 mb-3">🏆 Top 10 Scores</h3>
+                    <h3 class="text-center font-bold text-gray-200 mb-3">🏆 Top 10 Scores</h3>
                     <div id="leaderboardList">
-                        <p class="text-slate-400 text-center py-4">Loading...</p>
+                        <p class="text-gray-500 text-center py-4">Loading...</p>
                     </div>
                 </div>
                 
-                <button id="playAgainButton" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors mt-6">
+                <button id="playAgainButton" class="btn btn-primary font-semibold py-2 px-6 rounded-lg shadow hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-50 transition-colors mt-6">
                     Play Again
                 </button>
             </div>
             
         </div>
-        <footer class="text-center mt-6 text-sm text-slate-500">
+        <footer class="text-center mt-3 text-sm" style="color: var(--text-muted);">
             <p>A sequel to "Find the Center" | Originally by Gemini, leaderboard by Claude</p>
         </footer>
     </div>
@@ -340,7 +233,7 @@
             const leaderboardList = document.getElementById('leaderboardList');
             
             if (!db) {
-                leaderboardList.innerHTML = '<p class="text-slate-400 text-center py-4">Leaderboard unavailable</p>';
+                leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">Leaderboard unavailable</p>';
                 return [];
             }
             
@@ -352,7 +245,7 @@
                     .get();
                 
                 if (snapshot.empty) {
-                    leaderboardList.innerHTML = '<p class="text-slate-400 text-center py-4">No scores yet. Be the first!</p>';
+                    leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">No scores yet. Be the first!</p>';
                     return [];
                 }
                 
@@ -370,7 +263,7 @@
             const leaderboardList = document.getElementById('leaderboardList');
             
             if (scores.length === 0) {
-                leaderboardList.innerHTML = '<p class="text-slate-400 text-center py-4">No scores yet. Be the first!</p>';
+                leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">No scores yet. Be the first!</p>';
                 return;
             }
             
@@ -539,7 +432,7 @@
             isDragging = false;
             roundCounterEl.textContent = roundNumber;
             feedbackEl.textContent = "Drag the blue shape...";
-            feedbackEl.className = 'text-xl font-bold text-slate-700';
+            feedbackEl.className = 'text-xl font-bold text-gray-200';
             directionalFeedbackEl.textContent = "";
             nextButton.classList.add('hidden');
             
@@ -564,11 +457,11 @@
             const averageScore = Math.round(totalScore / MAX_ROUNDS);
             let gradeText = '';
             if (averageScore >= 90) {
-                gradeText = `Average: ${averageScore}/100 — <span class="text-green-600">Excellent!</span>`;
+                gradeText = `Average: ${averageScore}/100 — <span class="text-green-400">Excellent!</span>`;
             } else if (averageScore >= 80) {
-                gradeText = `Average: ${averageScore}/100 — <span class="text-blue-600">Great Job!</span>`;
+                gradeText = `Average: ${averageScore}/100 — <span class="text-[var(--primary)]">Great Job!</span>`;
             } else if (averageScore >= 70) {
-                gradeText = `Average: ${averageScore}/100 — <span class="text-amber-600">Good Effort!</span>`;
+                gradeText = `Average: ${averageScore}/100 — <span class="text-amber-400">Good Effort!</span>`;
             } else {
                 gradeText = `Average: ${averageScore}/100 — Keep practicing!`;
             }
@@ -668,7 +561,7 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#f8fafc';
+            ctx.fillStyle = '#222';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawShape(targetShape);
             drawShape(draggableShape);
@@ -761,16 +654,16 @@
                 feedbackClass = 'text-xl font-bold text-green-500';
             } else if (score >= 80) {
                 feedbackText = `Great! +${score}`;
-                feedbackClass = 'text-xl font-bold text-blue-600';
+                feedbackClass = 'text-xl font-bold text-[var(--primary)]';
             } else if (score >= 70) {
                 feedbackText = `Good! +${score}`;
-                feedbackClass = 'text-xl font-bold text-blue-600';
+                feedbackClass = 'text-xl font-bold text-[var(--primary)]';
             } else if (score >= 60) {
                 feedbackText = `Okay. +${score}`;
                 feedbackClass = 'text-xl font-bold text-amber-500';
             } else {
                 feedbackText = `+${score}`;
-                feedbackClass = 'text-xl font-bold text-slate-600';
+                feedbackClass = 'text-xl font-bold text-gray-400';
             }
             
             feedbackEl.textContent = feedbackText;
