@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Leaderboard v1.0.2</title>
+    <title>Spot On! Leaderboard v1.1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="games.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -129,9 +130,9 @@
         <!-- Header -->
         <header class="border-b border-gray-800 py-4 px-6">
             <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <a href="index.html" class="back-link">← Back to Games</a>
+                <a href="index.html" class="nav-link">← All Games</a>
                 <h1 class="text-xl font-bold glow" style="color: var(--carolina-blue);">SPOT ON!</h1>
-                <div style="width: 120px;"></div>
+                <div style="width: 80px;"></div>
             </div>
         </header>
         
@@ -149,6 +150,7 @@
                 <button class="filter-btn" data-game="find-the-center">Find the Center</button>
                 <button class="filter-btn" data-game="perfect-alignment">Perfect Alignment</button>
                 <button class="filter-btn" data-game="balanced-placement">Balanced Placement</button>
+                <button class="filter-btn" data-game="balanced-placement-ii">Balanced Placement II</button>
                 <button class="filter-btn" data-game="picture-perfect">Picture Perfect</button>
                 <button class="filter-btn" data-game="spot-the-format">Spot the Format</button>
                 <button class="filter-btn" data-game="format-frenzy">Format Frenzy</button>
