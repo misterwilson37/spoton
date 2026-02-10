@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Format Frenzy v1.1.0</title>
+    <title>Format Frenzy v1.1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="games.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -24,17 +25,9 @@
             --text-muted: #9ca3af;
         }
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-dark);
-            color: var(--text-primary);
-        }
         
-        .game-container {
-            background: var(--bg-card);
-            border: 2px solid #333;
-            border-radius: 12px;
-        }
+        
+        
         
         .canvas-container {
             background: #111;
@@ -191,88 +184,14 @@
             fill: none;
         }
         
-        /* Auth styles */
-        .btn-google {
-            background: #222;
-            color: #fff;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-google:hover { background: #333; }
         
-        .user-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: #222;
-            border-radius: 20px;
-            font-size: 14px;
-            border: 1px solid #333;
-        }
-        .user-badge img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
         
-        /* Initials input */
-        .initials-input {
-            background: #222;
-            border: 2px solid var(--danger);
-            color: #fff;
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            width: 100px;
-            padding: 8px;
-            border-radius: 8px;
-            letter-spacing: 6px;
-        }
-        .initials-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
-        }
         
-        /* Leaderboard */
-        .leaderboard {
-            background: #1a1a1a;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-            text-align: left;
-            border: 1px solid #333;
-        }
-        .leaderboard-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 6px;
-        }
-        .leaderboard-row:nth-child(odd) { background: rgba(255,255,255,0.03); }
-        .leaderboard-row.highlight {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid var(--danger);
-        }
-        .leaderboard-rank { font-weight: bold; width: 30px; color: #888; }
-        .leaderboard-row:nth-child(1) .leaderboard-rank { color: #eab308; }
-        .leaderboard-row:nth-child(2) .leaderboard-rank { color: #9ca3af; }
-        .leaderboard-row:nth-child(3) .leaderboard-rank { color: #cd7f32; }
-        .leaderboard-initials { font-weight: bold; flex: 1; margin-left: 12px; }
-        .leaderboard-score { font-weight: bold; color: var(--danger); }
         
-        /* Screen transitions */
-        .screen { display: none; }
-        .screen.active { display: block; }
+        
+        
+        
+        
         
         .glow-danger { text-shadow: 0 0 20px var(--danger); }
         
@@ -294,20 +213,23 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+    
+        .screen.active { display: block; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-3xl mx-auto">
-        <div class="game-container p-6 md:p-8 text-center">
-            
+<body>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <!-- Persistent Navigation -->
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">← All Games</a>
+                <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+            </div>
+
             <!-- Start Screen -->
             <div id="startScreen" class="screen active">
-                <div class="flex justify-between mb-6 text-sm">
-                    <a href="index.html" class="text-gray-500 hover:text-red-400">← All Games</a>
-                    <a href="leaderboard.html" class="text-gray-500 hover:text-red-400">🏆 Leaderboard</a>
-                </div>
                 
-                <h1 class="text-4xl md:text-5xl font-extrabold text-red-500 glow-danger mb-2">FORMAT FRENZY</h1>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-red-400 glow-danger mb-2">FORMAT FRENZY</h1>
                 <p class="text-gray-400 mb-6">Defuse the bomb before it explodes!</p>
                 
                 <div class="bg-black/50 rounded-lg p-4 mb-6 text-left max-w-md mx-auto border border-red-900">
@@ -433,7 +355,7 @@
                         <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
                         <button id="submitScoreBtn" class="btn-defuse text-white rounded-lg text-sm py-2 px-4">Submit</button>
                     </div>
-                    <p id="initialsError" class="text-red-500 text-sm mt-2 hidden"></p>
+                    <p id="initialsError" class="text-red-400 text-sm mt-2 hidden"></p>
                 </div>
                 
                 <div id="scoreSubmitted" class="mb-4 hidden">
@@ -447,7 +369,6 @@
                 
                 <!-- Links -->
                 <div class="flex gap-4 justify-center mb-4 flex-wrap">
-                    <a href="index.html" class="text-gray-500 hover:text-red-400 text-sm">← All Games</a>
                     <a href="spottheformat.html" class="text-gray-500 hover:text-blue-400 text-sm">Spot the Format (untimed)</a>
                     <a href="leaderboard.html" class="text-gray-500 hover:text-red-400 text-sm">🏆 Leaderboard</a>
                 </div>
@@ -676,17 +597,7 @@
         const ctx = canvas.getContext('2d');
         const canvasContainer = document.getElementById('canvasContainer');
         
-        const TEXT_SAMPLES = [
-            "Dorothy lived in the midst of the great Kansas prairies with Uncle Henry and Aunt Em. Their house was small, for the lumber had to be carried many miles by wagon.",
-            "The little girl gave a cry of amazement and looked about her. Her eyes grew bigger and bigger at the wonderful sights she saw. The cyclone had set the house down very gently.",
-            "These people were not as big as the grown folk she had always been used to. Neither were they very small or tiny. In fact, they seemed about as tall as Dorothy herself.",
-            "You must go to the City of Emeralds. Perhaps Oz will help you on your journey. It is a long journey through a country that is sometimes pleasant and sometimes dark and terrible.",
-            "The road to the City of Emeralds is paved with yellow brick. You cannot miss it if you follow the path carefully. When you get to Oz do not be afraid of him at all.",
-            "I will use all the magic arts I know of to keep you from harm. You must be brave and trust in the journey ahead. Good things await those who persevere through challenges.",
-            "There were lovely patches of green sward all about. Stately trees bearing rich and luscious fruits were everywhere. Banks of gorgeous flowers scented the air with their perfume.",
-            "The houses of the Munchkins were odd looking dwellings. Each was round with a big dome for a roof. All were painted blue, for that was the favorite color in this country.",
-            "She noticed coming down toward her a group of people. They were the strangest people she had ever seen. They were not as large as adults but larger than children.",
-            "Before them was a great stretch of country having a floor as smooth and shining as a mirror. It seemed to stretch to the edge of the sky in all directions."
+        const TEXT_SAMPLES = ["Dorothy lived in the midst of the great Kansas prairies with Uncle Henry and Aunt Em. Their house was small, for the lumber had to be carried many miles by wagon.","The little girl gave a cry of amazement and looked about her. Her eyes grew bigger and bigger at the wonderful sights she saw. The cyclone had set the house down very gently.","These people were not as big as the grown folk she had always been used to. Neither were they very small or tiny. In fact, they seemed about as tall as Dorothy herself.","You must go to the City of Emeralds. Perhaps Oz will help you on your journey. It is a long journey through a country that is sometimes pleasant and sometimes dark and terrible.","The road to the City of Emeralds is paved with yellow brick. You cannot miss it if you follow the path carefully. When you get to Oz do not be afraid of him at all.","I will use all the magic arts I know of to keep you from harm. You must be brave and trust in the journey ahead. Good things await those who persevere through challenges.","There were lovely patches of green sward all about. Stately trees bearing rich and luscious fruits were everywhere. Banks of gorgeous flowers scented the air with their perfume.","The houses of the Munchkins were odd looking dwellings. Each was round with a big dome for a roof. All were painted blue, for that was the favorite color in this country.","She noticed coming down toward her a group of people. They were the strangest people she had ever seen. They were not as large as adults but larger than children.","Before them was a great stretch of country having a floor as smooth and shining as a mirror. It seemed to stretch to the edge of the sky in all directions."
         ];
 
         let roundNumber = 0;
@@ -982,7 +893,7 @@
             } else {
                 feedbackEl.textContent = '💥 Time ran out!';
             }
-            feedbackEl.className = 'text-lg font-bold mb-4 text-red-500';
+            feedbackEl.className = 'text-lg font-bold mb-4 text-red-400';
             
             // Longer delay so they can see what was wrong
             setTimeout(() => {
@@ -1074,7 +985,7 @@
                 gameOverSubtitle.textContent = 'You cashed out!';
             } else {
                 gameOverTitle.textContent = '💥 GAME OVER';
-                gameOverTitle.className = 'text-4xl font-extrabold mb-2 text-red-500 glow-danger';
+                gameOverTitle.className = 'text-4xl font-extrabold mb-2 text-red-400 glow-danger';
                 gameOverSubtitle.textContent = survivorMode ? 'Survivor mode ended!' : 'The bomb exploded!';
             }
             
