@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balanced Placement II v1.0.3</title>
+    <title>Balanced Placement II v1.1.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -506,6 +506,24 @@
         // GAME STATE
         // ============================================
         const MAX_ROUNDS = 10;
+        const TEACHING_ROUNDS = 3;
+        let teachingPlan = []; // Pre-planned alignment+shape for rounds 1-3
+        
+        function buildTeachingPlan() {
+            // Guarantee: one left-on-wide, one right-on-wide, one center/justify (any shape)
+            const plan = [
+                { alignment: 'left', isWide: true },
+                { alignment: 'right', isWide: true },
+                { alignment: Math.random() > 0.5 ? 'center' : 'justify', isWide: Math.random() > 0.5 }
+            ];
+            // Shuffle
+            for (let i = plan.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [plan[i], plan[j]] = [plan[j], plan[i]];
+            }
+            return plan;
+        }
+        
         const ALIGNMENTS = ['left', 'right', 'center', 'justify'];
         
         let roundNumber = 0;
@@ -558,6 +576,7 @@
             roundNumber = 0;
             totalScore = 0;
             usedContent = [];
+            teachingPlan = buildTeachingPlan();
             
             document.getElementById('totalScore').textContent = '0';
             document.getElementById('roundCounter').textContent = '1';
@@ -608,11 +627,17 @@
             const crops = currentContent.cropOptions || ['circle', 'square', 'rectangle'];
             currentCrop = crops[Math.floor(Math.random() * crops.length)];
             
-            // Pick random text alignment
-            currentAlignment = ALIGNMENTS[Math.floor(Math.random() * ALIGNMENTS.length)];
-            
-            // Generate container (wide or tall)
-            isWide = Math.random() > 0.5;
+            // Alignment and container shape
+            if (roundNumber <= TEACHING_ROUNDS && teachingPlan[roundNumber - 1]) {
+                // Teaching rounds: use pre-planned alignment + shape
+                const plan = teachingPlan[roundNumber - 1];
+                currentAlignment = plan.alignment;
+                isWide = plan.isWide;
+            } else {
+                // Regular rounds: random
+                currentAlignment = ALIGNMENTS[Math.floor(Math.random() * ALIGNMENTS.length)];
+                isWide = Math.random() > 0.5;
+            }
             
             // Update alignment indicator (after isWide is set)
             updateAlignmentUI();
@@ -685,20 +710,28 @@
         function updateAlignmentUI() {
             const badge = document.getElementById('alignmentBadge');
             const hint = document.getElementById('sideHint');
+            const isTeaching = roundNumber <= TEACHING_ROUNDS;
             
             const names = { left: 'Left Aligned', right: 'Right Aligned', center: 'Center Aligned', justify: 'Justified' };
             badge.textContent = '📝 ' + names[currentAlignment];
             
-            if (isWide) {
-                if (currentAlignment === 'right') {
-                    hint.textContent = 'Right-aligned text → place on the left side';
-                } else if (currentAlignment === 'left') {
-                    hint.textContent = 'Left-aligned text → place on the right side';
+            if (isTeaching) {
+                // Teaching rounds: show placement guidance
+                hint.style.display = '';
+                if (isWide) {
+                    if (currentAlignment === 'right') {
+                        hint.textContent = '📖 Teaching: Right-aligned text → place on the left side';
+                    } else if (currentAlignment === 'left') {
+                        hint.textContent = '📖 Teaching: Left-aligned text → place on the right side';
+                    } else {
+                        hint.textContent = '📖 Teaching: Centered/justified text → either side works';
+                    }
                 } else {
-                    hint.textContent = 'Centered/justified text → either side works';
+                    hint.textContent = '📖 Teaching: Vertical layout → either position works. Focus on equal spacing!';
                 }
             } else {
-                hint.textContent = 'Vertical layout → either position works. Focus on equal spacing!';
+                // Regular rounds: no hint
+                hint.style.display = 'none';
             }
         }
         
