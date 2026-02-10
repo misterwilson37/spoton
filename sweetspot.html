@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Spot v2.0.3</title>
+    <title>Sweet Spot v2.0.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="games.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -113,97 +114,33 @@
             background: #2a2a3e;
         }
         
-        .btn-google {
-            background: white;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-        }
-        .btn-google:hover {
-            background: #f0f0f0;
-        }
         
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: var(--bg-panel);
-            border-radius: 20px;
-            font-size: 12px;
-        }
         
-        .user-badge img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
         
-        .initials-input {
-            background: var(--bg-panel);
-            border: 2px solid var(--accent-primary);
-            color: white;
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            width: 120px;
-            padding: 12px;
-            border-radius: 8px;
-            letter-spacing: 8px;
-        }
-        .initials-input:focus {
-            outline: none;
-            box-shadow: 0 0 20px var(--accent-primary);
-        }
         
-        .leaderboard {
-            background: var(--bg-panel);
-            border-radius: 12px;
-            padding: 16px;
-            width: 100%;
-            max-width: 400px;
-        }
         
-        .leaderboard-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 6px;
-        }
         
-        .leaderboard-row:nth-child(odd) {
-            background: rgba(255,255,255,0.05);
-        }
         
-        .leaderboard-row.highlight {
-            background: rgba(123, 175, 212, 0.2);
-            border: 1px solid var(--accent-primary);
-        }
         
-        .leaderboard-rank {
-            font-weight: bold;
-            width: 30px;
-            color: var(--accent-grey);
-        }
         
-        .leaderboard-row:nth-child(1) .leaderboard-rank { color: gold; }
-        .leaderboard-row:nth-child(2) .leaderboard-rank { color: silver; }
-        .leaderboard-row:nth-child(3) .leaderboard-rank { color: #cd7f32; }
         
-        .leaderboard-initials {
-            font-weight: bold;
-            flex: 1;
-            margin-left: 12px;
-        }
         
-        .leaderboard-score {
-            font-weight: bold;
-            color: var(--accent-primary);
-        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        .leaderboard-row:nth-child(1) 
+        .leaderboard-row:nth-child(2) 
+        .leaderboard-row:nth-child(3) 
+        
+        
+        
+        
         
         #gameContainer {
             background-size: contain;
@@ -388,9 +325,15 @@
                 opacity: 0; 
             }
         }
-    </style>
+        </style>
 </head>
 <body>
+    <!-- Persistent Navigation -->
+    <div class="nav-links" style="position:fixed; top:0; left:0; right:0; z-index:100; padding:0.75rem 1.5rem; pointer-events:none;">
+        <a href="index.html" class="nav-link" style="pointer-events:auto;">← All Games</a>
+        <a href="leaderboard.html" class="nav-link" style="pointer-events:auto;">🏆 Leaderboard</a>
+    </div>
+
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="spinner mb-6"></div>
@@ -399,10 +342,6 @@
     
     <!-- Start Screen -->
     <div id="startScreen" class="start-screen hidden">
-        <div class="absolute top-4 left-0 right-0 flex justify-between px-6 max-w-md mx-auto">
-            <a href="index.html" class="text-gray-500 hover:text-cyan-400 text-sm">← All Games</a>
-            <a href="leaderboard.html" class="text-gray-500 hover:text-cyan-400 text-sm">🏆 Leaderboard</a>
-        </div>
         <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">SWEET SPOT</h1>
         <p class="text-gray-400 mb-6 max-w-md text-center">Find the perfect placement for text on images.</p>
         
