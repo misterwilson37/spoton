@@ -1,5 +1,5 @@
 /* =============================================
-   SPOT ON! GAMES - Shared Stylesheet v1.0.1
+   SPOT ON! GAMES - Shared Stylesheet v1.1.0
    ============================================= */
 
 /* =============================================
@@ -31,7 +31,7 @@
     --text-muted: #6b7280;
     
     /* Sizing */
-    --game-max-width: 900px;
+    --game-max-width: 650px;
     --border-radius: 12px;
     --border-radius-sm: 8px;
 }
