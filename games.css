@@ -1,5 +1,5 @@
 /* =============================================
-   SPOT ON! GAMES - Shared Stylesheet v1.1.0
+   SPOT ON! GAMES - Shared Stylesheet v1.2.0
    ============================================= */
 
 /* =============================================
@@ -341,7 +341,7 @@ canvas {
     background: var(--bg-input);
     border-radius: var(--border-radius-sm);
     padding: 1rem;
-    margin-bottom: 1.5rem;
+    margin: 0 auto 1.5rem auto;
     text-align: left;
     max-width: 400px;
 }
@@ -371,7 +371,7 @@ canvas {
     background: var(--bg-input);
     border-radius: var(--border-radius-sm);
     padding: 1rem;
-    margin-top: 1rem;
+    margin: 1rem auto 0 auto;
     width: 100%;
     max-width: 350px;
     text-align: left;
