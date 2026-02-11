@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find the Center v1.1.0</title>
+    <title>Find the Center v1.1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
@@ -68,7 +68,7 @@
                 <p id="instructionText" class="game-subtitle" style="margin-bottom: 0.5rem;">Click as close as you can to the center of the shape.</p>
                 
                 <!-- Game Canvas -->
-                <div class="canvas-container" style="aspect-ratio: 1/1; max-height: 55vh;">
+                <div class="canvas-container" style="aspect-ratio: 1/1; max-height: 55vh; max-width: 55vh; width: auto; margin: 0.5rem auto;">
                     <canvas id="gameCanvas"></canvas>
                 </div>
 
@@ -87,8 +87,8 @@
                     </div>
                 </div>
 
-                <!-- Next Button -->
-                <div class="flex justify-center">
+                <!-- Next Button - fixed height to prevent layout jump -->
+                <div class="flex justify-center" style="min-height: 2.75rem;">
                     <button id="nextButton" class="btn btn-next hidden">
                         Next Shape
                     </button>
