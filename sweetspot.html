@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Spot v2.1.0</title>
+    <title>Sweet Spot v2.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
@@ -199,6 +199,7 @@
         }
         
         .start-screen {
+            padding-top: 2.5rem;
             position: fixed;
             inset: 0;
             background: var(--bg-dark);
@@ -268,12 +269,11 @@
 </head>
 <body>
     <!-- Persistent Navigation -->
-    <div class="nav-links" style="position:fixed; top:0; left:0; right:0; z-index:100; padding:0.75rem 1.5rem; pointer-events:none;">
-        <a href="index.html" class="nav-link" style="pointer-events:auto;">← All Games</a>
-        <a href="leaderboard.html" class="nav-link" style="pointer-events:auto;">🏆 Leaderboard</a>
+    <div class="nav-links">
+        <a href="index.html" class="nav-link">← All Games</a>
+        <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
     </div>
-
-    <!-- Loading Screen -->
+<!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="spinner mb-6"></div>
         <p class="text-gray-400">Loading levels...</p>
@@ -311,7 +311,7 @@
             </div>
         </div>
         
-        <button id="startGameBtn" class="btn btn-cyan text-lg px-12 py-4">Start Game</button>
+        <button id="startGameBtn" class="btn btn-primary">Start Game</button>
     </div>
     
     <!-- Game Over Screen -->
@@ -325,7 +325,7 @@
             <p style="color: var(--text-secondary);" class="mb-2">Enter your initials:</p>
             <div class="flex items-center gap-4 justify-center">
                 <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
-                <button id="submitScoreBtn" class="btn btn-cyan">Submit</button>
+                <button id="submitScoreBtn" class="btn btn-primary">Submit</button>
             </div>
             <p id="initialsError" class="text-red-400 text-sm mt-2 hidden">Please choose different initials.</p>
         </div>
@@ -343,14 +343,14 @@
         
         <!-- Leaderboard -->
         <div class="leaderboard mb-6">
-            <h3 class="leaderboard-title text-center">🏆 Top 10 Scores</h3>
+            <h3 class="leaderboard-title">🏆 Top 10 Scores</h3>
             <div id="leaderboardList">
-                <p class="text-gray-500 text-center py-4">Loading...</p>
+                <p class="loading-text text-center">Loading...</p>
             </div>
         </div>
         
         <div class="flex gap-4">
-            <button id="playAgainBtn" class="btn btn-cyan">Play Again</button>
+            <button id="playAgainBtn" class="btn btn-primary">Play Again</button>
         </div>
     </div>
     
@@ -358,7 +358,7 @@
     <div id="gameScreen" class="hidden">
         <header class="border-b border-gray-800 py-4 px-6">
             <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <h1 class="text-xl font-bold heading glow-primary">SWEET SPOT</h1>
+                <h1 class="game-title" style="font-size: clamp(1.25rem, 4vw, 1.75rem); margin-bottom: 0;">Sweet Spot</h1>
                 <div class="flex items-center gap-6">
                     <div class="stat-box py-2 px-4">
                         <span class="stat-label">Level</span>
@@ -391,7 +391,7 @@
             <div id="feedbackArea" class="feedback-text mb-2 text-center text-lg font-bold"></div>
             
             <div id="nextControls" class="hidden flex justify-center mt-2">
-                <button id="nextLevelBtn" class="btn btn-cyan">Next Level →</button>
+                <button id="nextLevelBtn" class="btn btn-primary">Next Level →</button>
             </div>
         </main>
     </div>
@@ -639,7 +639,7 @@
                     .get();
                 
                 if (snapshot.empty) {
-                    leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">No scores yet. Be the first!</p>';
+                    leaderboardList.innerHTML = '<p class="loading-text text-center">No scores yet. Be the first!</p>';
                     return [];
                 }
                 
@@ -655,7 +655,7 @@
         
         function renderLeaderboard(scores, highlightId = null) {
             if (scores.length === 0) {
-                leaderboardList.innerHTML = '<p class="text-gray-500 text-center py-4">No scores yet. Be the first!</p>';
+                leaderboardList.innerHTML = '<p class="loading-text text-center">No scores yet. Be the first!</p>';
                 return;
             }
             
