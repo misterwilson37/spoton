@@ -1,5 +1,5 @@
 /* =============================================
-   SPOT ON! GAMES - Shared Stylesheet v1.2.0
+   SPOT ON! GAMES - Shared Stylesheet v2.0.0
    ============================================= */
 
 /* =============================================
@@ -64,7 +64,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: 2.5rem 1rem 1rem;
 }
 
 .game-container {
@@ -76,8 +76,9 @@ body {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 2rem);
-    max-height: calc(100dvh - 2rem);
+    text-align: center;
+    max-height: calc(100vh - 3.5rem);
+    max-height: calc(100dvh - 3.5rem);
     overflow-y: auto;
 }
 
@@ -96,13 +97,10 @@ canvas {
    ============================================= */
 .screen {
     display: none;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
 }
 
 .screen.active {
-    display: flex;
+    display: block;
 }
 
 /* =============================================
@@ -132,11 +130,20 @@ canvas {
    NAV LINKS
    ============================================= */
 .nav-links {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
     display: flex;
     justify-content: space-between;
-    width: 100%;
-    margin-bottom: 1rem;
+    padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
+    pointer-events: none;
+}
+
+.nav-links .nav-link {
+    pointer-events: auto;
 }
 
 .nav-link {
@@ -378,6 +385,7 @@ canvas {
 }
 
 .leaderboard-title {
+    text-align: center;
     font-weight: 600;
     margin-bottom: 0.75rem;
     color: var(--text-primary);
@@ -497,6 +505,11 @@ canvas {
 /* =============================================
    NEXT BUTTON (shown after round feedback)
    ============================================= */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
 .btn-next {
     background: var(--primary);
     color: var(--bg-dark);
