@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Spot v2.0.3</title>
+    <title>Sweet Spot v2.1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="games.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -14,60 +15,35 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
+        /* Sweet Spot - Game-specific styles */
+        /* Alias vars for backward compat */
         :root {
-            --bg-dark: #1a1a1a;
-            --bg-panel: #2a2a2a;
-            --accent-primary: #7BAFD4; /* Carolina Blue */
-            --accent-light: #a8d1f0;
+            --accent-primary: var(--primary);
+            --accent-light: var(--primary-light);
             --accent-grey: #666666;
             --accent-success: #6fbf73;
-            --text-primary: #ffffff;
-            --border-color: #444444;
+            --bg-panel: var(--bg-card);
+            --border-color: var(--border);
         }
         
-        * { box-sizing: border-box; }
+        body { cursor: default; }
         
-        body {
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-            cursor: default;
-        }
-        
-        h1, h2, h3, .heading {
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            font-weight: 700;
-        }
-        
-        .glow-primary { text-shadow: 0 0 15px var(--accent-primary); }
+        .glow-primary { text-shadow: 0 0 15px var(--primary); color: var(--primary); }
         .glow-grey { text-shadow: 0 0 20px var(--accent-grey); }
         
         .panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 16px;
         }
         
-        .btn {
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 1px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border: none;
-        }
-        
+        /* Game buttons - extend base .btn from games.css */
         .btn-cyan {
-            background: var(--accent-primary);
+            background: var(--primary);
             color: var(--bg-dark);
         }
         .btn-cyan:hover {
-            box-shadow: 0 0 30px var(--accent-primary);
+            box-shadow: 0 0 30px var(--primary);
             transform: translateY(-2px);
         }
         
@@ -82,12 +58,12 @@
         
         .btn-outline {
             background: transparent;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border);
             color: var(--text-primary);
         }
         .btn-outline:hover {
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
+            border-color: var(--primary);
+            color: var(--primary);
         }
         
         .btn-white {
@@ -113,98 +89,7 @@
             background: #2a2a3e;
         }
         
-        .btn-google {
-            background: white;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-        }
-        .btn-google:hover {
-            background: #f0f0f0;
-        }
-        
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: var(--bg-panel);
-            border-radius: 20px;
-            font-size: 12px;
-        }
-        
-        .user-badge img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
-        
-        .initials-input {
-            background: var(--bg-panel);
-            border: 2px solid var(--accent-primary);
-            color: white;
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            width: 120px;
-            padding: 12px;
-            border-radius: 8px;
-            letter-spacing: 8px;
-        }
-        .initials-input:focus {
-            outline: none;
-            box-shadow: 0 0 20px var(--accent-primary);
-        }
-        
-        .leaderboard {
-            background: var(--bg-panel);
-            border-radius: 12px;
-            padding: 16px;
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .leaderboard-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 6px;
-        }
-        
-        .leaderboard-row:nth-child(odd) {
-            background: rgba(255,255,255,0.05);
-        }
-        
-        .leaderboard-row.highlight {
-            background: rgba(123, 175, 212, 0.2);
-            border: 1px solid var(--accent-primary);
-        }
-        
-        .leaderboard-rank {
-            font-weight: bold;
-            width: 30px;
-            color: var(--accent-grey);
-        }
-        
-        .leaderboard-row:nth-child(1) .leaderboard-rank { color: gold; }
-        .leaderboard-row:nth-child(2) .leaderboard-rank { color: silver; }
-        .leaderboard-row:nth-child(3) .leaderboard-rank { color: #cd7f32; }
-        
-        .leaderboard-initials {
-            font-weight: bold;
-            flex: 1;
-            margin-left: 12px;
-        }
-        
-        .leaderboard-score {
-            font-weight: bold;
-            color: var(--accent-primary);
-        }
-        
+        /* Game container */
         #gameContainer {
             background-size: contain;
             background-position: center;
@@ -223,8 +108,8 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             user-select: none;
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
-            font-size: 3.5rem; /* Fallback, will be overridden by JS */
+            font-family: inherit;
+            font-size: 3.5rem;
             font-weight: 800;
             line-height: 1.1;
             text-align: center;
@@ -257,7 +142,6 @@
         
         .score-popup {
             position: absolute;
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             font-size: 3rem;
             font-weight: 800;
             pointer-events: none;
@@ -272,7 +156,7 @@
         
         .stat-box {
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 12px;
             padding: 16px 24px;
         }
@@ -281,15 +165,15 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: #6b7280;
+            color: var(--text-muted);
         }
         
         .stat-value {
-            font-family: 'Century Gothic', 'Urbanist', 'Questrial', sans-serif;
             font-size: 2rem;
             font-weight: 800;
         }
         
+        /* Fullscreen overlays */
         .loading-screen {
             position: fixed;
             inset: 0;
@@ -304,8 +188,8 @@
         .spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid var(--border-color);
-            border-top-color: var(--accent-primary);
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -336,8 +220,6 @@
             z-index: 90;
         }
         
-        .hidden { display: none !important; }
-        
         .feedback-text {
             min-height: 80px;
             display: flex;
@@ -346,12 +228,12 @@
             justify-content: center;
         }
         
-        .feedback-good { color: #7BAFD4; }
+        .feedback-good { color: var(--primary); }
         .feedback-bad { color: #e74c3c; }
         .feedback-meh { color: #f59e0b; }
-        .feedback-hint { color: #94a3b8; font-style: italic; font-size: 0.9rem; }
+        .feedback-hint { color: var(--text-muted); font-style: italic; font-size: 0.9rem; }
         
-        /* Confetti animation for great scores */
+        /* Confetti */
         .confetti {
             position: fixed;
             width: 10px;
@@ -367,7 +249,7 @@
             100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
         
-        /* Firework animation for perfect scores */
+        /* Fireworks */
         .firework-particle {
             position: fixed;
             width: 8px;
@@ -379,18 +261,18 @@
             box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
         }
         @keyframes fireworkBurst {
-            0% { 
-                transform: translate(0, 0) scale(1); 
-                opacity: 1; 
-            }
-            100% { 
-                transform: translate(var(--tx), var(--ty)) scale(0.3); 
-                opacity: 0; 
-            }
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
         }
     </style>
 </head>
 <body>
+    <!-- Persistent Navigation -->
+    <div class="nav-links" style="position:fixed; top:0; left:0; right:0; z-index:100; padding:0.75rem 1.5rem; pointer-events:none;">
+        <a href="index.html" class="nav-link" style="pointer-events:auto;">← All Games</a>
+        <a href="leaderboard.html" class="nav-link" style="pointer-events:auto;">🏆 Leaderboard</a>
+    </div>
+
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="spinner mb-6"></div>
@@ -399,17 +281,13 @@
     
     <!-- Start Screen -->
     <div id="startScreen" class="start-screen hidden">
-        <div class="absolute top-4 left-0 right-0 flex justify-between px-6 max-w-md mx-auto">
-            <a href="index.html" class="text-gray-500 hover:text-cyan-400 text-sm">← All Games</a>
-            <a href="leaderboard.html" class="text-gray-500 hover:text-cyan-400 text-sm">🏆 Leaderboard</a>
-        </div>
-        <h1 class="text-5xl md:text-7xl font-bold heading glow-primary mb-4">SWEET SPOT</h1>
-        <p class="text-gray-400 mb-6 max-w-md text-center">Find the perfect placement for text on images.</p>
+        <h1 class="game-title" style="font-size: clamp(2.5rem, 8vw, 4rem); text-shadow: 0 0 20px rgba(123,175,212,0.4);">Sweet Spot</h1>
+        <p class="game-subtitle">Find the perfect placement for text on images.</p>
         
         <!-- How to Play -->
-        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 mb-6 text-left max-w-sm">
-            <h3 class="font-semibold text-gray-300 mb-2">How to Play:</h3>
-            <ul class="text-sm text-gray-400 space-y-1">
+        <div class="how-to-play">
+            <h3>How to Play:</h3>
+            <ul>
                 <li>• Click to place text on each image</li>
                 <li>• Choose white or black text color</li>
                 <li>• Find zones with best readability</li>
@@ -423,13 +301,13 @@
                 <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                 Sign in with Google
             </button>
-            <p class="text-gray-500 text-xs mt-2">Sign in to save your score to the leaderboard</p>
+            <p class="loading-text mt-1">Sign in to save your score</p>
         </div>
         <div id="userSignedIn" class="mb-6 hidden">
             <div class="user-badge">
                 <img id="userPhoto" src="" alt="">
                 <span id="userName">Player</span>
-                <button id="signOutBtn" class="text-gray-400 hover:text-white ml-2 text-xs">✕</button>
+                <span id="signOutBtn" class="sign-out">✕</span>
             </div>
         </div>
         
@@ -438,13 +316,13 @@
     
     <!-- Game Over Screen -->
     <div id="gameOverScreen" class="game-over-screen hidden">
-        <h2 class="text-4xl md:text-6xl font-bold heading glow-grey mb-4">GAME OVER</h2>
-        <p class="text-gray-400 mb-2">Final Score</p>
-        <p id="finalScore" class="text-6xl font-bold heading text-white mb-4">0</p>
+        <h1 class="game-title" style="text-shadow: 0 0 20px rgba(102,102,102,0.4);">Game Over</h1>
+        <p class="final-score-label">Final Score</p>
+        <p id="finalScore" class="final-score">0</p>
         
         <!-- Initials Entry (shown if signed in) -->
         <div id="initialsEntry" class="mb-6 hidden">
-            <p class="text-gray-400 mb-2">Enter your initials for the leaderboard:</p>
+            <p style="color: var(--text-secondary);" class="mb-2">Enter your initials:</p>
             <div class="flex items-center gap-4 justify-center">
                 <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
                 <button id="submitScoreBtn" class="btn btn-cyan">Submit</button>
@@ -465,7 +343,7 @@
         
         <!-- Leaderboard -->
         <div class="leaderboard mb-6">
-            <h3 class="text-center text-lg font-bold mb-4 text-gray-300">🏆 Top 10 Scores</h3>
+            <h3 class="leaderboard-title text-center">🏆 Top 10 Scores</h3>
             <div id="leaderboardList">
                 <p class="text-gray-500 text-center py-4">Loading...</p>
             </div>
@@ -488,7 +366,7 @@
                     </div>
                     <div class="stat-box py-2 px-4">
                         <span class="stat-label">Score</span>
-                        <span class="stat-value text-lg ml-2 text-cyan-400" id="totalScore">0</span>
+                        <span class="stat-value text-lg ml-2 text-[var(--primary)]" id="totalScore">0</span>
                     </div>
                 </div>
             </div>
