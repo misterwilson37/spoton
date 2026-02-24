@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balanced Placement II v2.0.0</title>
+    <title>Balanced Placement II v2.0.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -680,16 +680,34 @@
             };
             
             // Text element setup
-            const textW = elementSize * 1.1;
+            let textW = elementSize * 1.1;
             
             // Prepare text lines
-            const wrappedLines = wrapText(currentContent.text, textW - 8);
-            
-            // Height based on actual wrapped lines
             const fontSize = 11;
             const lineHeight = fontSize * 1.45;
             const textPadding = 6;
-            const textH = wrappedLines.length * lineHeight + textPadding * 2;
+            const maxTextH = containerRect.h * 0.85;
+            
+            let wrappedLines = wrapText(currentContent.text, textW - 8);
+            let textH = wrappedLines.length * lineHeight + textPadding * 2;
+            
+            // If text overflows container height, widen and rewrap
+            const longSide = Math.max(containerRect.w, containerRect.h);
+            const maxTextW = Math.min(longSide * 0.45, containerRect.w * 0.85);
+            while (textH > maxTextH && textW < maxTextW) {
+                textW += 10;
+                wrappedLines = wrapText(currentContent.text, textW - 8);
+                textH = wrappedLines.length * lineHeight + textPadding * 2;
+            }
+            
+            // If still too tall after max widening, truncate with ellipsis
+            if (textH > maxTextH) {
+                const maxLines = Math.max(1, Math.floor((maxTextH - textPadding * 2) / lineHeight));
+                wrappedLines = wrappedLines.slice(0, maxLines);
+                // Add ellipsis to last line
+                wrappedLines[wrappedLines.length - 1] = wrappedLines[wrappedLines.length - 1].replace(/\s+\S*$/, '') + '…';
+                textH = wrappedLines.length * lineHeight + textPadding * 2;
+            }
             
             textElement = {
                 x: canvas.width * 0.88,
