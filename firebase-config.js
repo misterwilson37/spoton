@@ -1,16 +1,13 @@
 // Firebase Configuration
 // Using existing ellisbell Firebase project
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyA0idCPsfQBJjLq7rsEXOrb1fVlzyVuJYA",
-    authDomain: "spotongames.firebaseapp.com",
-    projectId: "spotongames",
-    storageBucket: "spotongames.firebasestorage.app",
-    messagingSenderId: "733304601780",
-    appId: "1:733304601780:web:cc7062164ca6d978a72be1",
-    measurementId: "G-7EX4VJN5P7"
-  };
-
+const firebaseConfig = {
+  apiKey: "AIzaSyDfo45UBu-pR8nqMQhVlS_QgyYZ2kzBdvM",
+  authDomain: "ellisbell-c185c.firebaseapp.com",
+  projectId: "ellisbell-c185c",
+  storageBucket: "ellisbell-c185c.firebasestorage.app",
+  appId: "1:441560045695:web:94e51a006663404b8f474a"
+};
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
