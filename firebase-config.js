@@ -2,12 +2,15 @@
 // Using existing ellisbell Firebase project
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDfo45UBu-pR8nqMQhVlS_QgyYZ2kzBdvM",
-  authDomain: "ellisbell-c185c.firebaseapp.com",
-  projectId: "ellisbell-c185c",
-  storageBucket: "ellisbell-c185c.firebasestorage.app",
-  appId: "1:441560045695:web:94e51a006663404b8f474a"
+  apiKey: "AIzaSyDwfaJB8LVa6NX2kOPI7j4pCmQyiH3H4Lc",
+  authDomain: "spot-on-games.firebaseapp.com",
+  projectId: "spot-on-games",
+  storageBucket: "spot-on-games.firebasestorage.app",
+  messagingSenderId: "77896599950",
+  appId: "1:77896599950:web:3df9ec887881b57ba13cdf",
+  measurementId: "G-ZH4C895G2G"
 };
+
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
