@@ -3,16 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Spot v2.2.0</title>
+    <title>Sweet Spot v2.3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         /* Sweet Spot - Game-specific styles */
@@ -396,13 +390,17 @@
         </main>
     </div>
 
-    <script src="firebase-config.js"></script>
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { firebaseConfig } from "./firebase-config.js";
+
         // ============================================
         // FIREBASE & STATE
         // ============================================
         
-        let db, storage, auth;
+        let app, db, auth;
         let currentUser = null;
         let allLevels = []; // All loaded levels from Firebase
         let gameImages = []; // Levels for current game (shuffled subset)
@@ -538,23 +536,13 @@
             const statusText = document.querySelector('#loadingScreen p');
             
             try {
-                // Check if config loaded
-                if (typeof firebaseConfig === 'undefined') {
-                    throw new Error("firebase-config.js not loaded. Make sure the file exists.");
-                }
-                
-                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                    throw new Error("Firebase not configured - update firebase-config.js");
-                }
-                
                 statusText.textContent = 'Connecting to Firebase...';
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                storage = firebase.storage();
-                auth = firebase.auth();
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
                 
                 // Set up auth state listener
-                auth.onAuthStateChanged((user) => {
+                onAuthStateChanged(auth, (user) => {
                     currentUser = user;
                     updateAuthUI();
                 });
@@ -571,8 +559,6 @@
                 // Show specific error message
                 if (error.message.includes("No levels found")) {
                     statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #7BAFD4; text-decoration: underline;">Open Admin Panel</a> and run the migration first.';
-                } else if (error.message.includes("firebase-config.js")) {
-                    statusText.textContent = error.message;
                 } else if (error.code === 'permission-denied') {
                     statusText.textContent = 'Permission denied. Check Firestore security rules.';
                 } else {
@@ -599,8 +585,8 @@
         
         async function signInWithGoogle() {
             try {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                await auth.signInWithPopup(provider);
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
             } catch (error) {
                 if (error.code !== 'auth/popup-closed-by-user') {
                     console.error('Sign in error:', error);
@@ -611,7 +597,7 @@
         
         async function signOut() {
             try {
-                await auth.signOut();
+                await fbSignOut(auth);
             } catch (error) {
                 console.error('Sign out error:', error);
             }
@@ -632,11 +618,13 @@
         
         async function loadLeaderboard() {
             try {
-                const snapshot = await db.collection('scores')
-                    .where('gameId', '==', 'sweet-spot')
-                    .orderBy('score', 'desc')
-                    .limit(10)
-                    .get();
+                const q = query(
+                    collection(db, 'scores'),
+                    where('gameId', '==', 'sweet-spot'),
+                    orderBy('score', 'desc'),
+                    limit(10)
+                );
+                const snapshot = await getDocs(q);
                 
                 if (snapshot.empty) {
                     leaderboardList.innerHTML = '<p class="loading-text text-center">No scores yet. Be the first!</p>';
@@ -676,10 +664,12 @@
         
         async function getPlayerRank(playerScore) {
             try {
-                const snapshot = await db.collection('scores')
-                    .where('gameId', '==', 'sweet-spot')
-                    .where('score', '>', playerScore)
-                    .get();
+                const q = query(
+                    collection(db, 'scores'),
+                    where('gameId', '==', 'sweet-spot'),
+                    where('score', '>', playerScore)
+                );
+                const snapshot = await getDocs(q);
                 return snapshot.size + 1;
             } catch (error) {
                 console.error('Get rank error:', error);
@@ -700,11 +690,11 @@
                     photoURL: currentUser.photoURL || '',
                     uid: currentUser.uid,
                     levelCount: gameImages.length,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    timestamp: serverTimestamp(),
                     flagged: containsProfanity(initials) // Auto-flag suspicious initials
                 };
                 
-                const docRef = await db.collection('scores').add(scoreData);
+                const docRef = await addDoc(collection(db, 'scores'), scoreData);
                 return docRef.id;
             } catch (error) {
                 console.error('Submit score error:', error);
@@ -714,7 +704,7 @@
         
         async function loadLevels() {
             try {
-                const snapshot = await db.collection('levels').get();
+                const snapshot = await getDocs(collection(db, 'levels'));
                 
                 if (snapshot.empty) {
                     throw new Error("No levels found");
