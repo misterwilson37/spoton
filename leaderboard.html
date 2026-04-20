@@ -3,15 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Leaderboard v1.1.0</title>
+    <title>Spot On! Leaderboard v1.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <style>
         :root {
             --carolina-blue: #7BAFD4;
@@ -22,24 +17,18 @@
             --text-muted: #9ca3af;
             --border-color: #444444;
         }
-        
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
         }
-        
-        .glow {
-            text-shadow: 0 0 15px var(--carolina-blue);
-        }
-        
+        .glow { text-shadow: 0 0 15px var(--carolina-blue); }
         .panel {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 12px;
         }
-        
         .filter-btn {
             padding: 8px 16px;
             border-radius: 6px;
@@ -61,7 +50,6 @@
             color: var(--bg-dark);
             font-weight: 600;
         }
-        
         .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
@@ -83,17 +71,14 @@
         .leaderboard-table tr:hover {
             background: rgba(123, 175, 212, 0.05);
         }
-        
         .rank-1 { color: #fbbf24; font-weight: 700; }
         .rank-2 { color: #9ca3af; font-weight: 700; }
         .rank-3 { color: #cd7f32; font-weight: 700; }
-        
         .score-value {
             font-weight: 700;
             color: var(--carolina-blue);
             font-size: 18px;
         }
-        
         .game-badge {
             display: inline-block;
             padding: 4px 10px;
@@ -103,14 +88,14 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .game-sweet-spot { background: rgba(123, 175, 212, 0.2); color: var(--carolina-blue); }
-        .game-find-the-center { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-        .game-perfect-alignment { background: rgba(52, 211, 153, 0.2); color: #34d399; }
-        .game-balanced-placement { background: rgba(167, 139, 250, 0.2); color: #a78bfa; }
-        .game-picture-perfect { background: rgba(251, 113, 133, 0.2); color: #fb7185; }
-        .game-spot-the-format { background: rgba(34, 211, 238, 0.2); color: #22d3ee; }
-        .game-format-frenzy { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        
+        .game-sweet-spot          { background: rgba(123, 175, 212, 0.2); color: var(--carolina-blue); }
+        .game-find-the-center     { background: rgba(251, 191, 36, 0.2);  color: #fbbf24; }
+        .game-perfect-alignment   { background: rgba(52, 211, 153, 0.2);  color: #34d399; }
+        .game-balanced-placement  { background: rgba(167, 139, 250, 0.2); color: #a78bfa; }
+        .game-balanced-placement-ii { background: rgba(196, 181, 253, 0.2); color: #c4b5fd; }
+        .game-picture-perfect     { background: rgba(251, 113, 133, 0.2); color: #fb7185; }
+        .game-spot-the-format     { background: rgba(34, 211, 238, 0.2);  color: #22d3ee; }
+        .game-format-frenzy       { background: rgba(239, 68, 68, 0.2);   color: #ef4444; }
         .back-link {
             color: var(--text-muted);
             text-decoration: none;
@@ -120,14 +105,11 @@
             gap: 6px;
             transition: color 0.2s;
         }
-        .back-link:hover {
-            color: var(--carolina-blue);
-        }
+        .back-link:hover { color: var(--carolina-blue); }
     </style>
 </head>
 <body>
     <div class="min-h-screen">
-        <!-- Header -->
         <header class="border-b border-gray-800 py-4 px-6">
             <div class="max-w-4xl mx-auto flex items-center justify-between">
                 <a href="index.html" class="nav-link">← All Games</a>
@@ -135,15 +117,13 @@
                 <div style="width: 80px;"></div>
             </div>
         </header>
-        
-        <!-- Main Content -->
+
         <main class="max-w-4xl mx-auto p-6">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold mb-2">🏆 Leaderboard</h2>
                 <p class="text-gray-400">Top scores across all games</p>
             </div>
-            
-            <!-- Game Filters -->
+
             <div class="flex flex-wrap gap-2 justify-center mb-6">
                 <button class="filter-btn active" data-game="all">All Games</button>
                 <button class="filter-btn" data-game="sweet-spot">Sweet Spot</button>
@@ -155,8 +135,7 @@
                 <button class="filter-btn" data-game="spot-the-format">Spot the Format</button>
                 <button class="filter-btn" data-game="format-frenzy">Format Frenzy</button>
             </div>
-            
-            <!-- Leaderboard Table -->
+
             <div class="panel overflow-hidden">
                 <table class="leaderboard-table">
                     <thead>
@@ -174,69 +153,75 @@
                     </tbody>
                 </table>
             </div>
-            
+
             <p id="scoreCount" class="text-center text-gray-500 text-sm mt-4"></p>
         </main>
-        
-        <!-- Footer -->
+
         <footer class="text-center py-6 text-gray-600 text-sm">
             <p>Spot On! Perception Games</p>
         </footer>
     </div>
 
-    <script src="firebase-config.js"></script>
-    <script>
-        let db;
-        let allScores = [];
-        let currentFilter = 'all';
-        
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { firebaseConfig } from "./firebase-config.js";
+
+        // Games shown in the unified leaderboard (all higher-is-better by design).
+        // Format Trainer uses time-based scores in the same `scores` collection and
+        // should not be mixed into the "All Games" view; it's excluded here.
         const GAME_NAMES = {
             'sweet-spot': 'Sweet Spot',
             'find-the-center': 'Find the Center',
             'perfect-alignment': 'Perfect Alignment',
             'balanced-placement': 'Balanced Placement',
+            'balanced-placement-ii': 'Balanced Placement II',
             'picture-perfect': 'Picture Perfect',
             'spot-the-format': 'Spot the Format',
             'format-frenzy': 'Format Frenzy'
         };
-        
+
         const GAME_CLASSES = {
             'sweet-spot': 'game-sweet-spot',
             'find-the-center': 'game-find-the-center',
             'perfect-alignment': 'game-perfect-alignment',
             'balanced-placement': 'game-balanced-placement',
+            'balanced-placement-ii': 'game-balanced-placement-ii',
             'picture-perfect': 'game-picture-perfect',
             'spot-the-format': 'game-spot-the-format',
             'format-frenzy': 'game-format-frenzy'
         };
-        
+
+        const KNOWN_GAME_IDS = new Set(Object.keys(GAME_NAMES));
+
+        let db;
+        let allScores = [];
+        let currentFilter = 'all';
+
         async function initFirebase() {
             try {
-                if (typeof firebaseConfig === 'undefined') {
-                    showError('Firebase config not found');
-                    return;
-                }
-                
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
                 await loadScores();
             } catch (error) {
                 console.error('Firebase init error:', error);
                 showError('Failed to connect to database');
             }
         }
-        
+
         async function loadScores() {
             const tbody = document.getElementById('leaderboardBody');
             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Loading...</td></tr>';
-            
+
             try {
-                const snapshot = await db.collection('scores')
-                    .orderBy('score', 'desc')
-                    .limit(100)
-                    .get();
-                
+                // Pull a wider top slice so we still fill the table after filtering
+                // out unknown gameIds (e.g. Format Trainer, which sorts ascending).
+                const q = query(
+                    collection(db, 'scores'),
+                    orderBy('score', 'desc'),
+                    limit(200)
+                );
+                const snapshot = await getDocs(q);
                 allScores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderScores();
             } catch (error) {
@@ -244,29 +229,34 @@
                 showError('Failed to load scores');
             }
         }
-        
+
         function renderScores() {
             const tbody = document.getElementById('leaderboardBody');
             const countEl = document.getElementById('scoreCount');
-            
-            // Filter scores
-            let filtered = allScores;
-            if (currentFilter !== 'all') {
+
+            let filtered;
+            if (currentFilter === 'all') {
+                // Unified view: only higher-is-better games we know about.
+                filtered = allScores.filter(s => KNOWN_GAME_IDS.has(s.gameId));
+            } else {
                 filtered = allScores.filter(s => s.gameId === currentFilter);
             }
-            
+
+            // Cap display at 100 to match previous behavior.
+            filtered = filtered.slice(0, 100);
+
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">No scores yet. Be the first!</td></tr>';
                 countEl.textContent = '';
                 return;
             }
-            
+
             tbody.innerHTML = filtered.map((score, index) => {
                 const rank = index + 1;
                 const rankClass = rank <= 3 ? `rank-${rank}` : '';
                 const gameName = GAME_NAMES[score.gameId] || score.gameId;
                 const gameClass = GAME_CLASSES[score.gameId] || 'game-sweet-spot';
-                
+
                 return `
                     <tr>
                         <td class="${rankClass}">#${rank}</td>
@@ -276,23 +266,22 @@
                     </tr>
                 `;
             }).join('');
-            
-            countEl.textContent = `Showing ${filtered.length} scores`;
+
+            countEl.textContent = `Showing ${filtered.length} score${filtered.length === 1 ? '' : 's'}`;
         }
-        
+
         function showError(message) {
             const tbody = document.getElementById('leaderboardBody');
             tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-400">${escapeHtml(message)}</td></tr>`;
         }
-        
+
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
-        // Filter button handlers
+
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -301,8 +290,7 @@
                 renderScores();
             });
         });
-        
-        // Init
+
         initFirebase();
     </script>
 </body>
