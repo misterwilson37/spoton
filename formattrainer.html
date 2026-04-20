@@ -176,15 +176,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, signOut as fbSignOut, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // *** REPLACE with your spotongames config ***
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "spotongames.firebaseapp.com",
-            projectId: "spotongames",
-            storageBucket: "spotongames.appspot.com",
-            appId: "YOUR_APP_ID"
-        };
+        import { firebaseConfig } from "./firebase-config.js";
 
         let fbApp, auth, db, currentUser = null;
         try {
