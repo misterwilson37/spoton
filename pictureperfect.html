@@ -3,9 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v2.1.0</title>
+    <title>Picture Perfect v2.2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
+    <style>
+        /* =============================================
+           PICTURE PERFECT - page-scoped additions
+           Kept here rather than in games.css so the
+           shared stylesheet stays untouched for the
+           other games.
+           ============================================= */
+        .compare-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            text-align: left;
+            margin: -0.5rem 0 0.5rem;
+        }
+
+        .compare-status {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .compare-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+
+        .compare-label.is-corrected {
+            color: var(--primary-light);
+        }
+
+        .compare-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .btn-compare {
+            background: transparent;
+            color: var(--primary-light);
+            border: 1px solid var(--border-light);
+            padding: 0.35rem 0.8rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .btn-compare:hover:not(:disabled) {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(123, 175, 212, 0.25);
+        }
+
+        .pool-warning {
+            color: var(--warning);
+            font-size: 0.85rem;
+            margin: 0.5rem 0 0;
+        }
+
+        @media (max-width: 420px) {
+            .compare-bar {
+                justify-content: center;
+                text-align: center;
+            }
+            .compare-status {
+                align-items: center;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Persistent Navigation -->
@@ -28,6 +97,7 @@
                         <li>• Each image may be correct, stretched, or pixelated</li>
                         <li>• Identify the issue (or confirm it's correct)</li>
                         <li>• 100 points per correct answer</li>
+                        <li>• After you answer, compare your view to the fixed version</li>
                     </ul>
                 </div>
                 
@@ -50,6 +120,7 @@
                 <button id="startGameBtn" class="btn btn-primary">Start Game</button>
                 
                 <p id="imageCountInfo" class="image-count"></p>
+                <p id="poolWarning" class="pool-warning hidden">No images are available right now, so the game can't start. Check the picture-perfect-images collection.</p>
             </div>
             
             <!-- Game Screen -->
@@ -60,6 +131,15 @@
                 <!-- Game Canvas -->
                 <div id="canvasContainer" class="canvas-container">
                     <canvas id="gameCanvas"></canvas>
+                </div>
+
+                <!-- Compare control (shown after answering a round that had a defect) -->
+                <div id="compareBar" class="compare-bar hidden">
+                    <span class="compare-status">
+                        <span id="compareLabel" class="compare-label">Showing: the image as you saw it</span>
+                        <span class="compare-hint">Press C to flip between the two</span>
+                    </span>
+                    <button id="compareBtn" class="btn btn-compare">Show the fixed version</button>
                 </div>
 
                 <!-- Choice Buttons -->
@@ -284,15 +364,52 @@
         // GAME STATE
         // ============================================
         const TOTAL_ROUNDS = 10;
-        const DISTORTION_AMOUNT = 1.25;
-        
+
+        // --- Distortion tuning -------------------------------------------------
+        // The stretch factor is rolled fresh each round inside this range so
+        // students can't calibrate their eye to one fixed amount. Set MIN and MAX
+        // to the same number to go back to a single fixed factor.
+        const DISTORTION_MIN = 1.26;
+        const DISTORTION_MAX = 1.38;
+
+        // FIT_FRACTION is the share of the canvas the LARGEST possible render may
+        // occupy. The undistorted fit box is deliberately computed as
+        // FIT_FRACTION / DISTORTION_MAX so that:
+        //   1. a stretched image can never overflow the canvas and get clipped, and
+        //   2. the axis that is NOT stretched is always the same size, so overall
+        //      footprint never hints at the answer.
+        // Raise FIT_FRACTION toward 1.0 (or lower DISTORTION_MAX) for bigger images.
+        const FIT_FRACTION = 0.98;
+
+        // Block size for the pixelated mode, in CSS pixels.
+        const PIXEL_SIZE = 6;
+
+        // Give up on a URL after this many consecutive failures.
+        const MAX_LOAD_ATTEMPTS = 4;
+
         let round = 1;
         let totalScore = 0;
         let gameActive = false;
         let correctChoice = '';
+        let roundDistortion = DISTORTION_MIN;
         let currentImage = null;
         let imagePool = [];
         let usedImages = [];
+        let loadAttempts = 0;
+
+        // Incremented every round. Any image callback carrying a stale token is
+        // ignored, which stops a slow or failed load from the previous round
+        // redrawing the canvas or re-rolling the answer under the player.
+        let roundToken = 0;
+
+        // 'asShown' = exactly what the player was judging.
+        // 'corrected' = the same photo with the defect removed.
+        let revealMode = 'asShown';
+
+        // Canvas dimensions in CSS pixels. The backing store is larger on
+        // high-DPI screens; a transform keeps all drawing code in CSS pixels.
+        let viewW = 0;
+        let viewH = 0;
         
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -300,19 +417,59 @@
         const feedbackText = document.getElementById('feedbackText');
         const nextButton = document.getElementById('nextButton');
         const playAgainButton = document.getElementById('playAgainButton');
+        const compareBar = document.getElementById('compareBar');
+        const compareBtn = document.getElementById('compareBtn');
+        const compareLabel = document.getElementById('compareLabel');
 
         function resizeCanvas() {
             const container = canvas.parentElement;
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            const dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+            viewW = container.clientWidth;
+            viewH = container.clientHeight;
+            if (!viewW || !viewH) return;
+
+            canvas.width = Math.round(viewW * dpr);
+            canvas.height = Math.round(viewH * dpr);
+
+            // Derive the scale from the rounded backing store so the two axes
+            // can't drift apart and introduce a distortion of their own.
+            ctx.setTransform(canvas.width / viewW, 0, 0, canvas.height / viewH, 0, 0);
+        }
+
+        function clearCanvas(fill) {
+            ctx.clearRect(0, 0, viewW, viewH);
+            if (fill) {
+                ctx.fillStyle = fill;
+                ctx.fillRect(0, 0, viewW, viewH);
+            }
+        }
+
+        function canvasMessage(text, color) {
+            clearCanvas('#333');
+            ctx.fillStyle = color;
+            ctx.font = '16px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, viewW / 2, viewH / 2);
+        }
+
+        function setChoicesEnabled(enabled) {
+            choiceContainer.querySelectorAll('.btn-choice').forEach(btn => {
+                btn.disabled = !enabled;
+            });
         }
 
         // ============================================
         // IMAGE LOADING
         // ============================================
         async function loadImages() {
+            const countInfo = document.getElementById('imageCountInfo');
+            const poolWarning = document.getElementById('poolWarning');
+
             if (!db) {
                 imagePool = [];
+                poolWarning.classList.remove('hidden');
                 return;
             }
             
@@ -320,13 +477,14 @@
                 const snapshot = await getDocs(collection(db, 'picture-perfect-images'));
                 imagePool = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                const countInfo = document.getElementById('imageCountInfo');
                 if (countInfo) {
                     countInfo.textContent = `${imagePool.length} images in pool`;
                 }
+                poolWarning.classList.toggle('hidden', imagePool.length > 0);
             } catch (error) {
                 console.error('Load images error:', error);
                 imagePool = [];
+                poolWarning.classList.remove('hidden');
             }
         }
 
@@ -339,6 +497,12 @@
         }
 
         function startGame() {
+            if (imagePool.length === 0) {
+                showScreen('startScreen');
+                document.getElementById('poolWarning').classList.remove('hidden');
+                return;
+            }
+
             round = 1;
             totalScore = 0;
             usedImages = [];
@@ -349,7 +513,6 @@
             feedbackText.className = 'feedback-text';
             
             showScreen('gameScreen');
-            resizeCanvas();
             newRound();
         }
 
@@ -359,19 +522,27 @@
                 return;
             }
             
+            roundToken++;
+            gameActive = false;
+            revealMode = 'asShown';
+            loadAttempts = 0;
+
             document.getElementById('roundCounter').textContent = round;
             feedbackText.textContent = 'Pick your answer!';
             feedbackText.className = 'feedback-text';
             nextButton.classList.add('hidden');
+            compareBar.classList.add('hidden');
             
             choiceContainer.querySelectorAll('.btn-choice').forEach(btn => {
-                btn.disabled = false;
                 btn.classList.remove('selected', 'correct', 'incorrect');
             });
+            // Stay disabled until the image is actually on screen, so nobody can
+            // answer a blank canvas.
+            setChoicesEnabled(false);
             
             document.getElementById('canvasContainer').classList.remove('feedback-correct', 'feedback-incorrect');
             
-            gameActive = true;
+            resizeCanvas();
             loadImageForRound();
         }
 
@@ -380,97 +551,166 @@
             return baseChoices[Math.floor(Math.random() * baseChoices.length)];
         }
 
+        function rollDistortion() {
+            return DISTORTION_MIN + Math.random() * (DISTORTION_MAX - DISTORTION_MIN);
+        }
+
         function loadImageForRound() {
-            const available = imagePool.filter(img => !usedImages.includes(img.id));
-            
-            if (available.length === 0) {
-                usedImages = [];
-                loadImageForRound();
+            const token = roundToken;
+
+            if (imagePool.length === 0) {
+                canvasMessage('No images available.', '#ef4444');
                 return;
+            }
+
+            let available = imagePool.filter(img => !usedImages.includes(img.id));
+            if (available.length === 0) {
+                // Pool exhausted this game - start reusing rather than recursing.
+                usedImages = [];
+                available = imagePool.slice();
             }
             
             const imageData = available[Math.floor(Math.random() * available.length)];
             usedImages.push(imageData.id);
             
             correctChoice = getRandomChoice();
+            roundDistortion = rollDistortion();
             
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#333';
-            ctx.font = '16px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText("Loading image...", canvas.width / 2, canvas.height / 2);
+            canvasMessage('Loading image...', '#9ca3af');
             
-            currentImage = new Image();
-            currentImage.crossOrigin = "Anonymous";
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
             
-            let imageUrl = imageData.imageUrl;
-            currentImage.src = imageUrl;
-            
-            currentImage.onload = () => {
+            img.onload = () => {
+                if (token !== roundToken) return;   // stale round, ignore
+                if (!img.naturalWidth || !img.naturalHeight) {
+                    img.onerror();
+                    return;
+                }
+                currentImage = img;
+                loadAttempts = 0;
                 drawImage();
+                gameActive = true;
+                setChoicesEnabled(true);
             };
-            currentImage.onerror = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#ef4444';
-                ctx.fillText("Error loading image. Trying next...", canvas.width / 2, canvas.height / 2);
-                setTimeout(loadImageForRound, 1000);
+
+            img.onerror = () => {
+                if (token !== roundToken) return;   // stale round, ignore
+                loadAttempts++;
+
+                if (loadAttempts >= MAX_LOAD_ATTEMPTS) {
+                    canvasMessage('Could not load an image. Press Next Round to retry.', '#ef4444');
+                    nextButton.classList.remove('hidden');
+                    return;
+                }
+
+                canvasMessage('Error loading image. Trying next...', '#ef4444');
+                setTimeout(() => {
+                    if (token === roundToken) loadImageForRound();
+                }, 1000);
             };
+
+            img.src = imageData.imageUrl;
         }
 
-        function drawImage(showCorrect = false) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#333';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // ============================================
+        // RENDERING
+        // ============================================
 
-            const choiceToDraw = showCorrect ? 'correct' : correctChoice;
+        /**
+         * Work out where and how large to draw the photo.
+         *
+         * The undistorted fit box is shrunk by DISTORTION_MAX up front so that
+         * applying the stretch afterwards can never push the render past the
+         * canvas edge. Before v2.2.0 the stretch was applied after a full-size
+         * fit, which pushed roughly 11% of the image outside the canvas whenever
+         * the stretched axis was the one the fit was constrained by.
+         */
+        function computeLayout(mode, distortion) {
+            const imageRatio = currentImage.naturalWidth / currentImage.naturalHeight;
+            if (!isFinite(imageRatio) || imageRatio <= 0) return null;
 
-            const canvasRatio = canvas.width / canvas.height;
-            const imageRatio = currentImage.width / currentImage.height;
-            let drawWidth, drawHeight;
+            const boxW = viewW * FIT_FRACTION / DISTORTION_MAX;
+            const boxH = viewH * FIT_FRACTION / DISTORTION_MAX;
 
-            if (canvasRatio > imageRatio) {
-                drawHeight = canvas.height * 0.9;
-                drawWidth = drawHeight * imageRatio;
+            let w, h;
+            if (boxW / boxH > imageRatio) {
+                h = boxH;
+                w = h * imageRatio;
             } else {
-                drawWidth = canvas.width * 0.9;
-                drawHeight = drawWidth / imageRatio;
+                w = boxW;
+                h = w / imageRatio;
             }
 
-            let finalWidth = drawWidth;
-            let finalHeight = drawHeight;
-
-            if (choiceToDraw === 'vertical') {
-                finalHeight *= DISTORTION_AMOUNT;
-            } else if (choiceToDraw === 'horizontal') {
-                finalWidth *= DISTORTION_AMOUNT;
+            if (mode === 'horizontal') {
+                w *= distortion;
+            } else if (mode === 'vertical') {
+                h *= distortion;
             }
 
-            const x = (canvas.width - finalWidth) / 2;
-            const y = (canvas.height - finalHeight) / 2;
-            
-            if (choiceToDraw === 'pixelated') {
-                const pixelSize = 6;
-                const tinyWidth = Math.ceil(finalWidth / pixelSize);
-                const tinyHeight = Math.ceil(finalHeight / pixelSize);
-                
+            return { w, h, x: (viewW - w) / 2, y: (viewH - h) / 2 };
+        }
+
+        function drawImage() {
+            if (!currentImage || !currentImage.complete || !currentImage.naturalWidth) return;
+
+            // v2.2.0: the mode drawn is driven by revealMode, which only ever
+            // changes when the player asks for the comparison. Nothing swaps the
+            // image out from under them at verdict time any more.
+            const mode = (revealMode === 'corrected') ? 'correct' : correctChoice;
+
+            const layout = computeLayout(mode, roundDistortion);
+            if (!layout) return;
+
+            clearCanvas('#333');
+
+            const { w, h, x, y } = layout;
+
+            if (mode === 'pixelated') {
+                const tinyW = Math.max(1, Math.round(w / PIXEL_SIZE));
+                const tinyH = Math.max(1, Math.round(h / PIXEL_SIZE));
+
                 const tinyCanvas = document.createElement('canvas');
-                tinyCanvas.width = tinyWidth;
-                tinyCanvas.height = tinyHeight;
+                tinyCanvas.width = tinyW;
+                tinyCanvas.height = tinyH;
+
                 const tinyCtx = tinyCanvas.getContext('2d');
-                
-                tinyCtx.drawImage(currentImage, 0, 0, tinyWidth, tinyHeight);
-                
+                tinyCtx.imageSmoothingEnabled = true;
+                tinyCtx.drawImage(currentImage, 0, 0, tinyW, tinyH);
+
                 ctx.imageSmoothingEnabled = false;
-                ctx.mozImageSmoothingEnabled = false;
-                ctx.webkitImageSmoothingEnabled = false;
-                ctx.msImageSmoothingEnabled = false;
-                ctx.drawImage(tinyCanvas, x, y, finalWidth, finalHeight);
+                ctx.drawImage(tinyCanvas, x, y, w, h);
+                ctx.imageSmoothingEnabled = true;
             } else {
                 ctx.imageSmoothingEnabled = true;
-                ctx.drawImage(currentImage, x, y, finalWidth, finalHeight);
+                ctx.drawImage(currentImage, x, y, w, h);
             }
         }
 
+        // ============================================
+        // COMPARE CONTROL
+        // ============================================
+        function updateCompareUI() {
+            const corrected = (revealMode === 'corrected');
+            compareLabel.textContent = corrected
+                ? 'Showing: the fixed version'
+                : 'Showing: the image as you saw it';
+            compareLabel.classList.toggle('is-corrected', corrected);
+            compareBtn.textContent = corrected
+                ? 'Show what you saw'
+                : 'Show the fixed version';
+        }
+
+        function toggleCompare() {
+            if (compareBar.classList.contains('hidden')) return;
+            revealMode = (revealMode === 'corrected') ? 'asShown' : 'corrected';
+            updateCompareUI();
+            drawImage();
+        }
+
+        // ============================================
+        // ANSWERING
+        // ============================================
         function checkAnswer(selection) {
             if (!gameActive) return;
             gameActive = false;
@@ -478,9 +718,7 @@
             const selectedBtn = choiceContainer.querySelector(`[data-choice="${selection}"]`);
             const correctBtn = choiceContainer.querySelector(`[data-choice="${correctChoice}"]`);
             
-            choiceContainer.querySelectorAll('.btn-choice').forEach(btn => {
-                btn.disabled = true;
-            });
+            setChoicesEnabled(false);
             
             if (selectedBtn) selectedBtn.classList.add('selected');
 
@@ -506,8 +744,15 @@
                 if (selectedBtn) selectedBtn.classList.add('incorrect');
                 if (correctBtn) correctBtn.classList.add('correct');
                 canvasContainer.classList.add('feedback-incorrect');
-                
-                drawImage(true);
+            }
+
+            // Offer the side-by-side only when there is actually something to
+            // compare. The canvas keeps showing the image the player judged, so
+            // the verdict text and the picture always agree.
+            if (correctChoice !== 'correct') {
+                revealMode = 'asShown';
+                updateCompareUI();
+                compareBar.classList.remove('hidden');
             }
 
             round++;
@@ -516,6 +761,7 @@
 
         function endGame() {
             showScreen('gameOverScreen');
+            compareBar.classList.add('hidden');
             
             document.getElementById('finalScore').textContent = totalScore;
             const avgScore = totalScore / TOTAL_ROUNDS;
@@ -578,6 +824,7 @@
         document.getElementById('signOutBtn').addEventListener('click', signOut);
         document.getElementById('startGameBtn').addEventListener('click', startGame);
         document.getElementById('submitScoreBtn').addEventListener('click', handleScoreSubmit);
+        compareBtn.addEventListener('click', toggleCompare);
 
         document.getElementById('initialsInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -598,13 +845,17 @@
         window.addEventListener('resize', () => {
             if (document.getElementById('gameScreen').classList.contains('active')) {
                 resizeCanvas();
-                if (currentImage && currentImage.complete) {
-                    drawImage();
-                }
+                drawImage();
             }
         });
         
         window.addEventListener('keydown', (e) => {
+            // Don't hijack keys while the player is typing their initials.
+            const tag = (e.target && e.target.tagName) || '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) {
+                return;
+            }
+
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (!nextButton.classList.contains('hidden')) {
@@ -614,6 +865,9 @@
                 } else if (document.getElementById('startScreen').classList.contains('active')) {
                     startGame();
                 }
+            }
+            if (e.key === 'c' || e.key === 'C') {
+                toggleCompare();
             }
             if (gameActive) {
                 if (e.key === '1') checkAnswer('correct');
