@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Leaderboard v1.2.0</title>
+    <title>Spot On! Leaderboard v1.3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
@@ -164,7 +164,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
 
         // Games shown in the unified leaderboard (all higher-is-better by design).
@@ -195,27 +195,34 @@
         const KNOWN_GAME_IDS = new Set(Object.keys(GAME_NAMES));
 
         let db;
-        let allScores = [];
+        let allScores = [];              // top-200 global slice, backs the "All Games" view only
+        const perGameCache = {};         // gameId -> that game's own top scores, fetched on demand
         let currentFilter = 'all';
 
         async function initFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                await loadScores();
+                await loadAllScores();
             } catch (error) {
                 console.error('Firebase init error:', error);
                 showError('Failed to connect to database');
             }
         }
 
-        async function loadScores() {
+        // "All Games" view: the top 200 scores across every game, since that's
+        // what "top scores across all games" means when games use different
+        // scoring scales. This intentionally does NOT guarantee every game
+        // appears here — a game whose typical scores run lower than others
+        // (or that's simply been played less) can be crowded out of a raw
+        // cross-game top-200, and that's expected here, not a bug. Individual
+        // game filters below never suffer from that, because they query that
+        // game's own scores directly instead of filtering this slice.
+        async function loadAllScores() {
             const tbody = document.getElementById('leaderboardBody');
             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Loading...</td></tr>';
 
             try {
-                // Pull a wider top slice so we still fill the table after filtering
-                // out unknown gameIds (e.g. Format Trainer, which sorts ascending).
                 const q = query(
                     collection(db, 'scores'),
                     orderBy('score', 'desc'),
@@ -223,27 +230,55 @@
                 );
                 const snapshot = await getDocs(q);
                 allScores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderScores();
+                renderAllGamesView();
             } catch (error) {
                 console.error('Load scores error:', error);
                 showError('Failed to load scores');
             }
         }
 
-        function renderScores() {
-            const tbody = document.getElementById('leaderboardBody');
-            const countEl = document.getElementById('scoreCount');
+        function renderAllGamesView() {
+            // Unified view: only higher-is-better games we know about, capped
+            // at 100 to match previous display behavior.
+            const filtered = allScores.filter(s => KNOWN_GAME_IDS.has(s.gameId)).slice(0, 100);
+            renderScores(filtered);
+        }
 
-            let filtered;
-            if (currentFilter === 'all') {
-                // Unified view: only higher-is-better games we know about.
-                filtered = allScores.filter(s => KNOWN_GAME_IDS.has(s.gameId));
-            } else {
-                filtered = allScores.filter(s => s.gameId === currentFilter);
+        // Single-game view: queries that game's own top scores directly,
+        // using the same composite index (gameId ASC, score DESC) every
+        // in-game leaderboard already relies on. This is what the "All Games"
+        // slice above can't guarantee — a game never disappears from its own
+        // filtered leaderboard just because other games' scores happen to run
+        // higher.
+        async function loadGameScores(gameId) {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Loading...</td></tr>';
+
+            if (perGameCache[gameId]) {
+                renderScores(perGameCache[gameId]);
+                return;
             }
 
-            // Cap display at 100 to match previous behavior.
-            filtered = filtered.slice(0, 100);
+            try {
+                const q = query(
+                    collection(db, 'scores'),
+                    where('gameId', '==', gameId),
+                    orderBy('score', 'desc'),
+                    limit(100)
+                );
+                const snapshot = await getDocs(q);
+                const scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                perGameCache[gameId] = scores;
+                renderScores(scores);
+            } catch (error) {
+                console.error('Load scores error:', error);
+                showError('Failed to load scores');
+            }
+        }
+
+        function renderScores(filtered) {
+            const tbody = document.getElementById('leaderboardBody');
+            const countEl = document.getElementById('scoreCount');
 
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">No scores yet. Be the first!</td></tr>';
@@ -287,7 +322,11 @@
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.game;
-                renderScores();
+                if (currentFilter === 'all') {
+                    renderAllGamesView();
+                } else {
+                    loadGameScores(currentFilter);
+                }
             });
         });
 
