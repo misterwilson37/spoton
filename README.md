@@ -8,25 +8,25 @@ A collection of educational games that train visual perception skills: alignment
 
 | Game | Version | File | Description |
 |------|---------|------|-------------|
-| **Spot the Format** | 2.1.0 | spottheformat.html | Identify text formatting: horizontal/vertical alignment, line spacing, indentation. |
-| **Format Frenzy** | 2.1.0 | formatfrenzy.html | Timed challenge — identify all 4 formatting properties before the bomb explodes. Timer accelerates each round. |
-| **Format Trainer** | 0.10.0 | formattrainer.html | Practice formatting step-by-step. 6 levels covering basic and MLA format with speed and streak modes. Uses time-based scoring (lower is better), isolated from the unified leaderboard. |
+| **Spot the Format** | 2.1.1 | spottheformat.html | Identify text formatting: horizontal/vertical alignment, line spacing, indentation. |
+| **Format Frenzy** | 2.1.1 | formatfrenzy.html | Timed challenge — identify all 4 formatting properties before the bomb explodes. Timer accelerates each round. |
+| **Format Trainer** | 0.10.1 | formattrainer.html | Practice formatting step-by-step. 6 levels covering basic and MLA format with speed and streak modes. Uses time-based scoring (lower is better), isolated from the unified leaderboard. |
 
 ### Centering & Layout
 
 | Game | Version | File | Description |
 |------|---------|------|-------------|
-| **Find the Center** | 2.1.0 | findthecenter.html | Click the exact center of randomly generated quadrilaterals. |
-| **Perfect Alignment** | 2.1.0 | perfectalignment.html | Drag shapes to align centers. Shapes get smaller and mismatched as rounds progress. |
-| **Balanced Placement** | 2.1.0 | balancedplacement.html | Position two shapes with equal spacing inside containers. |
-| **Balanced Placement II** | 2.1.0 | balancedplacement2.html | Place images and text with equal spacing. Alignment rules determine which side elements belong on. |
-| **Sweet Spot** | 2.3.0 | sweetspot.html | Find the perfect placement for text on curated images. Polygon scoring zones. |
+| **Find the Center** | 2.1.1 | findthecenter.html | Click the exact center of randomly generated quadrilaterals. |
+| **Perfect Alignment** | 2.1.1 | perfectalignment.html | Drag shapes to align centers. Shapes get smaller and mismatched as rounds progress. |
+| **Balanced Placement** | 2.1.1 | balancedplacement.html | Position two shapes with equal spacing inside containers. |
+| **Balanced Placement II** | 2.1.1 | balancedplacement2.html | Place images and text with equal spacing. Alignment rules determine which side elements belong on. |
+| **Sweet Spot** | 2.3.1 | sweetspot.html | Find the perfect placement for text on curated images. Polygon scoring zones. |
 
 ### Visual Perception
 
 | Game | Version | File | Description |
 |------|---------|------|-------------|
-| **Picture Perfect** | 2.1.0 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
+| **Picture Perfect** | 2.2.1 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
 
 ## Site Files
 
@@ -38,6 +38,7 @@ A collection of educational games that train visual perception skills: alignment
 | **migration.html** | 1.0.0 | One-shot tool for migrating from `ellisbell-c185c` → `spot-on-games`. Migration complete. Consider archiving. |
 | **firebase-config.js** | — | ES-module-only config for the `spot-on-games` Firebase project. |
 | **games.css** | 2.0.0 | Shared stylesheet. Defines `.btn-*`, `.nav-links`, `.game-wrapper`, `.canvas-container`, `.leaderboard`, `.screen`, etc. |
+| **firestore.indexes.json** | — | Documents the two composite indexes the `scores` collection needs (see below). Not deployed automatically — this repo has no CLI/`firebase deploy` access, so it's a reference for recreating the indexes by hand in the console if the project is ever rebuilt. |
 
 ## Architecture
 
@@ -119,6 +120,60 @@ service cloud.firestore {
 }
 ```
 
+### Required Firestore Indexes
+
+Every game's leaderboard, and every game's post-submit rank calculation, queries
+`scores` filtered by `gameId` and ordered by `score`. Firestore auto-indexes single
+fields but **not** an equality filter combined with a sort on a different field —
+that combination needs a composite index created by hand, or the query throws
+`failed-precondition` at runtime. `leaderboard.html` is the one page that never
+needed one, because it sorts by `score` alone with no `gameId` filter — which is
+why it kept working in Aug 2026 while every in-game leaderboard failed at once.
+
+Two composite indexes cover every query shape in this repo (verified by scanning
+every `query()` call across all games):
+
+| # | Collection | Fields | Needed by |
+|---|------------|--------|-----------|
+| 1 | `scores` | `gameId` ASC, `score` DESC | Every in-game leaderboard display (top scores per game) + admin.html |
+| 2 | `scores` | `gameId` ASC, `score` ASC | `getPlayerRank()`'s `score >` comparison in 6 games, and Format Trainer's timed modes (lower-is-better sort) |
+
+**`firestore.indexes.json` in this repo documents both, but does not deploy
+them** — there's no CLI access in this workflow, so the source of truth is
+whatever's live in the Firebase console. If the project is ever recreated, or an
+index is accidentally deleted, recreate both by hand: Firestore Database →
+Indexes → **Manual** tab → Create index → **Structured** → collection ID
+`scores` → add the two fields from the table above, in order → Query scope
+**Collection**.
+
+An index shows **Building** for a few minutes after creation; queries fail with
+the exact same `failed-precondition` error until it flips to **Enabled**. Don't
+diagnose against a still-building index.
+
+### Firestore error handling in the games
+
+As of the Aug 2026 patch (`v2.1.1` / `v2.2.1` / `v2.3.1` / `v0.10.1`, see Version
+History), every game's `loadLeaderboard()` follows the same shape:
+
+1. Run the query inside `try`. On failure, translate `error.code` into an actual
+   sentence via `describeFirestoreError()` (`failed-precondition` → index
+   building; `permission-denied` → says so; anything else → generic) and
+   `return` immediately.
+2. Render the result **outside** the `try/catch`, so a bug in rendering can
+   never be mistaken for a database problem.
+3. Callers that need to highlight a just-submitted score pass a `highlightId`
+   into `loadLeaderboard()` directly, rather than calling `renderLeaderboard()`
+   a second time afterward. The old two-call pattern let a successful render
+   silently overwrite an error message — or, after a submit, made a live
+   "Score saved!" confirmation sit next to an "error"-flavored empty board with
+   no way to tell they were the same failure.
+
+Format Trainer's leaderboard modal shows four boards at once, so its
+`loadScores()` returns `{ data, error }` instead of a bare array — an empty
+`data` with `error: null` is a genuinely empty board; `error` set means the
+query failed and the modal says so per-card instead of claiming no one has
+played.
+
 ## Cross-Platform Compatibility
 
 - **Desktop**: Mouse and keyboard. Space advances rounds; `1`-`4` select answers in Picture Perfect.
@@ -169,6 +224,38 @@ Google Sign-In via Firebase Auth popup (`GoogleAuthProvider` + `signInWithPopup`
 | **Enter** | Submit initials on Game Over screen |
 
 ## Version History
+
+### Aug 2026 — Missing composite indexes + leaderboard error handling
+
+Every in-game leaderboard was throwing `failed-precondition` because the
+`scores` collection was missing the composite indexes its own `gameId` +
+`orderBy(score)` / `score >` queries require. `leaderboard.html` masked this for
+weeks, since its single-field sort needs no composite index and kept working
+while every other leaderboard silently failed. Root-caused via a browser-console
+diagnostic that ran the identical query shape against multiple `gameId` values
+to confirm the failure was index-wide, not specific to one game. Two composite
+indexes created in the Firebase console; both now documented (not deployed —
+no CLI here) in `firestore.indexes.json`. See "Required Firestore Indexes"
+above.
+
+While in there, fixed a related bug present in every game: after a score
+submit, `handleScoreSubmit()` called `loadLeaderboard()` then
+`renderLeaderboard()` a second time. If the leaderboard query failed, that
+second render call silently overwrote the error message with "No scores yet" —
+so a genuine outage looked identical to nobody having played, right below a
+"✓ Score saved!" confirmation that was, in fact, true. `error.code` is now
+surfaced as an actual sentence instead of a generic string, and rendering
+happens outside the `try/catch` so a render bug can't be mislabeled as a
+database problem.
+
+- **Find the Center 2.1.1**, **Balanced Placement 2.1.1**, **Balanced Placement
+  II 2.1.1**, **Perfect Alignment 2.1.1**, **Spot the Format 2.1.1**, **Format
+  Frenzy 2.1.1**, **Sweet Spot 2.3.1** (also picked up a missing `!db` guard on
+  `loadLeaderboard()` it never had), **Picture Perfect 2.2.1** — leaderboard
+  error handling rewritten per above.
+- **Format Trainer 0.10.1** — `loadScores()` now returns `{ data, error }`
+  instead of a bare array so its four-board leaderboard modal can tell a real
+  failure from an empty board, per card.
 
 ### Apr 2026 — Infrastructure cleanup
 

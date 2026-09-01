@@ -194,13 +194,33 @@
         // ════════════════════════════════════════
         // LEADERBOARD (Firestore)
         // ════════════════════════════════════════
+        // Turns a Firestore error into something a teacher reading the page
+        // (not the console) can actually act on. 'failed-precondition' is what
+        // a missing/still-building composite index throws.
+        function describeFirestoreError(error) {
+            if (error && error.code === 'failed-precondition') {
+                return 'Leaderboard unavailable (index building)';
+            }
+            if (error && error.code === 'permission-denied') {
+                return 'No permission to view scores';
+            }
+            return 'Error loading scores';
+        }
+
+        // Returns { data, error }. 'data: []' plus 'error: null' is a genuinely
+        // empty board; 'error' set means the query failed and the caller
+        // should say so rather than showing "No scores yet" for a database
+        // problem.
         async function loadScores(gameId, sortDir='asc', max=10) {
-            if (!db) return [];
+            if (!db) return { data: [], error: null };
             try {
                 const q = query(collection(db,'scores'), where('gameId','==',gameId), orderBy('score',sortDir), limit(max));
                 const snap = await getDocs(q);
-                return snap.docs.map(d => d.data());
-            } catch(e) { console.error('Load scores error:', e); return []; }
+                return { data: snap.docs.map(d => d.data()), error: null };
+            } catch(e) {
+                console.error('Load scores error:', e);
+                return { data: [], error: describeFirestoreError(e) };
+            }
         }
 
         async function saveScore(gameId, initials, score) {
@@ -905,9 +925,10 @@
             const content = $('lb-content');
             let html = '';
             for (const g of gameIds) {
-                const data = await loadScores(g.id, g.isStreak?'desc':'asc', 10);
+                const { data, error } = await loadScores(g.id, g.isStreak?'desc':'asc', 10);
                 html += `<div class="lb-card"><div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;"><span style="font-size:18px">${g.icon}</span><div style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:var(--ft-blue);">${g.name}</div></div>`;
-                if(!data.length) { html += `<div style="font-size:12px;color:#888;font-family:'Courier New',monospace;padding:8px 0;">No scores yet</div>`; }
+                if(error) { html += `<div style="font-size:12px;color:#f87171;font-family:'Courier New',monospace;padding:8px 0;">${error}</div>`; }
+                else if(!data.length) { html += `<div style="font-size:12px;color:#888;font-family:'Courier New',monospace;padding:8px 0;">No scores yet</div>`; }
                 else {
                     data.forEach((entry,i) => {
                         const rankCls = i===0?'gold':i===1?'silver':i===2?'bronze':'';

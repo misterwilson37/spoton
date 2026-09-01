@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v2.2.0</title>
+    <title>Picture Perfect v2.2.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     <style>
@@ -293,7 +293,20 @@
         // ============================================
         // LEADERBOARD
         // ============================================
-        async function loadLeaderboard() {
+        // Turns a Firestore error into something a teacher reading the page
+        // (not the console) can actually act on. 'failed-precondition' is what
+        // a missing/still-building composite index throws.
+        function describeFirestoreError(error) {
+            if (error && error.code === 'failed-precondition') {
+                return 'Leaderboard is temporarily unavailable (index building). Try again shortly.';
+            }
+            if (error && error.code === 'permission-denied') {
+                return 'You do not have permission to view scores right now.';
+            }
+            return 'Error loading leaderboard.';
+        }
+
+        async function loadLeaderboard(highlightId = null) {
             const leaderboardList = document.getElementById('leaderboardList');
             
             if (!db) {
@@ -301,6 +314,7 @@
                 return [];
             }
             
+            let scores;
             try {
                 const q = query(
                     collection(db, 'scores'),
@@ -309,20 +323,19 @@
                     limit(10)
                 );
                 const snapshot = await getDocs(q);
-                
-                if (snapshot.empty) {
-                    leaderboardList.innerHTML = '<p class="loading-text text-center">No scores yet. Be the first!</p>';
-                    return [];
-                }
-                
-                const scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderLeaderboard(scores);
-                return scores;
+                scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             } catch (error) {
                 console.error('Load leaderboard error:', error);
-                leaderboardList.innerHTML = '<p class="feedback-text incorrect text-center">Error loading leaderboard</p>';
+                leaderboardList.innerHTML = `<p class="feedback-text incorrect text-center">${describeFirestoreError(error)}</p>`;
                 return [];
             }
+            
+            // Rendering happens outside the try/catch above: a bug in
+            // renderLeaderboard should never be reported to a student as a
+            // database problem, and a query failure should never get
+            // silently overwritten by "No scores yet" a moment later.
+            renderLeaderboard(scores, highlightId);
+            return scores;
         }
         
         function renderLeaderboard(scores, highlightId = null) {
@@ -808,12 +821,11 @@
                 document.getElementById('initialsEntry').classList.add('hidden');
                 document.getElementById('scoreSubmitted').classList.remove('hidden');
                 
-                const scores = await loadLeaderboard();
+                const scores = await loadLeaderboard(scoreId);
                 const rank = scores.findIndex(s => s.id === scoreId) + 1;
                 if (rank > 0) {
                     document.getElementById('playerRank').textContent = `You ranked #${rank}!`;
                 }
-                renderLeaderboard(scores, scoreId);
             }
         }
 
