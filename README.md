@@ -33,7 +33,7 @@ A collection of educational games that train visual perception skills: alignment
 | File | Version | Description |
 |------|---------|-------------|
 | **index.html** | 2.3.0 | Dynamic game index, loads from Firestore `site-config/index` with hardcoded FALLBACK_DATA. |
-| **admin.html** | 2.8.0 | Admin panel: Sweet Spot level editor, Picture Perfect image manager, site/index config, leaderboards, **Privacy tab** (legacy cleanup, delete a student, quarterly retention, picture sources). Admin-only: checks with the database and signs anyone else out. |
+| **admin.html** | 2.9.0 | Admin panel: Sweet Spot level editor, Picture Perfect image manager, site/index config, leaderboards, **Privacy tab** (legacy cleanup, delete a student, quarterly retention, picture sources). Admin-only: checks with the database and signs anyone else out. |
 | **leaderboard.html** | 1.4.0 | Unified leaderboard across all 8 higher-is-better games. Format Trainer scores are filtered out of the "All Games" view. |
 | **privacy.html** | 1.0.0 | Privacy & Data Policy, including the COPPA notice. Linked from every page's menu or footer. |
 | **SECURITY.md** | — | The written information-security program (COPPA 16 CFR 312.8). |
@@ -42,7 +42,7 @@ A collection of educational games that train visual perception skills: alignment
 | **firestore.rules** / **storage.rules** | 2.0.0 | The security rules. Not deployed from here — paste into the Firebase console. |
 | **tailwind.css** | — | Built Tailwind (replaces the CDN script). **Rebuild after adding any Tailwind class** — see "Styles and fonts". |
 | **fonts/** | 1.0.0 | Self-hosted Inter, Urbanist, Questrial (OFL) + `fonts.css`. |
-| **scripts/auth-cleanup.py** | 1.0.0 | Deletes sign-in accounts unused 24 months (or one on request). Runs in Google Cloud Shell — instructions at the top of the file. |
+| **scripts/auth-cleanup.py** | 1.0.1 | Deletes sign-in accounts unused 24 months (or one on request). Runs in Google Cloud Shell — instructions at the top of the file. |
 | **tests/** | — | Test harnesses (rules, privacy tools, policy promises, self-hosted assets). Not part of the site. |
 | **firebase-config.js** | 1.1.0 | ES-module-only config for the `spot-on-games` Firebase project. (Analytics ID removed.) |
 | **games.css** | 2.1.0 | Shared stylesheet. Defines `.btn-*`, `.nav-links`, `.game-wrapper`, `.canvas-container`, `.leaderboard`, `.screen`, etc. |

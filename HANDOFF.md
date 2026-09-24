@@ -147,10 +147,29 @@ command instead of by hand.
 - **Not run against the live project.** First real run is Jake's, in Cloud Shell — the
   one untested piece is the Cloud Shell credential setup (quota-project step).
 
+### Part 4 — How-to sheet (same session)
+
+Jake: the Cloud Shell steps won't be needed for ~18 months, so they must be findable
+without remembering the script exists. admin.html 2.9.0 puts a collapsible "📋 How-to"
+at the top of the Privacy tab (quarterly routine, Cloud Shell, copy buttons, requests,
+troubleshooting). The commands live in two places (the How-to and the script's
+docstring) because each must stand alone; privacy-promises-test checks every How-to
+command appears verbatim in the docstring (mutation-verified).
+
+Also wrote `auth-cleanup-notes-for-typethatbook.md` (delivered separately, not in the
+repo) for the TypeThatBook instance, explaining the approach so it can be adapted.
+
+Process note: from here on, earlier zips in /mnt/user-data/outputs are NOT deleted
+before building the next (the compliance kit's lesson 6). Parts 1–3 did delete them;
+harmless only because each zip was cumulative and Jake deployed each one.
+
 ### Open items
 
-- **Mailing address** for the policy (COPPA 312.4(d)(1)) — undecided, same as TTB.
-- **Principal's approval naming SpotOn** — Jake is getting it.
+- ~~Mailing address~~ — done (part 5): 4501 Charlotte Ave, PO Box 90096, Nashville, TN 37209,
+  in privacy.html (contact list + parents' rights) and SECURITY.md; tested. TypeThatBook's
+  policy still needs it too.
+- **Principal's approval naming SpotOn** — Jake is getting it. Get it in writing (an
+  email is fine) and keep it: it is the consent the whole policy rests on.
 - **Run "Move outside pictures"**, then "List picture sources" should be all green.
   The policy's "game pictures are stored in Firebase" is only true after that.
 - **Quarterly retention** — admin → Privacy → Retention check, plus deleting unused

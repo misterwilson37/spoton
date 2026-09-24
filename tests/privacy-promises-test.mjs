@@ -79,6 +79,13 @@ const script = read('scripts/auth-cleanup.py');
 check('auth-cleanup.py uses the same retention period', new RegExp(`RETENTION_MONTHS = ${months}\\b`).test(script));
 check('auth-cleanup.py protects exactly the rules\' admin accounts',
       JSON.stringify(listFrom((script.match(/ADMIN_EMAILS = \{([\s\S]*?)\}/) || [,''])[1])) === JSON.stringify(adminList(rules)));
+const Q3 = '"' + '""', dsStart = script.indexOf(Q3) + 3;
+const docstring = script.slice(dsStart, script.indexOf(Q3, dsStart));   // the script's instructions block
+const howTo = stripHtmlComments(read('admin.html')).match(/<details id="privacyHowTo"[\s\S]*?<\/details>/);
+const cmds = howTo ? [...howTo[0].matchAll(/<code data-cmd>([^<]+)<\/code>/g)].map(m => m[1].trim()) : [];
+check('admin How-to shows the Cloud Shell commands (at least 9)', cmds.length >= 9, cmds.length);
+for (const c of cmds) check(`How-to command matches the script's own instructions: ${c}`, docstring.includes(c));
+check('the curl step points at the live site', cmds.includes('curl -sO https://' + read('CNAME').trim() + '/scripts/auth-cleanup.py'));
 check('"within 30 days" in both', /within 30\s+days/.test(policyText) && /within 30 days/.test(security));
 check('retention removes the account link LAST (players deleted after scores)',
       tools.indexOf("batch.delete(doc(db, 'players', s.uid))") > tools.indexOf("change = { uid: deleteField() }"));
@@ -102,11 +109,13 @@ for (const [f, s] of [...code, ['privacy.html (text)', policyText], ['SECURITY.m
 }
 check('policy says the database is in the United States', /located in the United States/.test(policyText));
 check('SECURITY.md names the verified region', /us-east1/.test(security));
+const ADDRESS = '4501 Charlotte Ave, PO Box 90096, Nashville, TN 37209';
+check('mailing address in the policy contact list (COPPA 312.4(d)(1))', policyText.includes(`Mail: Jake Wilson, ${ADDRESS}`));
+check('mailing address in the parents\' rights section', policyText.includes(`write to Jake Wilson, ${ADDRESS.replace(', PO', ', PO')}`) || policyText.includes('write to Jake Wilson, 4501 Charlotte Ave, PO Box 90096'));
+check('mailing address in SECURITY.md', security.includes(ADDRESS));
 check('contact email and phone in the policy', policyText.includes('privacy@misterwilson.org') && policyText.includes('(615) 379-7226'));
 check('no personal email address anywhere in the policy', !/@(gmail|sumnerk12)\./i.test(read('privacy.html')));
 check('policy lists no analytics company', !/analytics \(|Google Analytics \(/i.test(policyText));
 
 finish('privacy-promises-test');
-if (!/Address:|Mailing address/i.test(policyText)) {
-    console.log('\nNOTE: the policy has no mailing address yet (COPPA 16 CFR 312.4(d)(1)). Add it when Jake has one.');
-}
+

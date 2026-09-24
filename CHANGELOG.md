@@ -1,5 +1,17 @@
 # Changelog — SpotOn
 
+## Sept 2026 — Privacy round, part 5 (Figgins)
+
+- privacy.html 1.1.0 and SECURITY.md — mailing address added (COPPA 312.4(d)(1)).
+
+## Sept 2026 — Privacy round, part 4 (Figgins)
+
+- admin.html 2.9.0 — "📋 How-to" reference sheet at the top of the Privacy tab: the
+  quarterly routine, opening Cloud Shell, every command with a Copy button, deletion and
+  stop-collection requests, troubleshooting. Retention and delete results point to it.
+- scripts/auth-cleanup.py 1.0.1 — instructions use STUDENT_EMAIL, matching the How-to;
+  a test checks every How-to command appears in the script's own instructions.
+
 ## Sept 2026 — Privacy round, part 3 (Figgins)
 
 - admin.html 2.8.0 / privacy-tools.js 1.2.0 — retention check names the next student

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.8.0</title>
+    <title>Spot On! Admin v2.9.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     
     <style>
@@ -318,6 +318,21 @@
         .pp-modal input {
             margin-bottom: 16px;
         }
+        /* v2.9.0 Privacy how-to sheet */
+        .howto h3 { font-weight: 700; color: #e5e7eb; margin: 1.25rem 0 0.5rem; }
+        .howto ol { list-style: decimal; padding-left: 1.5rem; }
+        .howto ul { list-style: disc; padding-left: 1.5rem; }
+        .howto li { margin: 0.25rem 0; }
+        .howto a { color: #22d3ee; text-decoration: underline; }
+        .howto .cmd { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+        .howto .cmd code { flex: 1; background: #111827; border: 1px solid #374151; border-radius: 6px;
+                           padding: 0.5rem 0.75rem; font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem;
+                           overflow-x: auto; white-space: nowrap; color: #a5f3fc; }
+        .howto .copy-cmd { flex: none; background: #374151; color: #e5e7eb; border-radius: 6px;
+                           padding: 0.45rem 0.8rem; font-size: 0.75rem; }
+        .howto .copy-cmd:hover { background: #4b5563; }
+        .howto .note { color: #9ca3af; font-size: 0.8rem; margin: 0 0 0.5rem; }
+        #privacyHowTo summary::marker { color: #22d3ee; }
     </style>
     <!-- Built Tailwind (replaces the Tailwind CDN script). LAST in <head> on purpose:
          the CDN script injected its styles at the end of <head>, so this keeps the same
@@ -591,6 +606,67 @@
         <!-- Privacy Tab (v2.6.0, Figgins) — the four tools live in privacy-tools.js -->
         <div id="privacyTab" class="tab-content hidden">
             <div class="max-w-4xl mx-auto space-y-6">
+                <!-- v2.9.0: the how-to reference sheet. ⚠️ Every data-cmd command here must also
+                     appear in scripts/auth-cleanup.py's docstring (tests/privacy-promises-test.mjs). -->
+                <details id="privacyHowTo" class="panel p-6">
+                    <summary class="text-xl font-bold heading cursor-pointer">📋 How-to: the quarterly routine, deletion requests, and sign-in accounts <span class="text-sm text-gray-500 font-normal">(click to open)</span></summary>
+                    <div class="howto text-sm text-gray-300 mt-4">
+
+                        <h3>Every quarter (about 10 minutes)</h3>
+                        <ol>
+                            <li><b>Retention check</b> — section 3 below. Press <i>Check</i>. It lists anyone with no saved score in 24 months and tells you who is <b>next to expire, and when</b>. If nobody is listed and the next date is months away, you can skip checks until then.</li>
+                            <li>If anyone is listed, type the confirmation it asks for and press <i>Expire these students</i>. Their initials and scores stay on the boards; their email record is deleted.</li>
+                            <li><b>Sign-in accounts</b> — web pages aren't allowed to delete them, so do it in Google Cloud Shell (below).</li>
+                            <li><b>Picture sources</b> — section 4 below. Press <i>List picture sources</i>. Everything should be green; if not, press <i>Move outside pictures into SpotOn</i>.</li>
+                        </ol>
+
+                        <h3>Opening Google Cloud Shell</h3>
+                        <ol>
+                            <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> and sign in as yourself.</li>
+                            <li>At the top of the page, make sure the project says <b>spot-on-games</b> (click it to switch).</li>
+                            <li>Click the <b>&gt;_</b> button at the top right (<i>Activate Cloud Shell</i>). A terminal opens at the bottom of the page. Paste commands into it with ⌘V and press Return.</li>
+                        </ol>
+
+                        <h3>First time only (or if it has been a long time and something errors)</h3>
+                        <div class="cmd"><code data-cmd>pip install --user --quiet firebase-admin</code><button class="copy-cmd">Copy</button></div>
+                        <div class="cmd"><code data-cmd>gcloud auth application-default login --no-launch-browser</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">This prints a long link. Open it, sign in as yourself, allow access, copy the code it shows, paste it back into Cloud Shell, press Return.</p>
+                        <div class="cmd"><code data-cmd>gcloud auth application-default set-quota-project spot-on-games</code><button class="copy-cmd">Copy</button></div>
+
+                        <h3>Every time</h3>
+                        <div class="cmd"><code data-cmd>curl -sO https://spoton.misterwilson.org/scripts/auth-cleanup.py</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">Downloads the current script from the live site.</p>
+                        <div class="cmd"><code data-cmd>python3 auth-cleanup.py</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">Only <b>lists</b>: accounts unused 24+ months, and the next one due. Changes nothing.</p>
+                        <div class="cmd"><code data-cmd>python3 auth-cleanup.py --delete</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">Deletes them. It asks you to type <code>delete</code> plus the count (e.g. <code>delete 5</code>) first; anything else cancels. Your two admin accounts are never deleted. "Unused" counts a browser quietly staying signed in, so students who stay signed in on their MacBook aren't deleted.</p>
+
+                        <h3>A parent or the school asks to delete a student</h3>
+                        <ol>
+                            <li>Section 2 below: enter the email, <i>Find</i>, type the email again, <i>Delete this student</i>.</li>
+                            <li>Then in Cloud Shell (after the "Every time" download), replacing <code>STUDENT_EMAIL</code> with their email:</li>
+                        </ol>
+                        <div class="cmd"><code data-cmd>python3 auth-cleanup.py --email STUDENT_EMAIL --delete</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">Must be done within 30 days of the request (the policy promises it). Confirm the request through the school first.</p>
+
+                        <h3>A family asks that nothing more be collected</h3>
+                        <div class="cmd"><code data-cmd>python3 auth-cleanup.py --email STUDENT_EMAIL --disable</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">They can still play the games, but can't sign in, so nothing is ever saved. (Delete their existing records with section 2 if they asked for that too.)</p>
+
+                        <h3>Just look up one account</h3>
+                        <div class="cmd"><code data-cmd>python3 auth-cleanup.py --email STUDENT_EMAIL</code><button class="copy-cmd">Copy</button></div>
+
+                        <h3>If something goes wrong</h3>
+                        <ul>
+                            <li><b>An error mentioning "quota project"</b> → run the <code>set-quota-project</code> command above, then try again.</li>
+                            <li><b>An error mentioning "credentials"</b> → run the <code>application-default login</code> command above, then try again.</li>
+                            <li><b>"No module named firebase_admin"</b> → run the <code>pip install</code> command above.</li>
+                            <li><b>Anything else</b> → copy the whole Cloud Shell output into a new Claude chat along with the SpotOn repo.</li>
+                        </ul>
+                        <p class="note mt-2">The same instructions live at the top of <code>scripts/auth-cleanup.py</code> in the repo.</p>
+                    </div>
+                </details>
+
 
                 <div class="panel p-6">
                     <h2 class="text-xl font-bold heading mb-2">1. Legacy cleanup <span class="text-sm text-gray-500 font-normal">(one time)</span></h2>
@@ -4291,6 +4367,18 @@
             privacyNote(id, `Error: ${escapeHtml((err && (err.code || err.message)) || String(err))}. Nothing further was changed.`, 'text-red-400');
         };
 
+        // ---- How-to copy buttons (v2.9.0) ----
+        document.querySelectorAll('#privacyHowTo .copy-cmd').forEach(btn => btn.addEventListener('click', async () => {
+            const text = btn.previousElementSibling.textContent.trim();
+            try { await navigator.clipboard.writeText(text); }
+            catch {   // clipboard blocked: select the text so ⌘C works
+                const range = document.createRange(); range.selectNodeContents(btn.previousElementSibling);
+                const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+            }
+            btn.textContent = text.includes('STUDENT_EMAIL') ? 'Copied — now replace STUDENT_EMAIL' : 'Copied ✓';
+            setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
+        }));
+
         // ---- 1. Legacy cleanup ----
         let scrubPlan = null;
         document.getElementById('scrubCheckBtn').addEventListener('click', async () => {
@@ -4352,7 +4440,7 @@
                 document.getElementById('purgeArm').classList.add('hidden');
                 privacyNote('purgeResult',
                     `✓ Deleted ${r.scoresDeleted} scores and ${r.playersDeleted} email record(s) for <b>${escapeHtml(purgePlan.email)}</b>.<br><br>` +
-                    `<b>One step left, which no web page is allowed to do:</b> delete their sign-in account. In Google Cloud Shell: <code>python3 auth-cleanup.py --email ${escapeHtml(purgePlan.email)} --delete</code> ` +
+                    `<b>One step left, which no web page is allowed to do:</b> delete their sign-in account. In Google Cloud Shell (📋 How-to at the top of this tab): <code>python3 auth-cleanup.py --email ${escapeHtml(purgePlan.email)} --delete</code> ` +
                     `(or Firebase console → Authentication → Users → search → ⋮ → <b>Delete account</b>). ` +
                     `If the family asked to stop collection, use <code>--disable</code> instead of <code>--delete</code>: the student can still play, but can't sign in, so nothing is saved.`, 'text-green-400');
                 purgePlan = null;
@@ -4377,7 +4465,7 @@
                     ? `<br><br><b>Next to expire:</b> ${escapeHtml(p.next.email || '(no email on file)')} — last saved a score ${fmtDate(p.next.lastMs)}, due <b>${fmtDate(p.next.expiresMs)}</b>. Nothing new can expire before then.`
                     : '<br><br>No other students on file.';
                 const tail = nextLine +
-                    `<br><br><b>Also each quarter:</b> run <code>scripts/auth-cleanup.py</code> in Google Cloud Shell to delete sign-in accounts unused since <b>${fmtDate(p.cutoffMs)}</b> (instructions at the top of the script).` +
+                    `<br><br><b>Also each quarter:</b> delete sign-in accounts unused since <b>${fmtDate(p.cutoffMs)}</b> — step-by-step, with copy buttons, in the <b>📋 How-to</b> at the top of this tab.` +
                     (p.undatedScores ? `<br>${p.undatedScores} score(s) have no date and are never expired automatically.` : '');
                 if (p.expired.length === 0) {
                     privacyNote('retentionResult', `✓ Nobody has been inactive since before ${fmtDate(p.cutoffMs)}. Nothing to expire.` + tail, 'text-green-400');

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""auth-cleanup.py v1.0.0 — delete SpotOn sign-in accounts nobody has used in 24 months.
+"""auth-cleanup.py v1.0.1 — delete SpotOn sign-in accounts nobody has used in 24 months.
 
 Written by Figgins, Sept 2026. Web pages aren't allowed to delete other people's
 sign-in accounts, so this runs with your Google account's own permission instead.
@@ -20,13 +20,17 @@ no key file to keep safe):
   3. That last line only LISTS. Nothing changes until you add --delete and type the
      confirmation it asks for.
 
-COMMANDS
-  python3 auth-cleanup.py                      accounts unused 24+ months, and who's next
-  python3 auth-cleanup.py --delete             delete those accounts (asks you to confirm)
-  python3 auth-cleanup.py --email X            show one account
-  python3 auth-cleanup.py --email X --delete   delete one account (a deletion request)
-  python3 auth-cleanup.py --email X --disable  switch one account off (stop collection:
-                                               they can still play, nothing is saved)
+COMMANDS  (STUDENT_EMAIL = the student's school email)
+  python3 auth-cleanup.py                                accounts unused 24+ months, and who's next
+  python3 auth-cleanup.py --delete                       delete those accounts (asks you to confirm)
+  python3 auth-cleanup.py --email STUDENT_EMAIL          show one account
+  python3 auth-cleanup.py --email STUDENT_EMAIL --delete   delete one account (a deletion request)
+  python3 auth-cleanup.py --email STUDENT_EMAIL --disable  switch one account off (stop collection:
+                                                         they can still play, nothing is saved)
+
+⚠️ admin.html → Privacy → "How-to" shows these same commands with copy buttons.
+tests/privacy-promises-test.mjs checks every command there appears in this docstring,
+so change them in both places or the test fails.
 
 "Last used" = the latest of: signing in, the browser silently renewing a sign-in
 (students on the same MacBook stay signed in for months without "signing in"), and

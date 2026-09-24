@@ -4,6 +4,7 @@
 **Site:** https://spoton.misterwilson.org
 **Last reviewed:** September 2026
 **Contact for security or privacy concerns:** privacy@misterwilson.org · (615) 379-7226
+**Mailing address:** Jake Wilson, 4501 Charlotte Ave, PO Box 90096, Nashville, TN 37209
 
 This document describes how Spot On! protects the information it keeps about
 students. It is written to meet the written information-security program requirement
@@ -157,4 +158,5 @@ a new kind of information or starts using a new outside service.
 ---
 
 *Questions about this document, or requests to see or delete a student's information,
-should go to privacy@misterwilson.org or (615) 379-7226.*
+should go to privacy@misterwilson.org, (615) 379-7226, or Jake Wilson, 4501 Charlotte
+Ave, PO Box 90096, Nashville, TN 37209.*
