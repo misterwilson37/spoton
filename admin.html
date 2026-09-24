@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.5.6</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Questrial&display=swap" rel="stylesheet">
+    <title>Spot On! Admin v2.6.0</title>
+    <link href="fonts/fonts.css" rel="stylesheet">
     
     <style>
         :root {
@@ -320,6 +319,10 @@
             margin-bottom: 16px;
         }
     </style>
+    <!-- Built Tailwind (replaces the Tailwind CDN script). LAST in <head> on purpose:
+         the CDN script injected its styles at the end of <head>, so this keeps the same
+         cascade order. Rebuild it when adding Tailwind classes — see README. -->
+    <link rel="stylesheet" href="tailwind.css">
 </head>
 <body>
     <!-- Login Overlay -->
@@ -331,6 +334,8 @@
                 <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                 Sign in with Google
             </button>
+            <p id="loginMessage" class="text-sm text-red-400 mt-6 max-w-md mx-auto"></p>
+            <p class="mt-4"><a href="privacy.html" class="text-xs text-gray-500 hover:text-gray-300">Privacy &amp; Data Policy</a></p>
         </div>
     </div>
 
@@ -358,6 +363,7 @@
                     <span id="userName" class="text-sm text-gray-400"></span>
                     <button id="signOutBtn" class="text-xs text-gray-500 hover:text-red-400">Sign Out</button>
                 </div>
+                <a href="privacy.html" class="text-xs text-gray-500 hover:text-gray-300">Privacy policy</a>
                 <a href="index.html" class="btn btn-outline btn-sm">← Back to Games</a>
             </div>
         </div>
@@ -371,6 +377,7 @@
             <button class="tab-btn" data-tab="bp2">Balanced II</button>
             <button class="tab-btn" data-tab="siteconfig">Site / Index</button>
             <button class="tab-btn" data-tab="leaderboards">Leaderboards</button>
+            <button class="tab-btn" data-tab="privacy">Privacy</button>
             <button class="tab-btn hidden" data-tab="migrate" id="migrateTabBtn">Migration</button>
         </div>
     </div>
@@ -581,6 +588,55 @@
             </div>
         </div>
         
+        <!-- Privacy Tab (v2.6.0, Figgins) — the four tools live in privacy-tools.js -->
+        <div id="privacyTab" class="tab-content hidden">
+            <div class="max-w-4xl mx-auto space-y-6">
+
+                <div class="panel p-6">
+                    <h2 class="text-xl font-bold heading mb-2">1. Legacy cleanup <span class="text-sm text-gray-500 font-normal">(one time)</span></h2>
+                    <p class="text-gray-400 text-sm mb-4">Before September 2026, most games put each student's email, Google name and profile photo on their public score records. This moves every email into the private player records (only admins can read those) and then strips email, name and photo off every score. Initials and scores don't change. Safe to run again.</p>
+                    <div class="flex gap-2">
+                        <button id="scrubCheckBtn" class="btn btn-outline btn-sm">Check (changes nothing)</button>
+                        <button id="scrubRunBtn" class="btn btn-cyan btn-sm hidden">Run cleanup</button>
+                    </div>
+                    <div id="scrubResult" class="text-sm mt-4"></div>
+                </div>
+
+                <div class="panel p-6">
+                    <h2 class="text-xl font-bold heading mb-2">2. Delete a student <span class="text-sm text-gray-500 font-normal">(on a school or parent request)</span></h2>
+                    <p class="text-gray-400 text-sm mb-4">Deletes the student's scores and their email record. Nothing is deleted until you've seen the count and typed the email again.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <input type="email" id="purgeEmail" placeholder="student's school email" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1 w-72">
+                        <button id="purgeFindBtn" class="btn btn-outline btn-sm">Find (changes nothing)</button>
+                    </div>
+                    <div id="purgeResult" class="text-sm mt-4"></div>
+                    <div id="purgeArm" class="hidden mt-4 flex flex-wrap gap-2 items-center">
+                        <input type="text" id="purgeConfirm" placeholder="type the email again to confirm" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1 w-72" autocomplete="off">
+                        <button id="purgeRunBtn" class="btn btn-danger btn-sm" disabled>Delete this student</button>
+                    </div>
+                </div>
+
+                <div class="panel p-6">
+                    <h2 class="text-xl font-bold heading mb-2">3. Retention check <span class="text-sm text-gray-500 font-normal">(once a quarter)</span></h2>
+                    <p class="text-gray-400 text-sm mb-4">Finds students who haven't saved a score in <span id="retentionMonthsLabel">24</span> months. For each one, their email record is deleted and their scores become anonymous — the initials and scores stay on the leaderboards, attached to no one.</p>
+                    <button id="retentionCheckBtn" class="btn btn-outline btn-sm">Check (changes nothing)</button>
+                    <div id="retentionResult" class="text-sm mt-4"></div>
+                    <div id="retentionArm" class="hidden mt-4 flex flex-wrap gap-2 items-center">
+                        <input type="text" id="retentionConfirm" class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1 w-56" autocomplete="off">
+                        <button id="retentionRunBtn" class="btn btn-danger btn-sm" disabled>Expire these students</button>
+                    </div>
+                </div>
+
+                <div class="panel p-6">
+                    <h2 class="text-xl font-bold heading mb-2">4. Where the game pictures load from</h2>
+                    <p class="text-gray-400 text-sm mb-4">Every website listed here sees a student's IP address when a game shows its picture. Firebase Storage (<code>firebasestorage.googleapis.com</code>) is Google, which already runs SpotOn's database; anything else is another company. Reads only.</p>
+                    <button id="hostsCheckBtn" class="btn btn-outline btn-sm">List picture sources</button>
+                    <div id="hostsResult" class="text-sm mt-4"></div>
+                </div>
+
+            </div>
+        </div>
+
         <!-- Leaderboards Tab -->
         <div id="leaderboardsTab" class="tab-content hidden">
             <div class="panel p-6">
@@ -610,7 +666,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-sm text-gray-400">Player:</label>
-                        <input type="text" id="scoresPlayerSearch" placeholder="Search email or name..." class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1 w-48">
+                        <input type="text" id="scoresPlayerSearch" placeholder="Search email or initials..." class="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1 w-48">
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-sm text-gray-400">Status:</label>
@@ -641,13 +697,12 @@
                                 <th class="py-3 px-2 w-20">Initials</th>
                                 <th class="py-3 px-2 w-20">Score</th>
                                 <th class="py-3 px-2">Email</th>
-                                <th class="py-3 px-2">Name</th>
                                 <th class="py-3 px-2 w-36">Date</th>
                                 <th class="py-3 px-2 w-24">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="scoresTableBody">
-                            <tr><td colspan="8" class="py-8 text-center text-gray-500">Loading scores...</td></tr>
+                            <tr><td colspan="7" class="py-8 text-center text-gray-500">Loading scores...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -964,6 +1019,8 @@
         import { getFirestore, collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         import { firebaseConfig } from "./firebase-config.js";
+        import { RETENTION_MONTHS, planLegacyScrub, applyLegacyScrub, planStudentDelete,
+                 applyStudentDelete, planRetention, applyRetention, listImageHosts } from "./privacy-tools.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -1479,8 +1536,31 @@
         // ============================================
         // AUTHENTICATION
         // ============================================
-        onAuthStateChanged(auth, (user) => {
+        // v2.6.0: ADMIN GATE. Any Google account can sign in, so the page asks the
+        // DATABASE whether this account is an admin — by trying to read the private
+        // players collection, which firestore.rules lets only admins read. There is
+        // deliberately no admin list in this file: firestore.rules is the one list.
+        async function confirmAdmin() {
+            try {
+                await getDocs(query(collection(db, 'players'), limit(1)));
+                return { ok: true };
+            } catch (err) {
+                return { ok: false, code: err && err.code };
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
+                const check = await confirmAdmin();
+                if (!check.ok) {
+                    document.getElementById('loginMessage').textContent =
+                        check.code === 'permission-denied'
+                            ? `${user.email} isn't a SpotOn admin account, so it has been signed out.`
+                            : `Couldn't confirm admin access (${check.code || 'unknown error'}). Signed out — try again.`;
+                    await firebaseSignOut(auth);
+                    return;
+                }
+                document.getElementById('loginMessage').textContent = '';
                 currentUser = user;
                 firebaseReady = true;
                 document.getElementById('loginOverlay').classList.add('hidden');
@@ -1554,6 +1634,7 @@
                 if (targetTab === 'pictureperfect') loadPPImagesList();
                 if (targetTab === 'bp2') loadBP2ContentList();
                 if (targetTab === 'siteconfig') loadSiteConfig();
+                if (targetTab === 'privacy') document.getElementById('retentionMonthsLabel').textContent = RETENTION_MONTHS;
             });
         });
         
@@ -3927,12 +4008,27 @@
             return GAME_NAMES[gameId] || gameId || 'Unknown';
         }
         
+        // v2.6.0: emails no longer sit on score records. They live in the private
+        // players/{uid} records; this joins them back in for the admin view only.
+        // (s.email is still read as a fallback for scores the legacy cleanup hasn't reached.)
+        async function loadPlayerEmails() {
+            const snap = await getDocs(collection(db, 'players'));
+            return new Map(snap.docs.map(d => [d.id, d.data().email || '']));
+        }
+        function emailFor(s, emails) {
+            return emails.get(s.uid || s.userId) || s.email || '';
+        }
+        function matchesPlayerSearch(s, emails, term) {
+            return emailFor(s, emails).toLowerCase().includes(term) ||
+                   (s.initials || '').toLowerCase().includes(term);
+        }
+
         async function loadScoresList() {
             const tbody = document.getElementById('scoresTableBody');
             const totalCount = document.getElementById('scoresTotalCount');
             
             if (!firebaseReady) {
-                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">Sign in first</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">Sign in first</td></tr>';
                 return;
             }
             
@@ -3962,12 +4058,13 @@
                 const snapshot = await getDocs(q);
                 
                 if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">No scores found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No scores found</td></tr>';
                     totalCount.textContent = '';
                     return;
                 }
                 
                 let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                const emails = await loadPlayerEmails();
                 
                 // Apply status filter (JS side)
                 if (statusFilter === 'flagged') {
@@ -3976,16 +4073,13 @@
                     scores = scores.filter(s => !s.flagged);
                 }
                 
-                // Apply player search (JS side - searches email and name)
+                // Apply player search (JS side - searches email and initials)
                 if (playerSearch) {
-                    scores = scores.filter(s => 
-                        (s.email && s.email.toLowerCase().includes(playerSearch)) ||
-                        (s.displayName && s.displayName.toLowerCase().includes(playerSearch))
-                    );
+                    scores = scores.filter(s => matchesPlayerSearch(s, emails, playerSearch));
                 }
                 
                 if (scores.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">No matching scores</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No matching scores</td></tr>';
                     totalCount.textContent = '';
                     return;
                 }
@@ -4000,8 +4094,7 @@
                             <td class="py-3 px-2 text-xs text-gray-300">${escapeHtml(gameName)}</td>
                             <td class="py-3 px-2 font-bold">${escapeHtml(s.initials || '???')}</td>
                             <td class="py-3 px-2 font-bold text-cyan-400">${s.score}</td>
-                            <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(s.email || '')}</td>
-                            <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(s.displayName || '')}</td>
+                            <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(emailFor(s, emails))}</td>
                             <td class="py-3 px-2 text-gray-500 text-xs">${date}</td>
                             <td class="py-3 px-2">
                                 <div class="flex gap-1">
@@ -4039,7 +4132,7 @@
                 
             } catch (err) {
                 console.error('Load scores error:', err);
-                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-red-400">Error loading scores</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-400">Error loading scores</td></tr>';
             }
         }
         
@@ -4088,6 +4181,7 @@
                 }
                 
                 let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                const emails = await loadPlayerEmails();
                 
                 // Apply filters
                 if (statusFilter === 'flagged') {
@@ -4097,10 +4191,7 @@
                 }
                 
                 if (playerSearch) {
-                    scores = scores.filter(s => 
-                        (s.email && s.email.toLowerCase().includes(playerSearch)) ||
-                        (s.displayName && s.displayName.toLowerCase().includes(playerSearch))
-                    );
+                    scores = scores.filter(s => matchesPlayerSearch(s, emails, playerSearch));
                 }
                 
                 if (scores.length === 0) {
@@ -4110,7 +4201,7 @@
                 }
                 
                 // Create CSV
-                const headers = ['Rank', 'Game', 'Initials', 'Score', 'Email', 'Name', 'Date', 'Levels', 'Flagged'];
+                const headers = ['Rank', 'Game', 'Initials', 'Score', 'Email', 'Date', 'Levels', 'Flagged'];
                 const rows = scores.map((s, i) => {
                     const date = s.timestamp?.toDate ? s.timestamp.toDate().toISOString() : '';
                     return [
@@ -4118,8 +4209,7 @@
                         `"${(getGameDisplayName(s.gameId)).replace(/"/g, '""')}"`,
                         `"${(s.initials || '').replace(/"/g, '""')}"`,
                         s.score,
-                        `"${(s.email || '').replace(/"/g, '""')}"`,
-                        `"${(s.displayName || '').replace(/"/g, '""')}"`,
+                        `"${emailFor(s, emails).replace(/"/g, '""')}"`,
                         date,
                         s.levelCount || '',
                         s.flagged ? 'Yes' : ''
@@ -4183,6 +4273,147 @@
             { src: 'https://pdr-assets.b-cdn.net/collections/los-angeles-alligator-farm/alligator-farm-14.jpg', name: 'Alligator Farm (No Spot)', goodZones: { white: [], black: [] }, perfectZones: { white: [], black: [] }, feedback: "No good spot. Too busy for text." }
         ];
         
+        // ============================================
+        // PRIVACY TAB (v2.6.0, Figgins) — see privacy-tools.js
+        // Every tool: a plan first (reads only), then an explicit confirm, then apply.
+        // ============================================
+        const fmtDate = ms => ms ? new Date(ms).toLocaleDateString() : 'unknown';
+        const privacyNote = (id, html, cls = 'text-gray-300') => {
+            document.getElementById(id).innerHTML = `<div class="${cls}">${html}</div>`;
+        };
+        const privacyError = (id, err) => {
+            console.error(err);
+            privacyNote(id, `Error: ${escapeHtml((err && (err.code || err.message)) || String(err))}. Nothing further was changed.`, 'text-red-400');
+        };
+
+        // ---- 1. Legacy cleanup ----
+        let scrubPlan = null;
+        document.getElementById('scrubCheckBtn').addEventListener('click', async () => {
+            document.getElementById('scrubRunBtn').classList.add('hidden');
+            try {
+                showLoading('Reading every score…');
+                scrubPlan = await planLegacyScrub(db);
+                hideLoading();
+                const n = scrubPlan.scoresToClean.length;
+                if (n === 0) { privacyNote('scrubResult', '✓ No score records carry an email, name or photo. Nothing to do.', 'text-green-400'); return; }
+                privacyNote('scrubResult',
+                    `${n} score records still carry personal fields.<br>` +
+                    `${scrubPlan.playersToWrite.length} students' emails will be copied to private player records first.` +
+                    (scrubPlan.emailWithNoAccount ? `<br>${scrubPlan.emailWithNoAccount} records have an email but no account ID — their email can't be linked and will simply be removed.` : ''));
+                document.getElementById('scrubRunBtn').classList.remove('hidden');
+            } catch (err) { hideLoading(); privacyError('scrubResult', err); }
+        });
+        document.getElementById('scrubRunBtn').addEventListener('click', async () => {
+            if (!scrubPlan || !confirm(`Clean ${scrubPlan.scoresToClean.length} score records?`)) return;
+            try {
+                showLoading('Cleaning…');
+                const r = await applyLegacyScrub(db, scrubPlan);
+                hideLoading();
+                document.getElementById('scrubRunBtn').classList.add('hidden');
+                scrubPlan = null;
+                privacyNote('scrubResult', `✓ Done: ${r.playersWritten} player records written, ${r.scoresCleaned} scores cleaned. Press Check again to confirm it shows nothing left.`, 'text-green-400');
+            } catch (err) { hideLoading(); privacyError('scrubResult', err); }
+        });
+
+        // ---- 2. Delete a student ----
+        let purgePlan = null;
+        const purgeConfirm = document.getElementById('purgeConfirm');
+        const purgeRunBtn = document.getElementById('purgeRunBtn');
+        document.getElementById('purgeFindBtn').addEventListener('click', async () => {
+            document.getElementById('purgeArm').classList.add('hidden');
+            purgeConfirm.value = ''; purgeRunBtn.disabled = true; purgePlan = null;
+            try {
+                showLoading('Finding records…');
+                purgePlan = await planStudentDelete(db, document.getElementById('purgeEmail').value);
+                hideLoading();
+                if (purgePlan.scoreIds.length === 0 && purgePlan.playerIds.length === 0) {
+                    privacyNote('purgeResult', `No records found for <b>${escapeHtml(purgePlan.email)}</b>. Check the spelling — or they may never have saved a score. Their sign-in account (if any) is in Firebase console → Authentication.`);
+                    return;
+                }
+                privacyNote('purgeResult',
+                    `<b>${escapeHtml(purgePlan.email)}</b>: ${purgePlan.scoreIds.length} scores and ${purgePlan.playerIds.length} email record(s) will be deleted.`);
+                document.getElementById('purgeArm').classList.remove('hidden');
+            } catch (err) { hideLoading(); privacyError('purgeResult', err); }
+        });
+        purgeConfirm.addEventListener('input', () => {
+            purgeRunBtn.disabled = !purgePlan || purgeConfirm.value.trim().toLowerCase() !== purgePlan.email;
+        });
+        purgeRunBtn.addEventListener('click', async () => {
+            if (!purgePlan || purgeConfirm.value.trim().toLowerCase() !== purgePlan.email) return;
+            try {
+                showLoading('Deleting…');
+                const r = await applyStudentDelete(db, purgePlan);
+                hideLoading();
+                document.getElementById('purgeArm').classList.add('hidden');
+                privacyNote('purgeResult',
+                    `✓ Deleted ${r.scoresDeleted} scores and ${r.playersDeleted} email record(s) for <b>${escapeHtml(purgePlan.email)}</b>.<br><br>` +
+                    `<b>One step left, which no web page is allowed to do:</b> Firebase console → spot-on-games → Authentication → Users → search <b>${escapeHtml(purgePlan.email)}</b> → ⋮ → <b>Delete account</b>. ` +
+                    `(If the family asked to stop collection, choose <b>Disable account</b> instead: the student can still play, but can't sign in, so nothing is saved.)`, 'text-green-400');
+                purgePlan = null;
+            } catch (err) { hideLoading(); privacyError('purgeResult', err); }
+        });
+
+        // ---- 3. Retention ----
+        let retentionPlanCache = null;
+        const retentionConfirm = document.getElementById('retentionConfirm');
+        const retentionRunBtn = document.getElementById('retentionRunBtn');
+        const retentionWord = () => `expire ${retentionPlanCache ? retentionPlanCache.expired.length : 0}`;
+        document.getElementById('retentionCheckBtn').addEventListener('click', async () => {
+            document.getElementById('retentionArm').classList.add('hidden');
+            retentionConfirm.value = ''; retentionRunBtn.disabled = true;
+            try {
+                showLoading('Reading every score and player record…');
+                retentionPlanCache = await planRetention(db);
+                hideLoading();
+                const p = retentionPlanCache;
+                const tail = `<br><br><b>Also each quarter:</b> Firebase console → Authentication → Users → sort by <b>Signed In</b> and delete accounts that haven't signed in since <b>${fmtDate(p.cutoffMs)}</b>.` +
+                    (p.undatedScores ? `<br>${p.undatedScores} score(s) have no date and are never expired automatically.` : '');
+                if (p.expired.length === 0) {
+                    privacyNote('retentionResult', `✓ Nobody has been inactive since before ${fmtDate(p.cutoffMs)}. Nothing to expire.` + tail, 'text-green-400');
+                    return;
+                }
+                const rows = p.expired.map(e =>
+                    `<tr class="border-b border-gray-800"><td class="py-1 pr-4">${escapeHtml(e.email || '(no email on file)')}</td>` +
+                    `<td class="py-1 pr-4">${fmtDate(e.lastMs)}</td><td class="py-1">${e.scoreIds.length}</td></tr>`).join('');
+                privacyNote('retentionResult',
+                    `${p.expired.length} students last saved a score before ${fmtDate(p.cutoffMs)}:` +
+                    `<div class="overflow-x-auto mt-2"><table class="text-xs"><tr class="text-left text-gray-500"><th class="pr-4">Email</th><th class="pr-4">Last active</th><th>Scores</th></tr>${rows}</table></div>` +
+                    `<p class="mt-2">Type <b>${retentionWord()}</b> to confirm.</p>` + tail);
+                retentionConfirm.placeholder = retentionWord();
+                document.getElementById('retentionArm').classList.remove('hidden');
+            } catch (err) { hideLoading(); privacyError('retentionResult', err); }
+        });
+        retentionConfirm.addEventListener('input', () => {
+            retentionRunBtn.disabled = !retentionPlanCache || retentionConfirm.value.trim() !== retentionWord();
+        });
+        retentionRunBtn.addEventListener('click', async () => {
+            if (!retentionPlanCache || retentionConfirm.value.trim() !== retentionWord()) return;
+            try {
+                showLoading('Expiring…');
+                const r = await applyRetention(db, retentionPlanCache);
+                hideLoading();
+                document.getElementById('retentionArm').classList.add('hidden');
+                retentionPlanCache = null;
+                privacyNote('retentionResult', `✓ ${r.studentsExpired} students expired: ${r.scoresAnonymized} scores made anonymous, ${r.playersDeleted} email records deleted.`, 'text-green-400');
+            } catch (err) { hideLoading(); privacyError('retentionResult', err); }
+        });
+
+        // ---- 4. Image hosts ----
+        document.getElementById('hostsCheckBtn').addEventListener('click', async () => {
+            try {
+                showLoading('Reading game content…');
+                const hosts = await listImageHosts(db);
+                hideLoading();
+                if (hosts.length === 0) { privacyNote('hostsResult', 'No web addresses found in the game content.'); return; }
+                const google = h => h === 'firebasestorage.googleapis.com' || h.endsWith('.firebasestorage.app') || h === '(stored inside the database)';
+                privacyNote('hostsResult',
+                    `<table class="text-xs"><tr class="text-left text-gray-500"><th class="pr-4">Website</th><th class="pr-4">Links</th><th>Where</th></tr>` +
+                    hosts.map(h => `<tr class="border-b border-gray-800 ${google(h.host) ? 'text-green-400' : 'text-yellow-400'}">` +
+                        `<td class="py-1 pr-4">${escapeHtml(h.host)}</td><td class="py-1 pr-4">${h.count}</td><td class="py-1">${escapeHtml(h.collections.join(', '))}</td></tr>`).join('') +
+                    `</table><p class="mt-2 text-gray-400">Green = Google/Firebase or stored in the database. Yellow = another company (it also may include plain links, like a "source" credit, that students never load).</p>`);
+            } catch (err) { hideLoading(); privacyError('hostsResult', err); }
+        });
+
         document.getElementById('startMigrationBtn').addEventListener('click', async () => {
             if (!firebaseReady) return showToast('Sign in first', 'error');
             

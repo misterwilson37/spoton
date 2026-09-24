@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement v2.1.1</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Balanced Placement v2.2.0</title>
+    <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
     <style>
@@ -16,12 +15,19 @@
         .btn-submit:hover { box-shadow: 0 0 15px var(--primary); }
         /* Override screen display for this game's layout */
 </style>
+    <!-- Built Tailwind (replaces the Tailwind CDN script). LAST in <head> on purpose:
+         the CDN script injected its styles at the end of <head>, so this keeps the same
+         cascade order. Rebuild it when adding Tailwind classes — see README. -->
+    <link rel="stylesheet" href="tailwind.css">
 </head>
 <body>
     <!-- Persistent Navigation -->
     <div class="nav-links">
         <a href="index.html" class="nav-link">← All Games</a>
-        <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+        <div class="nav-group">
+            <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+            <a href="privacy.html" class="nav-link">🔒 Privacy</a>
+        </div>
     </div>
     <div class="game-wrapper">
         <div class="game-container">
@@ -144,8 +150,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
+        import { saveScore } from "./score-save.js";
 
         // ============================================
         // FIREBASE & AUTH
@@ -311,22 +318,15 @@
             if (!currentUser || !db) return null;
             
             try {
-                const scoreData = {
+                // Email, name and photo are NOT written here any more — see score-save.js.
+                return await saveScore(db, currentUser, {
                     gameId: 'balanced-placement',
                     initials: initials.toUpperCase(),
                     score: totalScore,
-                    email: currentUser.email,
-                    displayName: currentUser.displayName || '',
-                    photoURL: currentUser.photoURL || '',
-                    uid: currentUser.uid,
                     roundCount: MAX_ROUNDS,
                     averageScore: Math.round(totalScore / MAX_ROUNDS),
-                    timestamp: serverTimestamp(),
                     flagged: containsProfanity(initials)
-                };
-                
-                const docRef = await addDoc(collection(db, 'scores'), scoreData);
-                return docRef.id;
+                });
             } catch (error) {
                 console.error('Submit score error:', error);
                 return null;

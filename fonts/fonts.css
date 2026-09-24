@@ -1,0 +1,33 @@
+/* fonts/fonts.css v1.0.0 — SELF-HOSTED, SO NO OUTSIDE COMPANY SEES A VISITOR.
+ * Figgins, Sept 2026 (privacy round). Every page used to load Inter (and admin.html
+ * Urbanist + Questrial) from fonts.googleapis.com, which hands Google each visitor's
+ * IP address on every page load. These are the same fonts, served from SpotOn itself.
+ *
+ * All three are SIL Open Font License 1.1 (licence texts beside the files), which
+ * permits self-hosting. Source: the @fontsource npm packages, latin subset, woff2.
+ * Only the weights the old <link> tags asked for — add a file here before using a new
+ * weight, or the browser fakes it. tests/self-hosted-assets-test.mjs checks that every
+ * url() below points at a file that exists.
+ */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('inter-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('inter-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('inter-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('inter-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: swap;
+  src: url('inter-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Urbanist'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('urbanist-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Urbanist'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('urbanist-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Urbanist'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('urbanist-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Urbanist'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('urbanist-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Urbanist'; font-style: normal; font-weight: 800; font-display: swap;
+  src: url('urbanist-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Questrial'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('questrial-latin-400-normal.woff2') format('woff2'); }

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement II v2.1.1</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Balanced Placement II v2.2.0</title>
+    <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
 
     <style>
@@ -37,7 +37,10 @@
     <!-- Persistent Navigation -->
     <div class="nav-links">
         <a href="index.html" class="nav-link">← All Games</a>
-        <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+        <div class="nav-group">
+            <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+            <a href="privacy.html" class="nav-link">🔒 Privacy</a>
+        </div>
     </div>
     <div class="game-wrapper">
         <div class="game-container">
@@ -162,8 +165,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
+        import { saveScore } from "./score-save.js";
 
         // ============================================
         // FIREBASE & AUTH
@@ -314,19 +318,15 @@
             if (!db || !currentUser) return null;
             
             try {
-                const docRef = await addDoc(collection(db, 'scores'), {
+                // Email, name and photo are NOT written here any more — see score-save.js.
+                return await saveScore(db, currentUser, {
                     gameId: 'balanced-placement-ii',
                     initials: initials.toUpperCase(),
                     score: score,
-                    userId: currentUser.uid,
-                    email: currentUser.email,
-                    displayName: currentUser.displayName || '',
                     roundCount: MAX_ROUNDS,
                     averageScore: Math.round(score / MAX_ROUNDS),
-                    timestamp: serverTimestamp(),
                     flagged: containsProfanity(initials)
                 });
-                return docRef.id;
             } catch (error) {
                 console.error('Submit score error:', error);
                 return null;

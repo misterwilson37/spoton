@@ -1,5 +1,5 @@
 /* =============================================
-   SPOT ON! GAMES - Shared Stylesheet v2.0.0
+   SPOT ON! GAMES - Shared Stylesheet v2.1.0
    ============================================= */
 
 /* =============================================
@@ -144,6 +144,13 @@ canvas {
 
 .nav-links .nav-link {
     pointer-events: auto;
+}
+
+/* Right-hand group (Leaderboard + Privacy). v2.1.0: the Privacy link joined the
+   menu, and space-between would otherwise drop a third link into the middle. */
+.nav-links .nav-group {
+    display: flex;
+    gap: 1.25rem;
 }
 
 .nav-link {

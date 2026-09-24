@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! v2.2.0 - Perception Games</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Spot On! v2.3.0 - Perception Games</title>
+    <link href="fonts/fonts.css" rel="stylesheet">
     <style>
         :root {
             --carolina-blue: #7BAFD4;
@@ -107,6 +106,10 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    <!-- Built Tailwind (replaces the Tailwind CDN script). LAST in <head> on purpose:
+         the CDN script injected its styles at the end of <head>, so this keeps the same
+         cascade order. Rebuild it when adding Tailwind classes — see README. -->
+    <link rel="stylesheet" href="tailwind.css">
 </head>
 <body>
     <div class="min-h-screen flex flex-col">
@@ -136,6 +139,7 @@
             <p class="text-gray-500 text-sm mb-2">
                 Games created with Gemini & Claude • Enhanced for the classroom
             </p>
+            <p class="text-sm mb-2"><a href="privacy.html" class="text-gray-400 hover:text-gray-200 underline">Privacy &amp; Data Policy</a></p>
             <a href="admin.html" class="admin-link">⚙</a>
         </footer>
     </div>

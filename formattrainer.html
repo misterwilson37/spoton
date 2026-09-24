@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Format Trainer v0.10.0 - Spot On!</title>
+    <title>Format Trainer v0.11.0 - Spot On!</title>
     <link rel="stylesheet" href="games.css">
     <style>
         /* ── Game-specific styles ── */
@@ -165,7 +165,10 @@
     <!-- Persistent Navigation -->
     <div class="nav-links">
         <a href="index.html" class="nav-link">← All Games</a>
-        <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+        <div class="nav-group">
+            <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+            <a href="privacy.html" class="nav-link">🔒 Privacy</a>
+        </div>
     </div>
     <!-- All screens managed by JS -->
     <div id="app"></div>
@@ -176,8 +179,9 @@
         // ════════════════════════════════════════
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, signOut as fbSignOut, onAuthStateChanged, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
+        import { saveScore as writeScore } from "./score-save.js";  // aliased: this file has its own saveScore()
 
         let fbApp, auth, db, currentUser = null;
         try {
@@ -226,7 +230,8 @@
         async function saveScore(gameId, initials, score) {
             if (!db || !currentUser) return false;
             try {
-                await addDoc(collection(db,'scores'), { gameId, initials: initials.toUpperCase(), score, uid: currentUser.uid, timestamp: serverTimestamp() });
+                // Written through score-save.js, the one place scores are saved.
+                await writeScore(db, currentUser, { gameId, initials: initials.toUpperCase(), score });
                 return true;
             } catch(e) { console.error('Save score error:', e); return false; }
         }

@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Leaderboard v1.3.0</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Spot On! Leaderboard v1.4.0</title>
+    <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     <style>
         :root {
@@ -107,6 +106,10 @@
         }
         .back-link:hover { color: var(--carolina-blue); }
     </style>
+    <!-- Built Tailwind (replaces the Tailwind CDN script). LAST in <head> on purpose:
+         the CDN script injected its styles at the end of <head>, so this keeps the same
+         cascade order. Rebuild it when adding Tailwind classes — see README. -->
+    <link rel="stylesheet" href="tailwind.css">
 </head>
 <body>
     <div class="min-h-screen">
@@ -159,6 +162,7 @@
 
         <footer class="text-center py-6 text-gray-600 text-sm">
             <p>Spot On! Perception Games</p>
+            <p class="mt-2"><a href="privacy.html" class="text-gray-400 hover:text-gray-200 underline">Privacy &amp; Data Policy</a></p>
         </footer>
     </div>
 
