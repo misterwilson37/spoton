@@ -7,7 +7,7 @@ import { check, section, finish } from './harness.mjs';
 import { RETENTION_MONTHS, LEGACY_PERSONAL_FIELDS, planLegacyScrub, applyLegacyScrub,
          planStudentDelete, applyStudentDelete, planRetention, applyRetention,
          listImageHosts, retentionCutoff, planImageMoves, moveImage, hostPictureInSpotOn,
-         isSpotOnHosted } from '../privacy-tools.js';
+         isSpotOnHosted, expiryDate } from '../privacy-tools.js';
 
 const NOW = Date.UTC(2026, 8, 24);
 const ago = months => { const d = new Date(NOW); d.setMonth(d.getMonth() - months); return Timestamp.fromMillis(d.getTime()); };
@@ -92,6 +92,9 @@ check('D (20 months) is kept', !ids.includes('ud'));
 check('E kept: old record but a recent score (every activity source counts)', !ids.includes('ue'));
 check('undated score never auto-expired, and reported', !ids.includes('uz') && plan.undatedScores === 1);
 check('C listed with its email for the admin to see', plan.expired[0].email === 'c@stu.test');
+check('next to expire = D, the least-recently-active student still in date', plan.next && plan.next.uid === 'ud', JSON.stringify(plan.next));
+check('D is due 24 months after its last score (4 months from now)',
+      plan.next && plan.next.expiresMs === expiryDate(ago(20).toMillis()) && plan.next.expiresMs === ago(-4).toMillis());
 await applyRetention(admin.db, plan);
 const c1 = await score('c1');
 check('C\'s scores still on the board', !!c1 && !!(await score('c2')));

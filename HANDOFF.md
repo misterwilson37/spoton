@@ -123,6 +123,30 @@ crossOrigin, which needs CORS). Gutenberg is unknown — may need the manual fal
 Tests: rules 53/53, purge-retention 48/48 (now includes real emulator uploads),
 promises 130/130, assets 58/58. Mutation: dropping one copy-in call turns it red.
 
+### Part 3 — next-expiry date and sign-in account script (same session)
+
+Jake ran the cleanup, picture move and checks. Asked (1) for the retention check to say
+when the next student expires, and (2) whether sign-in accounts could be deleted by a
+command instead of by hand.
+
+- `planRetention()` now returns `next` = the least-recently-active student not yet
+  expired, with `expiresMs` (last activity + 24 months). admin.html shows it.
+- `scripts/auth-cleanup.py`: firebase-admin, run in **Google Cloud Shell** with the
+  admin's own credentials (ADC + quota project) — deliberately no service-account key,
+  which would be a master key sitting on a machine. Lists by default; `--delete` needs a
+  typed `delete N`. "Last used" = max(sign-in, token refresh, creation) — students stay
+  signed in on their own MacBooks, so sign-in alone would expire active kids. Admin
+  emails are hard-protected; a test checks the list matches firestore.rules.
+- The Auth emulator can't store a refresh time, so that one rule is unit-tested by
+  calling the script's own `last_used()`.
+- Policy wording fixed: sign-in accounts expire on their own 24 months of disuse, not
+  "at the same time" as the score anonymisation. The two clocks differ: scores expire
+  24 months after the last SAVED score; sign-in accounts 24 months after last USE. A
+  student who keeps signing in without saving keeps their account but loses the email
+  link — harmless, and the policy now says exactly this.
+- **Not run against the live project.** First real run is Jake's, in Cloud Shell — the
+  one untested piece is the Cloud Shell credential setup (quota-project step).
+
 ### Open items
 
 - **Mailing address** for the policy (COPPA 312.4(d)(1)) — undecided, same as TTB.

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.7.0</title>
+    <title>Spot On! Admin v2.8.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     
     <style>
@@ -4352,8 +4352,9 @@
                 document.getElementById('purgeArm').classList.add('hidden');
                 privacyNote('purgeResult',
                     `✓ Deleted ${r.scoresDeleted} scores and ${r.playersDeleted} email record(s) for <b>${escapeHtml(purgePlan.email)}</b>.<br><br>` +
-                    `<b>One step left, which no web page is allowed to do:</b> Firebase console → spot-on-games → Authentication → Users → search <b>${escapeHtml(purgePlan.email)}</b> → ⋮ → <b>Delete account</b>. ` +
-                    `(If the family asked to stop collection, choose <b>Disable account</b> instead: the student can still play, but can't sign in, so nothing is saved.)`, 'text-green-400');
+                    `<b>One step left, which no web page is allowed to do:</b> delete their sign-in account. In Google Cloud Shell: <code>python3 auth-cleanup.py --email ${escapeHtml(purgePlan.email)} --delete</code> ` +
+                    `(or Firebase console → Authentication → Users → search → ⋮ → <b>Delete account</b>). ` +
+                    `If the family asked to stop collection, use <code>--disable</code> instead of <code>--delete</code>: the student can still play, but can't sign in, so nothing is saved.`, 'text-green-400');
                 purgePlan = null;
             } catch (err) { hideLoading(); privacyError('purgeResult', err); }
         });
@@ -4371,7 +4372,12 @@
                 retentionPlanCache = await planRetention(db);
                 hideLoading();
                 const p = retentionPlanCache;
-                const tail = `<br><br><b>Also each quarter:</b> Firebase console → Authentication → Users → sort by <b>Signed In</b> and delete accounts that haven't signed in since <b>${fmtDate(p.cutoffMs)}</b>.` +
+                // v2.8.0: when the next student comes due, so a quiet quarter can be skipped.
+                const nextLine = p.next
+                    ? `<br><br><b>Next to expire:</b> ${escapeHtml(p.next.email || '(no email on file)')} — last saved a score ${fmtDate(p.next.lastMs)}, due <b>${fmtDate(p.next.expiresMs)}</b>. Nothing new can expire before then.`
+                    : '<br><br>No other students on file.';
+                const tail = nextLine +
+                    `<br><br><b>Also each quarter:</b> run <code>scripts/auth-cleanup.py</code> in Google Cloud Shell to delete sign-in accounts unused since <b>${fmtDate(p.cutoffMs)}</b> (instructions at the top of the script).` +
                     (p.undatedScores ? `<br>${p.undatedScores} score(s) have no date and are never expired automatically.` : '');
                 if (p.expired.length === 0) {
                     privacyNote('retentionResult', `✓ Nobody has been inactive since before ${fmtDate(p.cutoffMs)}. Nothing to expire.` + tail, 'text-green-400');

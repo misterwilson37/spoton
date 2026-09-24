@@ -100,9 +100,12 @@ page. It reads every score and player record, finds students whose most recent s
 score is more than 24 months old, and lists them; nothing changes until the
 administrator types a confirmation. It then removes the account ID from those
 students' scores first and deletes their email record last. In the same quarterly
-check, the administrator deletes sign-in accounts unused for 24 months in the
-Firebase console, since web pages are not permitted to delete another person's
-sign-in account.
+check, the administrator deletes sign-in accounts unused for 24 months with
+`scripts/auth-cleanup.py`, run in Google Cloud Shell under the administrator's own
+Google account (no key file is stored anywhere), since web pages are not permitted to
+delete another person's sign-in account. The script lists first and deletes only after
+a typed confirmation, and never deletes the administrator accounts. "Unused" counts
+both signing in and a browser silently renewing a sign-in.
 
 ## 7. Deleting a student's information
 
@@ -114,7 +117,7 @@ The administration page's delete tool first lists how many records it will remov
 then requires the student's email address to be typed again before anything is
 deleted. It deletes the scores first and the email record last, so an interrupted run
 leaves the student findable and can simply be repeated. The sign-in account is then
-deleted in the Firebase console. If a family asks that no further information be
+deleted with `scripts/auth-cleanup.py --email … --delete` (or in the Firebase console). If a family asks that no further information be
 collected, the sign-in account is disabled instead, so the student can still play but
 nothing is saved.
 

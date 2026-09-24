@@ -1,4 +1,4 @@
-// privacy-tools.js v1.1.0 — the admin page's privacy tools, kept out of admin.html
+// privacy-tools.js v1.2.0 — the admin page's privacy tools, kept out of admin.html
 // so tests/purge-retention-test.mjs can run THIS EXACT FILE against a real
 // Firestore emulator. Written by Figgins, Sept 2026 (privacy round).
 //
@@ -28,7 +28,7 @@ import { collection, getDocs, getDoc, doc, query, where, writeBatch, deleteField
 import { ref, uploadBytes, getDownloadURL }
     from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-export const PRIVACY_TOOLS_VERSION = '1.1.0';
+export const PRIVACY_TOOLS_VERSION = '1.2.0';
 
 // ⚠️ THE retention period. privacy.html and SECURITY.md state it in words;
 // tests/privacy-promises-test.mjs checks all three agree.
@@ -57,6 +57,13 @@ async function commitSteps(db, steps) {
         await batch.commit();
     }
     return steps.length;
+}
+
+// The day a student last active on lastMs becomes due for expiry (v1.2.0).
+export function expiryDate(lastMs) {
+    const d = new Date(lastMs);
+    d.setMonth(d.getMonth() + RETENTION_MONTHS);
+    return d.getTime();
 }
 
 export function retentionCutoff(nowMs = Date.now()) {
@@ -188,7 +195,15 @@ export async function planRetention(db, nowMs = Date.now()) {
         }
     }
     expired.sort((a, b) => a.lastMs - b.lastMs);
-    return { cutoffMs: cutoff, expired, undatedScores: undated };
+    // v1.2.0: the NEXT student due — the least-recently-active one not yet expired —
+    // so the admin knows the first date the check can find anything new.
+    let next = null;
+    for (const [uid, e] of byUid) {
+        if (e.lastMs === null || e.lastMs < cutoff) continue;
+        if (!next || e.lastMs < next.lastMs) next = { uid, email: e.email, lastMs: e.lastMs };
+    }
+    if (next) next.expiresMs = expiryDate(next.lastMs);
+    return { cutoffMs: cutoff, expired, undatedScores: undated, next };
 }
 
 export async function applyRetention(db, plan) {

@@ -75,6 +75,10 @@ check('SECURITY.md says 24 months', security.includes(`${months} months`));
 const otherMonths = s => (s.match(/\b(\d+) months\b/g) || []).filter(m => m !== `${months} months`);
 check('no other month count in the policy', otherMonths(policyText).length === 0, otherMonths(policyText));
 check('no other month count in SECURITY.md', otherMonths(security).length === 0, otherMonths(security));
+const script = read('scripts/auth-cleanup.py');
+check('auth-cleanup.py uses the same retention period', new RegExp(`RETENTION_MONTHS = ${months}\\b`).test(script));
+check('auth-cleanup.py protects exactly the rules\' admin accounts',
+      JSON.stringify(listFrom((script.match(/ADMIN_EMAILS = \{([\s\S]*?)\}/) || [,''])[1])) === JSON.stringify(adminList(rules)));
 check('"within 30 days" in both', /within 30\s+days/.test(policyText) && /within 30 days/.test(security));
 check('retention removes the account link LAST (players deleted after scores)',
       tools.indexOf("batch.delete(doc(db, 'players', s.uid))") > tools.indexOf("change = { uid: deleteField() }"));

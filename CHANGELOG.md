@@ -1,5 +1,16 @@
 # Changelog — SpotOn
 
+## Sept 2026 — Privacy round, part 3 (Figgins)
+
+- admin.html 2.8.0 / privacy-tools.js 1.2.0 — retention check names the next student
+  due and the date; delete-a-student points at the new script.
+- scripts/auth-cleanup.py 1.0.0 — deletes sign-in accounts unused 24 months (counts
+  silent sign-in renewals), or one account on request; `--disable` to stop collection.
+  Runs in Google Cloud Shell, no key file.
+- privacy.html 1.0.1 — sign-in accounts expire on their own 24 months of disuse
+  (was: "at the same time" as the scores, which the script doesn't do).
+- tests: auth-cleanup-test.py (Auth emulator) added to `npm run test:emulator`.
+
 ## Sept 2026 — Privacy round, part 2 (Figgins)
 
 - admin.html 2.7.0 — "Move outside pictures into SpotOn" (Privacy tab), with a
