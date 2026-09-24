@@ -102,13 +102,33 @@ Privacy & Data Policy with a COPPA section, in the footer or main menu.
 Between steps 1 and 2 a student on an old cached page can't save a score (old pages send
 the email field the new rules refuse). That's why it's after school.
 
+### Part 2 — outside pictures (same session)
+
+Jake deployed part 1 (rules + files). Picture sources found: Firebase Storage 20
+(Sweet Spot levels), images.pexels.com 16 (Picture Perfect), www.gutenberg.org 16
+(Balanced II), www.pexels.com 3 (Picture Perfect `sourceUrl` credit links — never loaded
+by the game, so the list no longer counts them).
+
+Built: admin.html 2.7.0 + privacy-tools.js 1.1.0 — Privacy → "Move outside pictures into
+SpotOn" downloads each picture in the admin's browser, uploads it to
+`game-images/moved/{collection}-{id}.{ext}`, then points the record at the copy
+(`originalImageUrl` keeps the old address as a credit). Upload first, record second; a
+record changed mid-move is left alone. A website that blocks the download (CORS) gets a
+per-picture "Open original" + file-upload fallback. Every admin save that sets a picture
+address (PP add, PP seed, BP2 add, BP2 edit) now copies the picture in immediately —
+a test checks all four save sites do.
+
+Pexels should download automatically (Picture Perfect already loads it with
+crossOrigin, which needs CORS). Gutenberg is unknown — may need the manual fallback.
+Tests: rules 53/53, purge-retention 48/48 (now includes real emulator uploads),
+promises 130/130, assets 58/58. Mutation: dropping one copy-in call turns it red.
+
 ### Open items
 
 - **Mailing address** for the policy (COPPA 312.4(d)(1)) — undecided, same as TTB.
 - **Principal's approval naming SpotOn** — Jake is getting it.
-- **Picture sources check** (deploy step 4). Note: admin → Picture Perfect →
-  "Seed Default Images" writes Pexels / pdr-assets URLs — if those were ever seeded, they
-  are outside hosts.
+- **Run "Move outside pictures"**, then "List picture sources" should be all green.
+  The policy's "game pictures are stored in Firebase" is only true after that.
 - **Quarterly retention** — admin → Privacy → Retention check, plus deleting unused
   sign-in accounts in Firebase console → Authentication (sort by Signed In).
 - Format Trainer never loaded a web font (falls back to the system font, unlike every

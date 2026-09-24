@@ -6,7 +6,8 @@ import { as, ADMIN, student, clearFirestore, denied } from './emu.mjs';
 import { check, section, finish } from './harness.mjs';
 import { RETENTION_MONTHS, LEGACY_PERSONAL_FIELDS, planLegacyScrub, applyLegacyScrub,
          planStudentDelete, applyStudentDelete, planRetention, applyRetention,
-         listImageHosts, retentionCutoff } from '../privacy-tools.js';
+         listImageHosts, retentionCutoff, planImageMoves, moveImage, hostPictureInSpotOn,
+         isSpotOnHosted } from '../privacy-tools.js';
 
 const NOW = Date.UTC(2026, 8, 24);
 const ago = months => { const d = new Date(NOW); d.setMonth(d.getMonth() - months); return Timestamp.fromMillis(d.getTime()); };
@@ -34,7 +35,10 @@ for (const [id, d] of Object.entries(seed)) await setDoc(doc(owner.db, 'scores',
 // E: old player record, but a RECENT score — must count as active.
 await setDoc(doc(owner.db, 'players', 'ue'), { email: 'e@stu.test', lastPlayed: ago(30) });
 await setDoc(doc(owner.db, 'levels', 'L1'), { imageUrl: 'https://firebasestorage.googleapis.com/v0/b/x/o/a.png' });
-await setDoc(doc(owner.db, 'picture-perfect-images', 'P1'), { url: 'https://images.pexels.com/photos/1/a.jpg' });
+await setDoc(doc(owner.db, 'picture-perfect-images', 'P1'), { name: 'Pier', imageUrl: 'https://images.pexels.com/photos/1/a.jpg',
+    sourceUrl: 'https://www.pexels.com/photo/1/' });   // sourceUrl: a credit link no game loads
+await setDoc(doc(owner.db, 'picture-perfect-images', 'P2'), { name: 'Cat', imageUrl: 'https://images.pexels.com/photos/2/b.jpg' });
+await setDoc(doc(owner.db, 'bp2-content', 'B1'), { name: 'Book', imageUrl: 'https://www.gutenberg.org/cache/epub/1/images/c.jpg', text: 'x' });
 
 const score = async id => (await getDoc(doc(admin.db, 'scores', id))).data();
 const playerRec = async uid => (await getDoc(doc(admin.db, 'players', uid))).data();
@@ -97,10 +101,48 @@ check('C\'s email record deleted', !(await playerRec('uc')));
 check('D untouched', (await score('d1')).uid === 'ud' && (await playerRec('ud')).email === 'd@stu.test');
 check('running it again expires nobody', (await planRetention(admin.db, NOW)).expired.length === 0);
 
-section('Image hosts');
-const hosts = (await listImageHosts(admin.db)).map(h => h.host);
+section('Picture sources');
+let hosts = (await listImageHosts(admin.db)).map(h => h.host);
 check('Firebase Storage listed', hosts.includes('firebasestorage.googleapis.com'));
-check('an outside host (Pexels) listed', hosts.includes('images.pexels.com'));
+check('Pexels and Gutenberg listed', hosts.includes('images.pexels.com') && hosts.includes('www.gutenberg.org'));
+check('a credit link (sourceUrl) is NOT counted — no game loads it', !hosts.includes('www.pexels.com'));
+check('Firebase Storage URL counts as SpotOn-hosted', isSpotOnHosted('https://firebasestorage.googleapis.com/v0/b/x/o/a.png'));
+const moves = await planImageMoves(admin.db);
+check('3 outside pictures to move (2 Picture Perfect, 1 Balanced II), not the Sweet Spot one',
+      moves.length === 3 && !moves.some(m => m.collection === 'levels'), JSON.stringify(moves.map(m => m.id)));
+
+section('Moving a picture into Storage (real emulator upload)');
+const png = new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' });
+const p1 = moves.find(m => m.id === 'P1');
+const newUrl = await moveImage(admin.db, admin.st, p1, png);
+const p1doc = (await getDoc(doc(admin.db, 'picture-perfect-images', 'P1'))).data();
+check('record now points at the uploaded copy', p1doc.imageUrl === newUrl && newUrl.includes('game-images%2Fmoved%2Fpicture-perfect-images-P1.png'), newUrl);
+check('original address kept as a credit', p1doc.originalImageUrl === 'https://images.pexels.com/photos/1/a.jpg');
+check('other fields untouched', p1doc.name === 'Pier' && p1doc.sourceUrl === 'https://www.pexels.com/photo/1/');
+check('P1 no longer loads from Pexels', !(await planImageMoves(admin.db)).some(m => m.url.includes('photos/1/')));
+let studentMove = '';
+try { await moveImage(kid.db, kid.st, moves.find(m => m.id === 'P2'), png); } catch (e) { studentMove = e.code; }
+check('a student cannot move a picture', studentMove === 'storage/unauthorized', studentMove);
+let changedErr = '';
+await setDoc(doc(owner.db, 'bp2-content', 'B1'), { name: 'Book', imageUrl: 'https://www.gutenberg.org/NEW.jpg', text: 'x' });
+try { await moveImage(admin.db, admin.st, moves.find(m => m.id === 'B1'), png); } catch (e) { changedErr = e.message; }
+check('a record changed mid-move is left alone', /changed while moving/.test(changedErr)
+      && (await getDoc(doc(admin.db, 'bp2-content', 'B1'))).data().imageUrl === 'https://www.gutenberg.org/NEW.jpg');
+
+section('Copy-in right after an admin save');
+const okFetch = async () => new Response(png, { status: 200 });
+check('outside picture copied in', (await hostPictureInSpotOn(admin.db, admin.st, 'picture-perfect-images', 'P2', okFetch)) === 'moved');
+check('a Firebase-hosted picture is left alone (no download attempted)',
+      (await hostPictureInSpotOn(admin.db, admin.st, 'levels', 'L1', async () => { throw new Error('should not fetch'); })) === 'already');
+const htmlFetch = async () => new Response('<html>', { status: 200, headers: { 'content-type': 'text/html' } });
+let notPic = '';
+try { await hostPictureInSpotOn(admin.db, admin.st, 'bp2-content', 'B1', htmlFetch); } catch (e) { notPic = e.message; }
+check('a web page instead of a picture is refused, record untouched', /not a picture/.test(notPic)
+      && (await getDoc(doc(admin.db, 'bp2-content', 'B1'))).data().imageUrl === 'https://www.gutenberg.org/NEW.jpg');
+const blocked = async () => { throw new TypeError('Failed to fetch'); };
+let corsErr = '';
+try { await hostPictureInSpotOn(admin.db, admin.st, 'bp2-content', 'B1', blocked); } catch (e) { corsErr = e.message; }
+check('a blocked download (CORS) throws, so admin shows the manual-upload fallback', /Failed to fetch/.test(corsErr));
 
 finish('purge-retention-test');
 process.exit(process.exitCode || 0);

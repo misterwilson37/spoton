@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.6.0</title>
+    <title>Spot On! Admin v2.7.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     
     <style>
@@ -629,9 +629,13 @@
 
                 <div class="panel p-6">
                     <h2 class="text-xl font-bold heading mb-2">4. Where the game pictures load from</h2>
-                    <p class="text-gray-400 text-sm mb-4">Every website listed here sees a student's IP address when a game shows its picture. Firebase Storage (<code>firebasestorage.googleapis.com</code>) is Google, which already runs SpotOn's database; anything else is another company. Reads only.</p>
-                    <button id="hostsCheckBtn" class="btn btn-outline btn-sm">List picture sources</button>
+                    <p class="text-gray-400 text-sm mb-4">Every website listed here sees a student's IP address when a game shows its picture. Firebase Storage (<code>firebasestorage.googleapis.com</code>) is Google, which already runs SpotOn's database; anything else is another company. <b>Move</b> copies every outside picture into SpotOn's own storage and points the game at the copy (the original address is kept as a credit, never loaded).</p>
+                    <div class="flex gap-2">
+                        <button id="hostsCheckBtn" class="btn btn-outline btn-sm">List picture sources</button>
+                        <button id="imagesMoveBtn" class="btn btn-cyan btn-sm">Move outside pictures into SpotOn</button>
+                    </div>
                     <div id="hostsResult" class="text-sm mt-4"></div>
+                    <div id="imagesMoveResult" class="text-sm mt-4"></div>
                 </div>
 
             </div>
@@ -732,7 +736,7 @@
                         <input type="text" id="ppNewImageSource" placeholder="Source URL (optional)" class="w-48">
                         <button id="ppAddImageBtn" class="btn btn-cyan">Add Image</button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Tip: Use Pexels.com or Unsplash.com for free, high-quality images. Right-click an image and "Copy image address".</p>
+                    <p class="text-xs text-gray-500 mt-2">Tip: Use Pexels.com or Unsplash.com for free, high-quality images. Right-click an image and "Copy image address". The picture is copied into SpotOn's own storage when you add it, so students' computers never contact the original website.</p>
                 </div>
                 
                 <!-- Image Stats -->
@@ -1020,7 +1024,8 @@
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         import { firebaseConfig } from "./firebase-config.js";
         import { RETENTION_MONTHS, planLegacyScrub, applyLegacyScrub, planStudentDelete,
-                 applyStudentDelete, planRetention, applyRetention, listImageHosts } from "./privacy-tools.js";
+                 applyStudentDelete, planRetention, applyRetention, listImageHosts,
+                 planImageMoves, fetchImage, moveImage, hostPictureInSpotOn } from "./privacy-tools.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -4398,6 +4403,63 @@
             } catch (err) { hideLoading(); privacyError('retentionResult', err); }
         });
 
+
+        // ---- 4b. Move outside pictures into SpotOn (v2.7.0) ----
+        async function runImageMoves() {
+            const out = document.getElementById('imagesMoveResult');
+            let items;
+            try { items = await planImageMoves(db); }
+            catch (err) { privacyError('imagesMoveResult', err); return; }
+            if (items.length === 0) { privacyNote('imagesMoveResult', '✓ Every game picture is already in SpotOn\'s own storage.', 'text-green-400'); return; }
+            if (!confirm(`Copy ${items.length} pictures into SpotOn's storage?`)) return;
+            const failed = [];
+            let moved = 0;
+            for (const [i, item] of items.entries()) {
+                privacyNote('imagesMoveResult', `Moving ${i + 1} of ${items.length}: ${escapeHtml(item.name)}…`);
+                try { await moveImage(db, storage, item, await fetchImage(item.url)); moved++; }
+                catch (err) { failed.push({ item, why: (err && err.message) || String(err) }); }
+            }
+            let html = `<div class="${failed.length ? 'text-yellow-400' : 'text-green-400'}">✓ Moved ${moved} of ${items.length}.</div>`;
+            if (failed.length) {
+                html += `<p class="mt-3 text-gray-300">${failed.length} couldn't be downloaded automatically (usually the other website doesn't allow it). For each one: click <b>Open original</b>, save the picture (right-click → Save Image As…), then choose that file here.</p>` +
+                    failed.map((f, k) => `<div class="mt-2 p-2 bg-gray-800 rounded flex flex-wrap gap-3 items-center" data-k="${k}">` +
+                        `<span class="font-semibold">${escapeHtml(f.item.name)}</span>` +
+                        `<span class="text-xs text-gray-500">${escapeHtml(f.item.collection)} · ${escapeHtml(f.why)}</span>` +
+                        `<a href="${escapeHtml(f.item.url)}" target="_blank" rel="noopener" class="text-cyan-400 underline text-xs">Open original</a>` +
+                        `<input type="file" accept="image/*" class="text-xs move-file"></div>`).join('');
+            }
+            out.innerHTML = html;
+            out.querySelectorAll('.move-file').forEach(input => input.addEventListener('change', async () => {
+                const row = input.closest('[data-k]');
+                const f = failed[Number(row.dataset.k)];
+                const file = input.files && input.files[0];
+                if (!file) return;
+                try {
+                    showLoading('Uploading…');
+                    await moveImage(db, storage, f.item, file);
+                    hideLoading();
+                    row.innerHTML = `<span class="text-green-400">✓ ${escapeHtml(f.item.name)} is now in SpotOn's storage.</span>`;
+                } catch (err) {
+                    hideLoading();
+                    row.insertAdjacentHTML('beforeend', `<span class="text-red-400 text-xs">${escapeHtml(err.message || String(err))}</span>`);
+                }
+            }));
+        }
+        document.getElementById('imagesMoveBtn').addEventListener('click', runImageMoves);
+
+        // Called after every save that sets a picture address (Picture Perfect add/seed,
+        // Balanced II add/edit): copy an outside picture in right away, so outside
+        // pictures can't pile up again between quarterly checks.
+        async function keepPictureInSpotOn(collectionName, id) {
+            try {
+                const r = await hostPictureInSpotOn(db, storage, collectionName, id);
+                if (r === 'moved') showToast('Picture copied into SpotOn\'s storage', 'success');
+            } catch (err) {
+                console.warn('Picture copy failed:', err);
+                showToast('Saved — but the picture still loads from another website. Admin → Privacy → Move outside pictures.', 'error');
+            }
+        }
+
         // ---- 4. Image hosts ----
         document.getElementById('hostsCheckBtn').addEventListener('click', async () => {
             try {
@@ -4405,12 +4467,11 @@
                 const hosts = await listImageHosts(db);
                 hideLoading();
                 if (hosts.length === 0) { privacyNote('hostsResult', 'No web addresses found in the game content.'); return; }
-                const google = h => h === 'firebasestorage.googleapis.com' || h.endsWith('.firebasestorage.app') || h === '(stored inside the database)';
                 privacyNote('hostsResult',
                     `<table class="text-xs"><tr class="text-left text-gray-500"><th class="pr-4">Website</th><th class="pr-4">Links</th><th>Where</th></tr>` +
-                    hosts.map(h => `<tr class="border-b border-gray-800 ${google(h.host) ? 'text-green-400' : 'text-yellow-400'}">` +
+                    hosts.map(h => `<tr class="border-b border-gray-800 ${h.spotOn ? 'text-green-400' : 'text-yellow-400'}">` +
                         `<td class="py-1 pr-4">${escapeHtml(h.host)}</td><td class="py-1 pr-4">${h.count}</td><td class="py-1">${escapeHtml(h.collections.join(', '))}</td></tr>`).join('') +
-                    `</table><p class="mt-2 text-gray-400">Green = Google/Firebase or stored in the database. Yellow = another company (it also may include plain links, like a "source" credit, that students never load).</p>`);
+                    `</table><p class="mt-2 text-gray-400">Green = SpotOn's own Firebase storage. Yellow = another company — press <b>Move outside pictures into SpotOn</b>.</p>`);
             } catch (err) { hideLoading(); privacyError('hostsResult', err); }
         });
 
@@ -4548,7 +4609,7 @@
             }
             
             try {
-                await addDoc(collection(db, 'picture-perfect-images'), {
+                const ppRef = await addDoc(collection(db, 'picture-perfect-images'), {
                     imageUrl: url,
                     name: name || 'Unnamed',
                     sourceUrl: sourceUrl || null,
@@ -4557,6 +4618,7 @@
                 });
                 
                 showToast('Image added!', 'success');
+                await keepPictureInSpotOn('picture-perfect-images', ppRef.id);
                 document.getElementById('ppNewImageUrl').value = '';
                 document.getElementById('ppNewImageName').value = '';
                 document.getElementById('ppNewImageSource').value = '';
@@ -4669,13 +4731,14 @@
             try {
                 let added = 0;
                 for (const img of PP_DEFAULT_IMAGES) {
-                    await addDoc(collection(db, 'picture-perfect-images'), {
+                    const seedRef = await addDoc(collection(db, 'picture-perfect-images'), {
                         imageUrl: img.imageUrl,
                         name: img.name,
                         enabled: true,
                         createdAt: serverTimestamp()
                     });
                     added++;
+                    await keepPictureInSpotOn('picture-perfect-images', seedRef.id);
                 }
                 
                 showToast(`Added ${added} default images!`, 'success');
@@ -5143,7 +5206,7 @@
             if (cropOptions.length === 0) { showToast('Select at least one crop option', 'error'); return; }
             
             try {
-                await addDoc(collection(db, 'bp2-content'), {
+                const bp2Ref = await addDoc(collection(db, 'bp2-content'), {
                     imageUrl: imageUrl,
                     name: name || 'Unnamed',
                     text: text,
@@ -5154,6 +5217,7 @@
                 });
                 
                 showToast('Content added! Open it to adjust the focal point.', 'success');
+                await keepPictureInSpotOn('bp2-content', bp2Ref.id);
                 document.getElementById('bp2NewImageUrl').value = '';
                 document.getElementById('bp2NewName').value = '';
                 document.getElementById('bp2NewText').value = '';
@@ -5256,7 +5320,9 @@
                 });
                 
                 showToast('Content updated!', 'success');
+                const editedId = currentBP2ModalId;
                 closeBP2Modal();
+                await keepPictureInSpotOn('bp2-content', editedId);
                 loadBP2ContentList();
             } catch (error) {
                 console.error('Save BP2 error:', error);

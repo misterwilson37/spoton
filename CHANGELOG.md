@@ -1,5 +1,13 @@
 # Changelog — SpotOn
 
+## Sept 2026 — Privacy round, part 2 (Figgins)
+
+- admin.html 2.7.0 — "Move outside pictures into SpotOn" (Privacy tab), with a
+  manual-upload fallback for any website that blocks the download; pictures added or
+  edited by URL are copied into Firebase Storage right after saving.
+- privacy-tools.js 1.1.0 — picture-source list now counts only the address each game
+  actually loads (not credit links); planImageMoves / moveImage / hostPictureInSpotOn.
+
 ## Sept 2026 — Privacy round (Figgins)
 
 - Scores no longer store email, name or photo; one shared writer (`score-save.js` 1.0.0)

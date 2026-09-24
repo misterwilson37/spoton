@@ -61,6 +61,12 @@ for (const g of GAMES) {
     check(`${g}: leaderboard shows no email/name`, !/\b(s|score|d)\.(email|displayName|photoURL)\b/.test(stripAll(read(g))));
 }
 
+section('Pictures stay in SpotOn (policy: game pictures are stored in Firebase)');
+const adminSrc = stripAll(read('admin.html'));
+const pictureSaves = (adminSrc.match(/(addDoc|updateDoc)\(\s*(collection|doc)\(db, '(picture-perfect-images|bp2-content)'[^)]*\)[^;]*?imageUrl/gs) || []).length;
+const copyIns = (adminSrc.match(/await keepPictureInSpotOn\(/g) || []).length;
+check('every admin save that sets a picture address copies it in', pictureSaves === 4 && copyIns === 4, `${pictureSaves} saves, ${copyIns} copy-ins`);
+
 section('Retention and deletion numbers agree everywhere');
 const months = Number(tools.match(/export const RETENTION_MONTHS = (\d+);/)[1]);
 check('RETENTION_MONTHS is 24', months === 24);

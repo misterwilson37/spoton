@@ -1,4 +1,4 @@
-// privacy-tools.js v1.0.0 — the admin page's privacy tools, kept out of admin.html
+// privacy-tools.js v1.1.0 — the admin page's privacy tools, kept out of admin.html
 // so tests/purge-retention-test.mjs can run THIS EXACT FILE against a real
 // Firestore emulator. Written by Figgins, Sept 2026 (privacy round).
 //
@@ -15,16 +15,20 @@
 //   3. Retention        — quarterly. A student with no saved score for 24 months has
 //                         their email link deleted and their scores made anonymous:
 //                         initials and scores stay on the boards, attached to nobody.
-//   4. Image hosts      — reads only. Which websites the games' pictures load from.
+//   4. Picture sources  — which websites the games' pictures load from (reads only),
+//                         and (v1.1.0) moving outside pictures into SpotOn's own Firebase
+//                         Storage, so students' computers never contact those websites.
 //
 // ⚠️ ORDER MATTERS, and is the same in every tool: the step that would lose the only
 // copy of something runs LAST, so a run interrupted halfway (tab closed, network
 // drop) leaves everything findable and the tool is safe to run again.
 
-import { collection, getDocs, doc, query, where, writeBatch, deleteField, Timestamp }
+import { collection, getDocs, getDoc, doc, query, where, writeBatch, deleteField, updateDoc, Timestamp }
     from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL }
+    from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-export const PRIVACY_TOOLS_VERSION = '1.0.0';
+export const PRIVACY_TOOLS_VERSION = '1.1.0';
 
 // ⚠️ THE retention period. privacy.html and SECURITY.md state it in words;
 // tests/privacy-promises-test.mjs checks all three agree.
@@ -209,32 +213,98 @@ export async function applyRetention(db, plan) {
 }
 
 // ============================================================
-// 4. IMAGE HOSTS (reads only)
+// 4. PICTURE SOURCES (v1.1.0)
 // ============================================================
-// A picture loaded from another company's website shows that company each student's
-// IP address. This lists every website the game content points at.
+// The one field per collection that the games actually load into a student's browser.
+// Other URL fields (a Picture Perfect "sourceUrl" credit, a moved picture's
+// "originalImageUrl") are stored but never loaded by a game, so they don't count.
+export const IMAGE_FIELDS = {
+    'levels': 'imageUrl',                    // Sweet Spot
+    'picture-perfect-images': 'imageUrl',    // Picture Perfect
+    'bp2-content': 'imageUrl'                // Balanced Placement II
+};
+
+function hostOf(url) {
+    if (typeof url !== 'string' || !url) return null;
+    if (url.startsWith('data:')) return '(stored inside the database)';
+    try { return new URL(url).host; } catch { return null; }
+}
+// Google's own Firebase Storage — the same company that already runs SpotOn's database.
+export function isSpotOnHosted(url) {
+    const h = hostOf(url);
+    return h === '(stored inside the database)' || h === 'firebasestorage.googleapis.com'
+        || (!!h && h.endsWith('.firebasestorage.app'));
+}
+
+// Every website a game loads a picture from, with how many pictures.
 export async function listImageHosts(db) {
-    const hosts = {};  // host -> { count, collections: Set }
-    const visit = (value, where) => {
-        if (typeof value === 'string') {
-            let host = null;
-            if (value.startsWith('data:')) host = '(stored inside the database)';
-            else if (/^https?:\/\//i.test(value)) {
-                try { host = new URL(value).host; } catch { host = null; }
-            }
-            if (host) {
-                hosts[host] = hosts[host] || { count: 0, collections: new Set() };
-                hosts[host].count++;
-                hosts[host].collections.add(where);
-            }
-        } else if (value && typeof value === 'object') {
-            Object.values(value).forEach(v => visit(v, where));
+    const hosts = {};
+    for (const [name, field] of Object.entries(IMAGE_FIELDS)) {
+        for (const d of await readAll(db, name)) {
+            const host = hostOf(d[field]);
+            if (!host) continue;
+            hosts[host] = hosts[host] || { count: 0, collections: new Set() };
+            hosts[host].count++;
+            hosts[host].collections.add(name);
         }
-    };
-    for (const name of ['levels', 'picture-perfect-images', 'bp2-content', 'site-config']) {
-        (await readAll(db, name)).forEach(d => visit(d, name));
     }
     return Object.entries(hosts)
-        .map(([host, h]) => ({ host, count: h.count, collections: [...h.collections] }))
+        .map(([host, h]) => ({ host, count: h.count, collections: [...h.collections],
+                               spotOn: host === '(stored inside the database)' || host === 'firebasestorage.googleapis.com'
+                                       || host.endsWith('.firebasestorage.app') }))
         .sort((a, b) => b.count - a.count);
+}
+
+// Every picture still loaded from another website.
+export async function planImageMoves(db) {
+    const items = [];
+    for (const [name, field] of Object.entries(IMAGE_FIELDS)) {
+        for (const d of await readAll(db, name)) {
+            const url = d[field];
+            if (typeof url === 'string' && url && !isSpotOnHosted(url)) {
+                items.push({ collection: name, id: d.id, url, name: d.name || d.id });
+            }
+        }
+    }
+    return items;
+}
+
+const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg' };
+
+// Download a picture in the admin's browser. Fails if the other website doesn't allow
+// it (CORS) — admin.html then offers a manual upload for that one picture instead.
+export async function fetchImage(url, fetchImpl = fetch) {
+    const resp = await fetchImpl(url);
+    if (!resp.ok) throw new Error(`download failed (HTTP ${resp.status})`);
+    const blob = await resp.blob();
+    if (!/^image\//.test(blob.type)) throw new Error(`not a picture (${blob.type || 'unknown type'})`);
+    return blob;
+}
+
+// Upload the picture to Storage FIRST, then point the record at it. If the record
+// changed in the meantime, it is left alone. The old address is kept as
+// originalImageUrl (a credit, never loaded by a game).
+export async function moveImage(db, storage, item, blob) {
+    const field = IMAGE_FIELDS[item.collection];
+    if (!field) throw new Error(`not a picture collection: ${item.collection}`);
+    const ext = EXT[blob.type] || 'img';
+    const fileRef = ref(storage, `game-images/moved/${item.collection}-${item.id}.${ext}`);
+    await uploadBytes(fileRef, blob, { contentType: blob.type || 'application/octet-stream' });
+    const newUrl = await getDownloadURL(fileRef);
+    const now = (await getDoc(doc(db, item.collection, item.id))).data();
+    if (!now || now[field] !== item.url) throw new Error('the record changed while moving — run it again');
+    await updateDoc(doc(db, item.collection, item.id), { [field]: newUrl, originalImageUrl: item.url });
+    return newUrl;
+}
+
+// Used right after admin.html saves a picture record: if its picture is on another
+// website, copy it in. Returns 'already' | 'moved'. Throws if it couldn't be copied.
+export async function hostPictureInSpotOn(db, storage, collectionName, id, fetchImpl = fetch) {
+    const field = IMAGE_FIELDS[collectionName];
+    const data = (await getDoc(doc(db, collectionName, id))).data();
+    const url = data && data[field];
+    if (!url || isSpotOnHosted(url)) return 'already';
+    const blob = await fetchImage(url, fetchImpl);
+    await moveImage(db, storage, { collection: collectionName, id, url, name: data.name || id }, blob);
+    return 'moved';
 }
