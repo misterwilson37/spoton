@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Spot v2.4.0</title>
+    <title>Sweet Spot v2.4.1</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -562,10 +562,13 @@
                 
             } catch (error) {
                 console.error("Init error:", error);
+                // v2.4.1: stop the spinner, so an error doesn't look like it's still loading.
+                const spinner = loadingScreen.querySelector('.spinner');
+                if (spinner) spinner.style.display = 'none';
                 
                 // Show specific error message
                 if (error.message.includes("No levels found")) {
-                    statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #7BAFD4; text-decoration: underline;">Open Admin Panel</a> and run the migration first.';
+                    statusText.innerHTML = 'No levels found.<br><br><a href="admin.html" style="color: #7BAFD4; text-decoration: underline;">Open the Admin Panel</a> and add levels in the Sweet Spot tab.';
                 } else if (error.code === 'permission-denied') {
                     statusText.textContent = 'Permission denied. Check Firestore security rules.';
                 } else {

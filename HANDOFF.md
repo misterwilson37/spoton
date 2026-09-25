@@ -163,6 +163,53 @@ Process note: from here on, earlier zips in /mnt/user-data/outputs are NOT delet
 before building the next (the compliance kit's lesson 6). Parts 1–3 did delete them;
 harmless only because each zip was cumulative and Jake deployed each one.
 
+### Cleanup round — Format Trainer font, admin leaderboard (same session)
+
+Jake asked for the two known leftovers and anything else found on the way.
+
+- **Format Trainer font**: fonts.css linked; body is now Inter. 0.11.1.
+- **Admin Leaderboards tab** (Binny's flag was the double-render pattern; admin
+  didn't have that exact bug, but had several others). One `fetchAdminScores()`
+  returns `{rows, matched, error}` for both the table and CSV; render is outside the
+  try. Fixed: filters applied after the limit (search couldn't find low scorers);
+  debounced-search race (sequence number); generic error text; unhandled flag/delete
+  failures; Format Trainer ids missing (names, filter optgroup, ascending sort for the
+  three speed modes, m:ss); CSV formula injection; sync revokeObjectURL; plurals.
+- **First real browser pass.** Found Playwright + Chromium in the container.
+  `tests/browser-smoke-test.py` serves the repo locally, serves Firebase's own SDK
+  files from the npm package at the gstatic URLs, and swaps in three small shims
+  (Firestore/Storage → emulator, sign-in → fake user). No page is edited. It blocks and
+  counts every outside request. 63/63, and mutation-checked (reverting the
+  limit-before-filter fix turns three checks red).
+- Found by looking at the screenshots: Sweet Spot's spinner kept spinning under "No
+  levels found" (fixed, 2.4.1); How-to Copy button changed width when clicked (fixed —
+  exactly Jake's "slightly off" pet peeve).
+- Noticed, NOT changed (Jake's call):
+  - **leaderboard.html has no Format Trainer.** It shows eight games; Format
+    Trainer's scores appear only inside Format Trainer. Adding it needs a decision:
+    four modes, three of them lower-is-better.
+  - Format Frenzy's page background is darker than the other games'. It's a colour,
+    and may be deliberate (bomb theme), so left alone.
+  - privacy.html is light-themed while the site is dark — deliberate, for a readable
+    document; TypeThatBook's is the same.
+
+### Format Trainer boards + Picture Perfect stopwatch (same session)
+
+- **leaderboard.html 1.5.0**: Format Trainer filter shows a Mode row (`.mode-btn`
+  shares every CSS rule with `.filter-btn`, so both rows are identical in size); speed
+  modes query `orderBy('score','asc')` (index exists) and show m:ss; header flips
+  Score ↔ Time; `loadSeq` guards stale renders. Badge colour fuchsia (#e879f9) — orange
+  was tried first but sat too close to the #3 bronze rank colour.
+- **pictureperfect.html 2.4.0**: Jake: "once you figure it out it's not hard", so the
+  top scores were all perfect 1000s. Speed is folded INTO `score` (100 + up to 50 per
+  correct answer; `SPEED_BONUS_MAX/FULL_SECS/ZERO_SECS` constants), so no new score
+  field, no rules change, and every existing leaderboard query keeps working. Clock
+  starts on the picture's `onload`, never during loading or feedback. Old 1000s stay on
+  the board and are now beatable. A separate `seconds` field (to show time on boards)
+  would need SCORE_FIELDS + rules — not done; offer it if Jake wants time visible.
+- Browser test 81/81, including a scripted 10-round Picture Perfect game (score ==
+  100×correct + bonus; the clock runs, then pauses on answer).
+
 ### Open items
 
 - ~~Mailing address~~ — done (part 5): 4501 Charlotte Ave, PO Box 90096, Nashville, TN 37209,

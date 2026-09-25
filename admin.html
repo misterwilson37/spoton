@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.9.0</title>
+    <title>Spot On! Admin v2.10.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     
     <style>
@@ -328,8 +328,8 @@
         .howto .cmd code { flex: 1; background: #111827; border: 1px solid #374151; border-radius: 6px;
                            padding: 0.5rem 0.75rem; font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem;
                            overflow-x: auto; white-space: nowrap; color: #a5f3fc; }
-        .howto .copy-cmd { flex: none; background: #374151; color: #e5e7eb; border-radius: 6px;
-                           padding: 0.45rem 0.8rem; font-size: 0.75rem; }
+        .howto .copy-cmd { flex: none; width: 5.5rem; text-align: center; background: #374151; color: #e5e7eb;
+                           border-radius: 6px; padding: 0.45rem 0; font-size: 0.75rem; }
         .howto .copy-cmd:hover { background: #4b5563; }
         .howto .note { color: #9ca3af; font-size: 0.8rem; margin: 0 0 0.5rem; }
         #privacyHowTo summary::marker { color: #22d3ee; }
@@ -742,6 +742,12 @@
                             <option value="picture-perfect">Picture Perfect</option>
                             <option value="spot-the-format">Spot the Format</option>
                             <option value="format-frenzy">Format Frenzy</option>
+                            <optgroup label="Format Trainer">
+                                <option value="ft-basic-speed">Basic — Speed</option>
+                                <option value="ft-mla-speed">MLA — Speed</option>
+                                <option value="ft-random-speed">Random — Speed</option>
+                                <option value="ft-streak">Streak</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div class="flex items-center gap-2">
@@ -4083,12 +4089,33 @@
             'picture-perfect': 'Picture Perfect',
             'spot-the-format': 'Spot the Format',
             'format-frenzy': 'Format Frenzy',
+            // v2.10.0: Format Trainer saves under one id per mode, and was missing here
+            // (its scores showed as raw ids and couldn't be filtered).
+            'ft-basic-speed': 'Format Trainer — Basic Speed',
+            'ft-mla-speed': 'Format Trainer — MLA Speed',
+            'ft-random-speed': 'Format Trainer — Random Speed',
+            'ft-streak': 'Format Trainer — Streak'
         };
-        
+        // Timed modes: the score is seconds taken, so LOWER is better (as in the game).
+        const LOWER_IS_BETTER = new Set(['ft-basic-speed', 'ft-mla-speed', 'ft-random-speed']);
+
         function getGameDisplayName(gameId) {
             return GAME_NAMES[gameId] || gameId || 'Unknown';
         }
-        
+        function formatScore(s) {
+            if (LOWER_IS_BETTER.has(s.gameId) && typeof s.score === 'number') {
+                return `${Math.floor(s.score / 60)}:${String(s.score % 60).padStart(2, '0')}`;
+            }
+            return String(s.score);
+        }
+        // Same wording as the games' describeFirestoreError (Binny, Aug 2026), so a missing
+        // index or a rules problem says so instead of a generic "Error loading scores".
+        function describeFirestoreError(err) {
+            if (err && err.code === 'failed-precondition') return 'The database is missing an index for this view (see README → firestore.indexes.json).';
+            if (err && err.code === 'permission-denied') return 'Permission denied — is this an admin account, and are the current rules published?';
+            return `Error loading scores (${(err && (err.code || err.message)) || 'unknown'}).`;
+        }
+
         // v2.6.0: emails no longer sit on score records. They live in the private
         // players/{uid} records; this joins them back in for the admin view only.
         // (s.email is still read as a fallback for scores the legacy cleanup hasn't reached.)
@@ -4104,220 +4131,145 @@
                    (s.initials || '').toLowerCase().includes(term);
         }
 
+        // v2.10.0: ONE loader for the table and the CSV. Fixes three old problems:
+        //  • search and the flagged filter ran AFTER the limit, so searching a student
+        //    only looked inside the top N scores ("No matching scores" for anyone lower);
+        //    now a filtered view reads the whole game (or collection), then limits;
+        //  • timed Format Trainer modes sorted highest-first; now fastest-first;
+        //  • it returns {rows, matched, error} instead of rendering, so a rendering bug
+        //    can never be reported as a loading error.
+        async function fetchAdminScores(maxRows) {
+            const gameFilter = document.getElementById('scoresGameFilter').value;
+            const playerSearch = document.getElementById('scoresPlayerSearch').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('scoresFilter').value;
+            const filtering = !!playerSearch || statusFilter !== 'all';
+            const dir = LOWER_IS_BETTER.has(gameFilter) ? 'asc' : 'desc';
+            const parts = [collection(db, 'scores')];
+            if (gameFilter !== 'all') parts.push(where('gameId', '==', gameFilter));
+            parts.push(orderBy('score', dir));
+            if (!filtering) parts.push(limit(maxRows));
+            try {
+                const [snapshot, emails] = await Promise.all([getDocs(query(...parts)), loadPlayerEmails()]);
+                let scores = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (statusFilter === 'flagged') scores = scores.filter(s => s.flagged);
+                else if (statusFilter === 'unflagged') scores = scores.filter(s => !s.flagged);
+                if (playerSearch) scores = scores.filter(s => matchesPlayerSearch(s, emails, playerSearch));
+                return { rows: scores.slice(0, maxRows), matched: scores.length, filtering, emails, error: null };
+            } catch (err) {
+                console.error('Load scores error:', err);
+                return { rows: [], matched: 0, filtering, emails: new Map(), error: describeFirestoreError(err) };
+            }
+        }
+
+        let scoresLoadSeq = 0;   // typing in the search box fires several loads; only the newest may draw
         async function loadScoresList() {
             const tbody = document.getElementById('scoresTableBody');
             const totalCount = document.getElementById('scoresTotalCount');
-            
-            if (!firebaseReady) {
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">Sign in first</td></tr>';
-                return;
-            }
-            
-            try {
-                const gameFilter = document.getElementById('scoresGameFilter').value;
-                const playerSearch = document.getElementById('scoresPlayerSearch').value.toLowerCase().trim();
-                const statusFilter = document.getElementById('scoresFilter').value;
-                const limitVal = parseInt(document.getElementById('scoresLimit').value);
-                
-                // Build query - can filter by gameId in Firestore
-                let q;
-                if (gameFilter !== 'all') {
-                    q = query(
-                        collection(db, 'scores'),
-                        where('gameId', '==', gameFilter),
-                        orderBy('score', 'desc'),
-                        limit(limitVal)
-                    );
-                } else {
-                    q = query(
-                        collection(db, 'scores'),
-                        orderBy('score', 'desc'),
-                        limit(limitVal)
-                    );
-                }
-                
-                const snapshot = await getDocs(q);
-                
-                if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No scores found</td></tr>';
-                    totalCount.textContent = '';
-                    return;
-                }
-                
-                let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-                const emails = await loadPlayerEmails();
-                
-                // Apply status filter (JS side)
-                if (statusFilter === 'flagged') {
-                    scores = scores.filter(s => s.flagged);
-                } else if (statusFilter === 'unflagged') {
-                    scores = scores.filter(s => !s.flagged);
-                }
-                
-                // Apply player search (JS side - searches email and initials)
-                if (playerSearch) {
-                    scores = scores.filter(s => matchesPlayerSearch(s, emails, playerSearch));
-                }
-                
-                if (scores.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No matching scores</td></tr>';
-                    totalCount.textContent = '';
-                    return;
-                }
-                
-                tbody.innerHTML = scores.map((s, i) => {
-                    const date = s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : 'N/A';
-                    const flaggedClass = s.flagged ? 'bg-yellow-900/30' : '';
-                    const gameName = getGameDisplayName(s.gameId);
-                    return `
-                        <tr class="border-b border-gray-800 hover:bg-gray-800/50 ${flaggedClass}" data-id="${s.id}">
-                            <td class="py-3 px-2 font-bold text-gray-400">#${i + 1}</td>
-                            <td class="py-3 px-2 text-xs text-gray-300">${escapeHtml(gameName)}</td>
-                            <td class="py-3 px-2 font-bold">${escapeHtml(s.initials || '???')}</td>
-                            <td class="py-3 px-2 font-bold text-cyan-400">${s.score}</td>
-                            <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(emailFor(s, emails))}</td>
-                            <td class="py-3 px-2 text-gray-500 text-xs">${date}</td>
-                            <td class="py-3 px-2">
-                                <div class="flex gap-1">
-                                    <button class="btn btn-outline btn-sm flag-btn" title="${s.flagged ? 'Unflag' : 'Flag'}">${s.flagged ? '🚩' : '⚑'}</button>
-                                    <button class="btn btn-danger btn-sm del-score-btn" title="Delete">×</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-                
-                totalCount.textContent = `Showing ${scores.length} scores`;
-                
-                // Add event listeners to buttons
-                tbody.querySelectorAll('.flag-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const row = e.target.closest('tr');
-                        const id = row.dataset.id;
-                        const isFlagged = btn.textContent === '🚩';
-                        await updateDoc(doc(db, 'scores', id), { flagged: !isFlagged });
-                        loadScoresList();
-                    });
-                });
-                
-                tbody.querySelectorAll('.del-score-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const row = e.target.closest('tr');
-                        const id = row.dataset.id;
-                        if (confirm('Delete this score?')) {
-                            await deleteDoc(doc(db, 'scores', id));
-                            loadScoresList();
-                        }
-                    });
-                });
-                
-            } catch (err) {
-                console.error('Load scores error:', err);
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-400">Error loading scores</td></tr>';
-            }
+            const note = (msg, cls = 'text-gray-500') => {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center ${cls}">${escapeHtml(msg)}</td></tr>`;
+                totalCount.textContent = '';
+            };
+            if (!firebaseReady) { note('Sign in first'); return; }
+
+            const seq = ++scoresLoadSeq;
+            const limitVal = parseInt(document.getElementById('scoresLimit').value);
+            const result = await fetchAdminScores(limitVal);
+            if (seq !== scoresLoadSeq) return;            // a newer load has started; drop this one
+
+            if (result.error) { note(result.error, 'text-red-400'); return; }
+            if (result.rows.length === 0) { note(result.filtering ? 'No matching scores' : 'No scores found'); return; }
+
+            const { rows, emails } = result;
+            tbody.innerHTML = rows.map((s, i) => {
+                const date = s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : 'N/A';
+                const flaggedClass = s.flagged ? 'bg-yellow-900/30' : '';
+                return `
+                    <tr class="border-b border-gray-800 hover:bg-gray-800/50 ${flaggedClass}" data-id="${escapeHtml(s.id)}" data-flagged="${s.flagged ? '1' : ''}">
+                        <td class="py-3 px-2 font-bold text-gray-400">#${i + 1}</td>
+                        <td class="py-3 px-2 text-xs text-gray-300">${escapeHtml(getGameDisplayName(s.gameId))}</td>
+                        <td class="py-3 px-2 font-bold">${escapeHtml(s.initials || '???')}</td>
+                        <td class="py-3 px-2 font-bold text-cyan-400">${escapeHtml(formatScore(s))}</td>
+                        <td class="py-3 px-2 text-gray-400 text-xs">${escapeHtml(emailFor(s, emails))}</td>
+                        <td class="py-3 px-2 text-gray-500 text-xs">${date}</td>
+                        <td class="py-3 px-2">
+                            <div class="flex gap-1">
+                                <button class="btn btn-outline btn-sm flag-btn" title="${s.flagged ? 'Unflag' : 'Flag'}">${s.flagged ? '🚩' : '⚑'}</button>
+                                <button class="btn btn-danger btn-sm del-score-btn" title="Delete">×</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            totalCount.textContent = result.filtering && result.matched > rows.length
+                ? `Showing ${rows.length} of ${result.matched} matching scores`
+                : `Showing ${rows.length} score${rows.length === 1 ? '' : 's'}`;
+
+            // v2.10.0: failures used to vanish silently (no catch); now they say so.
+            tbody.querySelectorAll('.flag-btn').forEach(btn => btn.addEventListener('click', async (e) => {
+                const row = e.target.closest('tr');
+                try {
+                    await updateDoc(doc(db, 'scores', row.dataset.id), { flagged: !row.dataset.flagged });
+                    loadScoresList();
+                } catch (err) { console.error(err); showToast(`Couldn't change the flag (${err.code || err.message})`, 'error'); }
+            }));
+            tbody.querySelectorAll('.del-score-btn').forEach(btn => btn.addEventListener('click', async (e) => {
+                const row = e.target.closest('tr');
+                if (!confirm('Delete this score?')) return;
+                try {
+                    await deleteDoc(doc(db, 'scores', row.dataset.id));
+                    loadScoresList();
+                } catch (err) { console.error(err); showToast(`Couldn't delete the score (${err.code || err.message})`, 'error'); }
+            }));
         }
-        
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
+        // Spreadsheet apps run a cell starting with = + - @ as a formula. Initials are
+        // student-typed, so neutralise that (v2.10.0).
+        function csvCell(v) {
+            let t = String(v ?? '');
+            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+            return `"${t.replace(/"/g, '""')}"`;
+        }
+
         async function exportScoresCSV() {
-            if (!firebaseReady) {
-                showToast('Sign in first', 'error');
+            if (!firebaseReady) { showToast('Sign in first', 'error'); return; }
+            showLoading('Exporting...');
+            const result = await fetchAdminScores(1000);
+            hideLoading();
+            if (result.error) { showToast(result.error, 'error'); return; }
+            if (result.rows.length === 0) {
+                showToast(result.filtering ? 'No matching scores to export' : 'No scores to export', 'info');
                 return;
             }
-            
-            try {
-                showLoading('Exporting...');
-                
-                const gameFilter = document.getElementById('scoresGameFilter').value;
-                const playerSearch = document.getElementById('scoresPlayerSearch').value.toLowerCase().trim();
-                const statusFilter = document.getElementById('scoresFilter').value;
-                
-                // Build query
-                let q;
-                if (gameFilter !== 'all') {
-                    q = query(
-                        collection(db, 'scores'),
-                        where('gameId', '==', gameFilter),
-                        orderBy('score', 'desc'),
-                        limit(1000)
-                    );
-                } else {
-                    q = query(
-                        collection(db, 'scores'),
-                        orderBy('score', 'desc'),
-                        limit(1000)
-                    );
-                }
-                
-                const snapshot = await getDocs(q);
-                
-                if (snapshot.empty) {
-                    hideLoading();
-                    showToast('No scores to export', 'info');
-                    return;
-                }
-                
-                let scores = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-                const emails = await loadPlayerEmails();
-                
-                // Apply filters
-                if (statusFilter === 'flagged') {
-                    scores = scores.filter(s => s.flagged);
-                } else if (statusFilter === 'unflagged') {
-                    scores = scores.filter(s => !s.flagged);
-                }
-                
-                if (playerSearch) {
-                    scores = scores.filter(s => matchesPlayerSearch(s, emails, playerSearch));
-                }
-                
-                if (scores.length === 0) {
-                    hideLoading();
-                    showToast('No matching scores to export', 'info');
-                    return;
-                }
-                
-                // Create CSV
-                const headers = ['Rank', 'Game', 'Initials', 'Score', 'Email', 'Date', 'Levels', 'Flagged'];
-                const rows = scores.map((s, i) => {
-                    const date = s.timestamp?.toDate ? s.timestamp.toDate().toISOString() : '';
-                    return [
-                        i + 1,
-                        `"${(getGameDisplayName(s.gameId)).replace(/"/g, '""')}"`,
-                        `"${(s.initials || '').replace(/"/g, '""')}"`,
-                        s.score,
-                        `"${emailFor(s, emails).replace(/"/g, '""')}"`,
-                        date,
-                        s.levelCount || '',
-                        s.flagged ? 'Yes' : ''
-                    ].join(',');
-                });
-                
-                const csv = [headers.join(','), ...rows].join('\n');
-                
-                // Download with date and filter info in filename
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                const filterSuffix = gameFilter !== 'all' ? `-${gameFilter}` : '-all-games';
-                a.download = `leaderboard${filterSuffix}-${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                hideLoading();
-                showToast(`Exported ${scores.length} scores!`, 'success');
-            } catch (err) {
-                hideLoading();
-                console.error('Export error:', err);
-                showToast('Export failed', 'error');
-            }
+            const { rows, emails } = result;
+            const headers = ['Rank', 'Game', 'Initials', 'Score', 'Email', 'Date', 'Levels', 'Flagged'];
+            const lines = rows.map((s, i) => [
+                i + 1,
+                csvCell(getGameDisplayName(s.gameId)),
+                csvCell(s.initials || ''),
+                csvCell(formatScore(s)),
+                csvCell(emailFor(s, emails)),
+                s.timestamp?.toDate ? s.timestamp.toDate().toISOString() : '',
+                s.levelCount || '',
+                s.flagged ? 'Yes' : ''
+            ].join(','));
+            const csv = [headers.join(','), ...lines].join('\n');
+
+            const gameFilter = document.getElementById('scoresGameFilter').value;
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leaderboard${gameFilter !== 'all' ? `-${gameFilter}` : '-all-games'}-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);   // revoking at once can cancel the download in Safari
+            showToast(`Exported ${rows.length} score${rows.length === 1 ? '' : 's'}!${result.matched > rows.length ? ` (first 1000 of ${result.matched})` : ''}`, 'success');
         }
-        
+
         document.getElementById('refreshScoresBtn').addEventListener('click', loadScoresList);
         document.getElementById('exportScoresBtn').addEventListener('click', exportScoresCSV);
         document.getElementById('scoresGameFilter').addEventListener('change', loadScoresList);
@@ -4375,7 +4327,10 @@
                 const range = document.createRange(); range.selectNodeContents(btn.previousElementSibling);
                 const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
             }
-            btn.textContent = text.includes('STUDENT_EMAIL') ? 'Copied — now replace STUDENT_EMAIL' : 'Copied ✓';
+            // Fixed-width button, same label every time (a longer label used to squeeze the
+            // command box); the STUDENT_EMAIL reminder goes in a toast instead.
+            btn.textContent = 'Copied ✓';
+            if (text.includes('STUDENT_EMAIL')) showToast('Copied — now replace STUDENT_EMAIL with the student\'s email', 'info');
             setTimeout(() => { btn.textContent = 'Copy'; }, 2500);
         }));
 

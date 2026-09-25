@@ -1,5 +1,34 @@
 # Changelog — SpotOn
 
+## Sept 2026 — Format Trainer boards and Picture Perfect speed (Figgins)
+
+- leaderboard.html 1.5.0 — Format Trainer button with a Mode row (Basic / MLA /
+  Random Speed, Streak). Speed boards rank fastest-first and show m:ss under a "Time"
+  column. Format Trainer stays out of "All Games" (seconds can't rank against points).
+  Quick clicks between boards can't draw a stale one.
+- pictureperfect.html 2.4.0 — stopwatch on the picture, running only while a picture
+  is up and unanswered. Each correct answer earns 100 plus up to 50 speed bonus (full
+  within 2 s, none at 10 s), so a perfect fast run scores up to 1500. Game-over shows
+  accuracy + bonus + total time.
+- tests/browser-smoke-test.py — Format Trainer boards and a full 10-round Picture
+  Perfect game.
+
+## Sept 2026 — Cleanup round (Figgins)
+
+- admin.html 2.10.0 — Leaderboards tab rebuilt on one loader for the table and CSV:
+  search and the flagged filter now look at the whole game, not just the top N (a
+  low-ranked student used to come back "No matching scores"); fast typing can't draw
+  a stale result; real error messages (missing index / permission) instead of
+  "Error loading scores"; flag and delete buttons report failures; Format Trainer's
+  four scoring modes added to the filter with readable names, fastest-first order and
+  m:ss times; CSV neutralises formula-like initials and no longer risks a cancelled
+  download in Safari; "1 score", not "1 scores". How-to Copy buttons are one fixed
+  width (a longer "Copied" label used to squeeze the command box).
+- formattrainer.html 0.11.1 — loads the self-hosted fonts (now Inter like every game).
+- sweetspot.html 2.4.1 — "No levels found" stops the loading spinner and points to
+  the admin's Sweet Spot tab.
+- tests/browser-smoke-test.py — new: every page in a real headless browser.
+
 ## Sept 2026 — Privacy round, part 5 (Figgins)
 
 - privacy.html 1.1.0 and SECURITY.md — mailing address added (COPPA 312.4(d)(1)).

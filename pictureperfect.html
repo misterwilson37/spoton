@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v2.3.0</title>
+    <title>Picture Perfect v2.4.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     <style>
@@ -74,6 +74,15 @@
                 align-items: center;
             }
         }
+        /* v2.4.0 stopwatch: runs only while a picture is up and unanswered */
+        .stopwatch {
+            position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
+            padding: 0.25rem 0.6rem; border-radius: 6px;
+            background: rgba(0, 0, 0, 0.65); color: #fff;
+            font-weight: 600; font-size: 0.95rem; line-height: 1.2;
+            font-variant-numeric: tabular-nums; pointer-events: none;
+        }
+        .stopwatch.paused { color: #9ca3af; }
     </style>
 </head>
 <body>
@@ -99,7 +108,7 @@
                         <li>• 10 rounds of image inspection</li>
                         <li>• Each image may be correct, stretched, or pixelated</li>
                         <li>• Identify the issue (or confirm it's correct)</li>
-                        <li>• 100 points per correct answer</li>
+                        <li>• 100 points per correct answer, plus a speed bonus: up to 50 more for answering fast</li>
                         <li>• After you answer, compare your view to the fixed version</li>
                     </ul>
                 </div>
@@ -133,6 +142,7 @@
                 
                 <!-- Game Canvas -->
                 <div id="canvasContainer" class="canvas-container">
+                    <div id="stopwatch" class="stopwatch paused">⏱ 0:00.0</div>
                     <canvas id="gameCanvas"></canvas>
                 </div>
 
@@ -402,6 +412,48 @@
         // Give up on a URL after this many consecutive failures.
         const MAX_LOAD_ATTEMPTS = 4;
 
+        // --- Speed bonus (v2.4.0) ---------------------------------------------
+        // Once students learn the three defects, most runs were a perfect 1000 and the
+        // board was a tie. Now each CORRECT answer also earns up to SPEED_BONUS_MAX,
+        // counted from the moment the picture appears (never while it's loading):
+        // full bonus within SPEED_FULL_SECS, sliding to zero at SPEED_ZERO_SECS.
+        // A perfect, fast run scores up to 1500, so the old perfect 1000s are beatable.
+        // Wrong answers earn nothing and lose nothing.
+        const SPEED_BONUS_MAX = 50;
+        const SPEED_FULL_SECS = 2;
+        const SPEED_ZERO_SECS = 10;
+        function speedBonus(seconds) {
+            const f = (SPEED_ZERO_SECS - seconds) / (SPEED_ZERO_SECS - SPEED_FULL_SECS);
+            return Math.round(SPEED_BONUS_MAX * Math.min(1, Math.max(0, f)));
+        }
+        let roundStartedAt = null;   // performance.now() when the picture appeared
+        let answerMs = 0;            // total answering time this game
+        let bonusTotal = 0;
+        let stopwatchTimer = null;
+        const fmtClock = ms => { const t = Math.floor(ms / 100); return `${Math.floor(t / 600)}:${String(Math.floor(t / 10) % 60).padStart(2, '0')}.${t % 10}`; };
+        function drawStopwatch() {
+            const live = roundStartedAt === null ? 0 : performance.now() - roundStartedAt;
+            const el = document.getElementById('stopwatch');
+            el.textContent = `⏱ ${fmtClock(answerMs + live)}`;
+            el.classList.toggle('paused', roundStartedAt === null);
+        }
+        function startStopwatch() {
+            roundStartedAt = performance.now();
+            clearInterval(stopwatchTimer);
+            stopwatchTimer = setInterval(drawStopwatch, 100);
+            drawStopwatch();
+        }
+        // Stops the clock and returns this round's seconds.
+        function stopStopwatch() {
+            clearInterval(stopwatchTimer);
+            if (roundStartedAt === null) return 0;
+            const ms = performance.now() - roundStartedAt;
+            answerMs += ms;
+            roundStartedAt = null;
+            drawStopwatch();
+            return ms / 1000;
+        }
+
         let round = 1;
         let totalScore = 0;
         let gameActive = false;
@@ -521,6 +573,9 @@
             round = 1;
             totalScore = 0;
             usedImages = [];
+            clearInterval(stopwatchTimer);
+            roundStartedAt = null; answerMs = 0; bonusTotal = 0;
+            drawStopwatch();
             
             document.getElementById('totalScore').textContent = '0';
             document.getElementById('roundCounter').textContent = '1';
@@ -607,6 +662,7 @@
                 drawImage();
                 gameActive = true;
                 setChoicesEnabled(true);
+                startStopwatch();   // the clock starts when the picture is on screen
             };
 
             img.onerror = () => {
@@ -729,6 +785,7 @@
         function checkAnswer(selection) {
             if (!gameActive) return;
             gameActive = false;
+            const seconds = stopStopwatch();
 
             const selectedBtn = choiceContainer.querySelector(`[data-choice="${selection}"]`);
             const correctBtn = choiceContainer.querySelector(`[data-choice="${correctChoice}"]`);
@@ -740,9 +797,11 @@
             const canvasContainer = document.getElementById('canvasContainer');
             
             if (selection === correctChoice) {
-                totalScore += 100;
+                const bonus = speedBonus(seconds);
+                bonusTotal += bonus;
+                totalScore += 100 + bonus;
                 document.getElementById('totalScore').textContent = totalScore;
-                feedbackText.textContent = '✓ Correct! +100';
+                feedbackText.textContent = `✓ Correct! +100 · speed +${bonus} (${seconds.toFixed(1)}s)`;
                 feedbackText.className = 'feedback-text correct';
                 if (selectedBtn) selectedBtn.classList.add('correct');
                 canvasContainer.classList.add('feedback-correct');
@@ -778,9 +837,10 @@
             showScreen('gameOverScreen');
             compareBar.classList.add('hidden');
             
+            clearInterval(stopwatchTimer);
             document.getElementById('finalScore').textContent = totalScore;
-            const avgScore = totalScore / TOTAL_ROUNDS;
-            document.getElementById('averageScore').textContent = `Average: ${avgScore.toFixed(0)} per round`;
+            document.getElementById('averageScore').textContent =
+                `${totalScore - bonusTotal} for accuracy + ${bonusTotal} speed bonus · time ${fmtClock(answerMs)}`;
             
             document.getElementById('scoreSubmitted').classList.add('hidden');
             document.getElementById('initialsError').classList.add('hidden');

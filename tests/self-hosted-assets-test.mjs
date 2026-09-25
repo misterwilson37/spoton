@@ -29,9 +29,8 @@ for (const fam of ['Inter', 'Urbanist', 'Questrial']) {
     check(`${fam} declared`, fontsCss.includes(`font-family: '${fam}'`));
     check(`${fam} licence present`, existsSync(join(ROOT, 'fonts', `LICENSE-${fam}.txt`)));
 }
-// Every page that used to load Google Fonts. formattrainer.html never loaded a web font
-// (it has always fallen back to the system font), so it is left as it was.
-for (const f of rootFiles('.html').filter(f => f !== 'formattrainer.html')) {
+// Every page, including formattrainer.html (which never loaded a web font until v0.11.1).
+for (const f of rootFiles('.html')) {
     check(`${f}: links fonts/fonts.css`, /href="fonts\/fonts\.css"/.test(stripHtmlComments(read(f))));
 }
 

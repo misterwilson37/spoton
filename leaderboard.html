@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Leaderboard v1.4.0</title>
+    <title>Spot On! Leaderboard v1.5.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     <style>
@@ -28,7 +28,9 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
         }
-        .filter-btn {
+        /* .mode-btn (Format Trainer's modes, v1.5.0) shares every rule with .filter-btn,
+           so the two rows of buttons are exactly the same size. */
+        .filter-btn, .mode-btn {
             padding: 8px 16px;
             border-radius: 6px;
             font-size: 13px;
@@ -39,11 +41,11 @@
             border: 1px solid var(--border-color);
             color: var(--text-muted);
         }
-        .filter-btn:hover {
+        .filter-btn:hover, .mode-btn:hover {
             border-color: var(--carolina-blue);
             color: var(--text-primary);
         }
-        .filter-btn.active {
+        .filter-btn.active, .mode-btn.active {
             background: var(--carolina-blue);
             border-color: var(--carolina-blue);
             color: var(--bg-dark);
@@ -95,6 +97,7 @@
         .game-picture-perfect     { background: rgba(251, 113, 133, 0.2); color: #fb7185; }
         .game-spot-the-format     { background: rgba(34, 211, 238, 0.2);  color: #22d3ee; }
         .game-format-frenzy       { background: rgba(239, 68, 68, 0.2);   color: #ef4444; }
+        .game-format-trainer      { background: rgba(232, 121, 249, 0.2); color: #e879f9; }
         .back-link {
             color: var(--text-muted);
             text-decoration: none;
@@ -137,6 +140,16 @@
                 <button class="filter-btn" data-game="picture-perfect">Picture Perfect</button>
                 <button class="filter-btn" data-game="spot-the-format">Spot the Format</button>
                 <button class="filter-btn" data-game="format-frenzy">Format Frenzy</button>
+                <button class="filter-btn" data-game="format-trainer">Format Trainer</button>
+            </div>
+
+            <!-- v1.5.0: Format Trainer keeps a separate board per mode; shown only when it's picked. -->
+            <div id="ftModes" class="hidden flex flex-wrap gap-2 justify-center items-center mb-6">
+                <span class="text-sm text-gray-400 mr-1">Mode:</span>
+                <button class="mode-btn active" data-mode="ft-basic-speed">Basic — Speed</button>
+                <button class="mode-btn" data-mode="ft-mla-speed">MLA — Speed</button>
+                <button class="mode-btn" data-mode="ft-random-speed">Random — Speed</button>
+                <button class="mode-btn" data-mode="ft-streak">Streak</button>
             </div>
 
             <div class="panel overflow-hidden">
@@ -146,7 +159,7 @@
                             <th style="width: 60px;">Rank</th>
                             <th>Player</th>
                             <th>Game</th>
-                            <th style="text-align: right;">Score</th>
+                            <th id="scoreHeader" style="text-align: right;">Score</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboardBody">
@@ -197,6 +210,27 @@
         };
 
         const KNOWN_GAME_IDS = new Set(Object.keys(GAME_NAMES));
+
+        // v1.5.0: Format Trainer — one board per mode. Still kept OUT of "All Games":
+        // three of its modes score in seconds (lower is better), which can't be ranked
+        // against points.
+        const FT_MODES = {
+            'ft-basic-speed':  { name: 'Format Trainer — Basic Speed',  lowerIsBetter: true },
+            'ft-mla-speed':    { name: 'Format Trainer — MLA Speed',    lowerIsBetter: true },
+            'ft-random-speed': { name: 'Format Trainer — Random Speed', lowerIsBetter: true },
+            'ft-streak':       { name: 'Format Trainer — Streak',       lowerIsBetter: false }
+        };
+        let currentFtMode = 'ft-basic-speed';
+        let loadSeq = 0;   // quick clicks between boards: only the newest may draw
+
+        function gameNameOf(id) { return GAME_NAMES[id] || (FT_MODES[id] && FT_MODES[id].name) || id; }
+        function gameClassOf(id) { return GAME_CLASSES[id] || (FT_MODES[id] ? 'game-format-trainer' : 'game-sweet-spot'); }
+        function formatScore(s) {
+            if (FT_MODES[s.gameId] && FT_MODES[s.gameId].lowerIsBetter && typeof s.score === 'number') {
+                return `${Math.floor(s.score / 60)}:${String(s.score % 60).padStart(2, '0')}`;
+            }
+            return String(s.score);
+        }
 
         let db;
         let allScores = [];              // top-200 global slice, backs the "All Games" view only
@@ -256,6 +290,9 @@
         // higher.
         async function loadGameScores(gameId) {
             const tbody = document.getElementById('leaderboardBody');
+            const seq = ++loadSeq;
+            const lower = !!(FT_MODES[gameId] && FT_MODES[gameId].lowerIsBetter);
+            document.getElementById('scoreHeader').textContent = lower ? 'Time' : 'Score';
             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Loading...</td></tr>';
 
             if (perGameCache[gameId]) {
@@ -267,16 +304,16 @@
                 const q = query(
                     collection(db, 'scores'),
                     where('gameId', '==', gameId),
-                    orderBy('score', 'desc'),
+                    orderBy('score', lower ? 'asc' : 'desc'),   // speed modes: fastest first
                     limit(100)
                 );
                 const snapshot = await getDocs(q);
                 const scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 perGameCache[gameId] = scores;
-                renderScores(scores);
+                if (seq === loadSeq) renderScores(scores);
             } catch (error) {
                 console.error('Load scores error:', error);
-                showError('Failed to load scores');
+                if (seq === loadSeq) showError('Failed to load scores');
             }
         }
 
@@ -293,15 +330,15 @@
             tbody.innerHTML = filtered.map((score, index) => {
                 const rank = index + 1;
                 const rankClass = rank <= 3 ? `rank-${rank}` : '';
-                const gameName = GAME_NAMES[score.gameId] || score.gameId;
-                const gameClass = GAME_CLASSES[score.gameId] || 'game-sweet-spot';
+                const gameName = gameNameOf(score.gameId);
+                const gameClass = gameClassOf(score.gameId);
 
                 return `
                     <tr>
                         <td class="${rankClass}">#${rank}</td>
                         <td class="font-semibold">${escapeHtml(score.initials || '???')}</td>
                         <td><span class="game-badge ${gameClass}">${escapeHtml(gameName)}</span></td>
-                        <td class="text-right score-value">${score.score}</td>
+                        <td class="text-right score-value">${escapeHtml(formatScore(score))}</td>
                     </tr>
                 `;
             }).join('');
@@ -326,11 +363,25 @@
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.game;
+                document.getElementById('ftModes').classList.toggle('hidden', currentFilter !== 'format-trainer');
                 if (currentFilter === 'all') {
+                    loadSeq++;   // cancel any board still loading
+                    document.getElementById('scoreHeader').textContent = 'Score';
                     renderAllGamesView();
+                } else if (currentFilter === 'format-trainer') {
+                    loadGameScores(currentFtMode);
                 } else {
                     loadGameScores(currentFilter);
                 }
+            });
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFtMode = btn.dataset.mode;
+                loadGameScores(currentFtMode);
             });
         });
 

@@ -10,7 +10,7 @@ A collection of educational games that train visual perception skills: alignment
 |------|---------|------|-------------|
 | **Spot the Format** | 2.2.0 | spottheformat.html | Identify text formatting: horizontal/vertical alignment, line spacing, indentation. |
 | **Format Frenzy** | 2.2.0 | formatfrenzy.html | Timed challenge — identify all 4 formatting properties before the bomb explodes. Timer accelerates each round. |
-| **Format Trainer** | 0.11.0 | formattrainer.html | Practice formatting step-by-step. 6 levels covering basic and MLA format with speed and streak modes. Uses time-based scoring (lower is better), isolated from the unified leaderboard. |
+| **Format Trainer** | 0.11.1 | formattrainer.html | Practice formatting step-by-step. 6 levels covering basic and MLA format with speed and streak modes. Uses time-based scoring (lower is better), isolated from the unified leaderboard. |
 
 ### Centering & Layout
 
@@ -20,21 +20,21 @@ A collection of educational games that train visual perception skills: alignment
 | **Perfect Alignment** | 2.2.0 | perfectalignment.html | Drag shapes to align centers. Shapes get smaller and mismatched as rounds progress. |
 | **Balanced Placement** | 2.2.0 | balancedplacement.html | Position two shapes with equal spacing inside containers. |
 | **Balanced Placement II** | 2.2.0 | balancedplacement2.html | Place images and text with equal spacing. Alignment rules determine which side elements belong on. |
-| **Sweet Spot** | 2.4.0 | sweetspot.html | Find the perfect placement for text on curated images. Polygon scoring zones. |
+| **Sweet Spot** | 2.4.1 | sweetspot.html | Find the perfect placement for text on curated images. Polygon scoring zones. |
 
 ### Visual Perception
 
 | Game | Version | File | Description |
 |------|---------|------|-------------|
-| **Picture Perfect** | 2.3.0 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
+| **Picture Perfect** | 2.4.0 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
 
 ## Site Files
 
 | File | Version | Description |
 |------|---------|-------------|
 | **index.html** | 2.3.0 | Dynamic game index, loads from Firestore `site-config/index` with hardcoded FALLBACK_DATA. |
-| **admin.html** | 2.9.0 | Admin panel: Sweet Spot level editor, Picture Perfect image manager, site/index config, leaderboards, **Privacy tab** (legacy cleanup, delete a student, quarterly retention, picture sources). Admin-only: checks with the database and signs anyone else out. |
-| **leaderboard.html** | 1.4.0 | Unified leaderboard across all 8 higher-is-better games. Format Trainer scores are filtered out of the "All Games" view. |
+| **admin.html** | 2.10.0 | Admin panel: Sweet Spot level editor, Picture Perfect image manager, site/index config, leaderboards, **Privacy tab** (legacy cleanup, delete a student, quarterly retention, picture sources). Admin-only: checks with the database and signs anyone else out. |
+| **leaderboard.html** | 1.5.0 | Unified leaderboard across all 8 higher-is-better games. Format Trainer scores are filtered out of the "All Games" view. |
 | **privacy.html** | 1.0.0 | Privacy & Data Policy, including the COPPA notice. Linked from every page's menu or footer. |
 | **SECURITY.md** | — | The written information-security program (COPPA 16 CFR 312.8). |
 | **score-save.js** | 1.0.0 | **The one place a score is written.** Every game imports `saveScore()`. Public score + private email record. |
