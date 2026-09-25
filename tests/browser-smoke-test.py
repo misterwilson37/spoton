@@ -34,6 +34,21 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
 srv = http.server.ThreadingHTTPServer(('127.0.0.1', PORT), functools.partial(Quiet, directory=str(ROOT)))
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 
+# A second origin serving a picture with NO CORS headers — like a Storage bucket with no
+# CORS setting (the Sept 2026 Picture Perfect outage). data: URLs and the emulator both
+# hide that problem, so the game's pictures come from here.
+import base64, tempfile
+IMGDIR = Path(tempfile.mkdtemp())
+def tiny_png(w=80, h=60):
+    import struct, zlib
+    rows = b''.join(b'\x00' + b''.join(bytes([(x * 3) % 256, (y * 4) % 256, 160]) for x in range(w)) for y in range(h))
+    chunk = lambda k, d: struct.pack('>I', len(d)) + k + d + struct.pack('>I', zlib.crc32(k + d) & 0xffffffff)
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + \
+           chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b'')
+(IMGDIR / 'test.png').write_bytes(tiny_png())
+img_srv = http.server.ThreadingHTTPServer(('127.0.0.1', 8766), functools.partial(Quiet, directory=str(IMGDIR)))
+threading.Thread(target=img_srv.serve_forever, daemon=True).start()
+
 DEMO_CONFIG = 'export const firebaseConfig = { apiKey: "fake", authDomain: "demo-spoton.firebaseapp.com", projectId: "demo-spoton", storageBucket: "demo-spoton.appspot.com", appId: "1:1:web:1" };'
 SHIM = {'firebase-firestore.js': 'browser-shim-firestore.js', 'firebase-storage.js': 'browser-shim-storage.js',
         'firebase-auth.js': 'browser-shim-auth.js'}
@@ -48,7 +63,7 @@ def route(r):
         return r.fulfill(path=str(path), content_type='application/javascript')
     if url == f'{BASE}/firebase-config.js':
         return r.fulfill(body=DEMO_CONFIG, content_type='application/javascript')
-    if url.startswith(BASE) or url.startswith('http://127.0.0.1:8080') or url.startswith('http://127.0.0.1:9199') or url.startswith('data:'):
+    if url.startswith(BASE) or url.startswith('http://127.0.0.1:8080') or url.startswith('http://127.0.0.1:9199') or url.startswith('http://127.0.0.1:8766') or url.startswith('data:'):
         return r.continue_()
     outside.append(url)
     return r.abort()
@@ -123,7 +138,14 @@ with sync_playwright() as p:
     print('\npictureperfect.html — stopwatch and speed bonus')
     page, errs = open_page(ctx, 'pictureperfect.html', wait=2500)
     page.click('#startGameBtn')
-    page.wait_for_function("!document.querySelector('.btn-choice').disabled", timeout=10000)
+    try:
+        page.wait_for_function("!document.querySelector('.btn-choice').disabled", timeout=10000)
+        loaded = True
+    except Exception:
+        loaded = False
+    check('pictures load from a server that sends no CORS header', loaded, page.inner_text('#gameScreen')[:200])
+    if not loaded:
+        raise SystemExit(f'\nbrowser-smoke-test: {passed} passed, {failed + 1} failed — Picture Perfect could not load pictures')
     page.wait_for_timeout(600)
     running = page.inner_text('#stopwatch')
     check('stopwatch runs while the picture is up', running != '⏱ 0:00.0' and 'paused' not in page.get_attribute('#stopwatch', 'class'), running)

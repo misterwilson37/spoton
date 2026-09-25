@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v2.4.0</title>
+    <title>Picture Perfect v2.4.1</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     <style>
@@ -649,7 +649,12 @@
             canvasMessage('Loading image...', '#9ca3af');
             
             const img = new Image();
-            img.crossOrigin = "Anonymous";
+            // v2.4.1: NO crossOrigin. The game only DRAWS pictures (drawImage, including
+            // the pixelated path), never reads pixels back, so it doesn't need the
+            // picture's server to allow cross-origin reads. With crossOrigin set, every
+            // picture failed once they moved to Firebase Storage, whose bucket sent no
+            // CORS header. ⚠️ If this game ever calls getImageData/toDataURL, it needs
+            // crossOrigin back AND the bucket's CORS setting (README → Storage CORS).
             
             img.onload = () => {
                 if (token !== roundToken) return;   // stale round, ignore

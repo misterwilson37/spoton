@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spot On! Admin v2.10.0</title>
+    <title>Spot On! Admin v2.11.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     
     <style>
@@ -663,7 +663,14 @@
                             <li><b>"No module named firebase_admin"</b> → run the <code>pip install</code> command above.</li>
                             <li><b>Anything else</b> → copy the whole Cloud Shell output into a new Claude chat along with the SpotOn repo.</li>
                         </ul>
-                        <p class="note mt-2">The same instructions live at the top of <code>scripts/auth-cleanup.py</code> in the repo.</p>
+                        <h3>One-time setup: let the games read pictures from storage (CORS)</h3>
+                        <p class="note">Sweet Spot's cropped pictures, and this page's Sweet Spot level editor, read picture pixels, and the storage bucket must allow that for spoton.misterwilson.org. Done once; do it again only if pictures start failing with a "CORS" error in the browser console. Run in Cloud Shell:</p>
+                        <div class="cmd"><code>echo '[{"origin":["https://spoton.misterwilson.org"],"method":["GET"],"maxAgeSeconds":3600}]' &gt; cors.json</code><button class="copy-cmd">Copy</button></div>
+                        <div class="cmd"><code>gcloud storage buckets update gs://spot-on-games.firebasestorage.app --cors-file=cors.json</code><button class="copy-cmd">Copy</button></div>
+                        <div class="cmd"><code>gcloud storage buckets describe gs://spot-on-games.firebasestorage.app --format="default(cors_config)"</code><button class="copy-cmd">Copy</button></div>
+                        <p class="note">The last one should print the spoton.misterwilson.org origin back. Browsers can remember the old answer for up to an hour.</p>
+
+                        <p class="note mt-2">The Cloud Shell sign-in account steps also live at the top of <code>scripts/auth-cleanup.py</code> in the repo.</p>
                     </div>
                 </details>
 

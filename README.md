@@ -26,14 +26,14 @@ A collection of educational games that train visual perception skills: alignment
 
 | Game | Version | File | Description |
 |------|---------|------|-------------|
-| **Picture Perfect** | 2.4.0 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
+| **Picture Perfect** | 2.4.1 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
 
 ## Site Files
 
 | File | Version | Description |
 |------|---------|-------------|
 | **index.html** | 2.3.0 | Dynamic game index, loads from Firestore `site-config/index` with hardcoded FALLBACK_DATA. |
-| **admin.html** | 2.10.0 | Admin panel: Sweet Spot level editor, Picture Perfect image manager, site/index config, leaderboards, **Privacy tab** (legacy cleanup, delete a student, quarterly retention, picture sources). Admin-only: checks with the database and signs anyone else out. |
+| **admin.html** | 2.11.0 | Admin panel: Sweet Spot level editor, Picture Perfect image manager, site/index config, leaderboards, **Privacy tab** (legacy cleanup, delete a student, quarterly retention, picture sources). Admin-only: checks with the database and signs anyone else out. |
 | **leaderboard.html** | 1.5.0 | Unified leaderboard across all 8 higher-is-better games. Format Trainer scores are filtered out of the "All Games" view. |
 | **privacy.html** | 1.0.0 | Privacy & Data Policy, including the COPPA notice. Linked from every page's menu or footer. |
 | **SECURITY.md** | — | The written information-security program (COPPA 16 CFR 312.8). |
@@ -180,6 +180,17 @@ Format Trainer's leaderboard modal shows four boards at once, so its
 `data` with `error: null` is a genuinely empty board; `error` set means the
 query failed and the modal says so per-card instead of claiming no one has
 played.
+
+## Storage CORS (pictures)
+
+Pictures live in Firebase Storage (`spot-on-games.firebasestorage.app`). A page that
+only DRAWS a picture needs nothing special. A page that READS pixels back
+(`getImageData`/`toDataURL` — Sweet Spot's cropping, admin's Sweet Spot level editor)
+must load it with `crossOrigin`, and then the bucket must send a CORS header for
+spoton.misterwilson.org. That's a one-time bucket setting, made in Cloud Shell; the
+exact commands are in admin → Privacy → 📋 How-to → "One-time setup". **Never add
+`crossOrigin` to a page that doesn't read pixels** — that is how Picture Perfect 2.4.0
+failed to load every picture (fixed in 2.4.1).
 
 ## Styles and fonts
 

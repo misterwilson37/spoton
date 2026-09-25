@@ -210,6 +210,23 @@ Jake asked for the two known leftovers and anything else found on the way.
 - Browser test 81/81, including a scripted 10-round Picture Perfect game (score ==
   100×correct + bonus; the clock runs, then pauses on answer).
 
+### Picture Perfect outage (same session) — my mistake, and what it taught
+
+After Jake ran "Move outside pictures", Picture Perfect loaded no pictures: Firefox
+reported CORS blocked on `firebasestorage.googleapis.com/.../game-images/moved/...`.
+Cause: Picture Perfect set `img.crossOrigin = "Anonymous"`; Pexels sends CORS headers,
+the bucket sends none. In part 2 I had reasoned "Sweet Spot loads Storage pictures with
+crossOrigin and works, so the bucket allows CORS". Wrong: Sweet Spot's `onerror` silently
+falls back to the UNCROPPED picture, so its failure was invisible. And my tests used
+`data:` URLs and the emulator (which sends CORS headers), so neither could catch it.
+
+Fixes: Picture Perfect 2.4.1 drops crossOrigin (it never reads pixels). The bucket CORS
+setting (Cloud Shell, admin How-to) fixes Sweet Spot's crops and the admin level editor.
+The browser test now serves pictures from a no-CORS origin; mutation-checked.
+
+⚠️ Unconfirmed: whether Sweet Spot's cropped levels have been showing uncropped for a
+while. Jake should check after the CORS step.
+
 ### Open items
 
 - ~~Mailing address~~ — done (part 5): 4501 Charlotte Ave, PO Box 90096, Nashville, TN 37209,

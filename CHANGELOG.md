@@ -1,5 +1,16 @@
 # Changelog — SpotOn
 
+## Sept 2026 — Picture Perfect outage fix (Figgins)
+
+- pictureperfect.html 2.4.1 — every picture failed to load after they moved to Firebase
+  Storage: the game asked for cross-origin (CORS) access it never uses, and the bucket
+  doesn't grant it. Removed the request; the game only draws pictures.
+- admin.html 2.11.0 — How-to gains the one-time Cloud Shell step that gives the storage
+  bucket a CORS setting (needed by Sweet Spot's cropped pictures and the admin level
+  editor, which DO read pixels).
+- tests/browser-smoke-test.py — pictures now come from a second local server that sends
+  no CORS header, reproducing the outage (red with the old line, green with the fix).
+
 ## Sept 2026 — Format Trainer boards and Picture Perfect speed (Figgins)
 
 - leaderboard.html 1.5.0 — Format Trainer button with a Mode row (Basic / MLA /
