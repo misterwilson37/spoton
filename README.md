@@ -26,7 +26,7 @@ A collection of educational games that train visual perception skills: alignment
 
 | Game | Version | File | Description |
 |------|---------|------|-------------|
-| **Picture Perfect** | 2.4.1 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
+| **Picture Perfect** | 2.4.2 | pictureperfect.html | Spot the defects — is each image correct, stretched, or pixelated? |
 
 ## Site Files
 

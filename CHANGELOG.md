@@ -1,5 +1,10 @@
 # Changelog — SpotOn
 
+## Sept 2026 — Picture Perfect tuning (Figgins)
+
+- pictureperfect.html 2.4.2 — pixelated blocks 6 → 5 px, so the effect is a little
+  subtler (`PIXEL_SIZE`).
+
 ## Sept 2026 — Picture Perfect outage fix (Figgins)
 
 - pictureperfect.html 2.4.1 — every picture failed to load after they moved to Firebase

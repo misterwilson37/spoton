@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Picture Perfect v2.4.1</title>
+    <title>Picture Perfect v2.4.2</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     <style>
@@ -406,8 +406,9 @@
         // Raise FIT_FRACTION toward 1.0 (or lower DISTORTION_MAX) for bigger images.
         const FIT_FRACTION = 0.98;
 
-        // Block size for the pixelated mode, in CSS pixels.
-        const PIXEL_SIZE = 6;
+        // Block size for the pixelated mode, in CSS pixels. v2.4.2: 6 → 5 (Jake: "too
+        // pixelated"). Smaller = subtler = harder. One line to tune.
+        const PIXEL_SIZE = 5;
 
         // Give up on a URL after this many consecutive failures.
         const MAX_LOAD_ATTEMPTS = 4;
