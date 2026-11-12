@@ -464,7 +464,7 @@
                     c.fillStyle = s.color; pathShape(c, s, p.x, p.y); c.fill();
                 }
                 const label = document.createElement('span');
-                label.textContent = mine ? 'Yours ✓' : l.lopsided ? `Lopsided (−${LOPSIDED_PENALTY})` : 'Full marks';
+                label.textContent = (mine ? 'Yours — ' : '') + (l.lopsided ? `lopsided (−${LOPSIDED_PENALTY})` : 'full marks');
                 wrap.append(cv, label);
                 row.append(wrap);
             }
