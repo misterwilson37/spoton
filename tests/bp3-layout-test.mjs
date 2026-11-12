@@ -76,13 +76,15 @@ section('Generated puzzles — 300 per round, every round');
             const sizes = p.shapes.map(s => s.size), ratio = Math.max(...sizes) / Math.min(...sizes);
             if (ratio >= cfg.ratio[0] * 0.9 && ratio <= cfg.ratio[1] * 1.1) ratioOk++;
             if (cfg.plan !== 'stack' || !an.good.some(a => a.arr.groups.every(g => g.length === 1))) stackRule++;
-            // tray: shapes start outside the rectangle and don't overlap each other
+            // start: rectangle centred; shapes outside it, on the stage, none buried under another
             const box = s => { const c = p.start[s.id]; return { l: c.x - s.size / 2, r: c.x + s.size / 2, t: c.y - s.size / 2, b: c.y + s.size / 2 }; };
             const R = { l: p.rect.x, r: p.rect.x + p.rect.w, t: p.rect.y, b: p.rect.y + p.rect.h };
             const hit = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
             const bs = p.shapes.map(box);
-            if (bs.every(b => !hit(b, R) && b.l >= 0 && b.t >= 0 && b.r <= L.STAGE.w && b.b <= L.STAGE.h) &&
-                bs.every((a, i) => bs.every((b, j) => i === j || !hit(a, b)))) trayOk++;
+            const centred = Math.abs(p.rect.x + p.rect.w / 2 - L.STAGE.w / 2) < 0.5 && Math.abs(p.rect.y + p.rect.h / 2 - L.STAGE.h / 2) < 0.5;
+            const buried = p.shapes.some((a, i) => p.shapes.some((b, j) => i !== j &&
+                Math.max(Math.abs(p.start[a.id].x - p.start[b.id].x), Math.abs(p.start[a.id].y - p.start[b.id].y)) < 0.6 * (a.size + b.size) / 2));
+            if (centred && !buried && bs.every(b => !hit(b, R) && b.l >= 0 && b.t >= 0 && b.r <= L.STAGE.w && b.b <= L.STAGE.h)) trayOk++;
             // spacing by CENTRES (the classic mistake) should cost points when sizes differ
             if (best.arr.groups.length > 2 && ratio > 1.4) {
                 const cols = best.arr.dir === 'columns';
@@ -103,7 +105,7 @@ section('Generated puzzles — 300 per round, every round');
         check(`round ${round + 1}: rectangle on the stage, shapes ≥ ${L.MIN_SHAPE}`, fit === N, fit);
         check(`round ${round + 1}: size ratio within the round's range`, ratioOk === N, ratioOk);
         check(`round ${round + 1}: "stack" rounds can't be solved with one row`, stackRule === N, stackRule);
-        check(`round ${round + 1}: starting shapes sit in the tray, not overlapping`, trayOk === N, trayOk);
+        check(`round ${round + 1}: rectangle centred; shapes start around it, none buried`, trayOk === N, trayOk);
         check(`round ${round + 1}: centre-spacing never scores a full 100`, gaveAway === 0, gaveAway);
         check(`round ${round + 1}: puzzle + scoring under 250ms`, ms < 250, ms.toFixed(0));
     }

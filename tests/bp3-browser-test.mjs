@@ -75,13 +75,12 @@ const state = page => page.evaluate(() => ({
     layouts: __bp3.puzzle.analysis.layouts.map(l => ({ lopsided: l.lopsided, centers: l.geom.centers, groups: l.arr.groups, dir: l.arr.dir })),
     round: __bp3.puzzle.round,
 }));
-// drag in an order that never drops a shape onto another loose one: biggest first works,
-// since the targets are inside the rectangle and the tray is outside it
+// shapes may start in a pile, so drag the TOP one first (what a student would grab)
 async function placeAll(page, targets, drag) {
-    const s = await state(page);
-    for (const sh of [...s.shapes].sort((a, b) => b.size - a.size)) {
-        const cur = (await state(page)).pos[sh.id];
-        await drag(cur, targets[sh.id]);
+    const order = await page.evaluate(() => [...__bp3.drawOrder].reverse());
+    for (const id of order) {
+        const cur = (await state(page)).pos[id];
+        await drag(cur, targets[id]);
     }
 }
 const submit = async page => { await page.click('#submitButton'); return page.evaluate(() => ({ score: __bp3.result.score, ok: __bp3.result.ok, lopsided: __bp3.result.lopsided })); };
@@ -96,7 +95,7 @@ section('Desktop: play all 10 rounds, placing the best layout by mouse');
     const scores = [];
     for (let r = 1; r <= 10; r++) {
         const s = await state(page);
-        if (r === 1) await page.screenshot({ path: join(SHOTS, 'bp3-round1-before.png') });
+        await page.screenshot({ path: join(SHOTS, `bp3-round${r}-before.png`) });
         await placeAll(page, s.best, (a, b) => dragMouse(page, a, b));
         const res = await submit(page);
         scores.push(res.score);

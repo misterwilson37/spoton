@@ -241,7 +241,7 @@ export const ROUNDS = [
 // The play area, in logical units (the canvas is drawn at 600 × 450 and scaled).
 export const STAGE = { w: 600, h: 450 };
 export const MIN_SHAPE = 28;     // smallest shape a finger can grab
-const PAD = 14, TRAY_GAP = 10;
+const PAD = 10;
 
 const COLORS = ['#3b82f6', '#f59e0b', '#ec4899', '#10b981', '#a78bfa'];
 
@@ -254,6 +254,37 @@ function compositions(n, k) { // ways to split n shapes into k ordered groups (s
 
 // Build one puzzle BACKWARDS: pick a layout + gap, then size the rectangle so that
 // layout works. Other layouts may work too — that's allowed.
+// The four margins around a centred rectangle. Each shape starts at a random spot in a
+// margin it fits in, biggest first. Shapes may overlap each other a little (a messy pile is
+// fine) but each keeps most of itself visible, so none hides another. null = no room.
+export function scatter(shapes, rect, rnd = Math.random) {
+    const strips = [
+        { x0: PAD, x1: STAGE.w - PAD, y0: PAD, y1: rect.y - PAD },                       // above
+        { x0: PAD, x1: STAGE.w - PAD, y0: rect.y + rect.h + PAD, y1: STAGE.h - PAD },     // below
+        { x0: PAD, x1: rect.x - PAD, y0: PAD, y1: STAGE.h - PAD },                       // left
+        { x0: rect.x + rect.w + PAD, x1: STAGE.w - PAD, y0: PAD, y1: STAGE.h - PAD },     // right
+    ];
+    const start = {}, placed = [];
+    for (const s of [...shapes].sort((a, b) => b.size - a.size)) {
+        const fits = strips.filter(t => t.x1 - t.x0 >= s.size && t.y1 - t.y0 >= s.size);
+        if (!fits.length) return null;
+        let best = null, bestGap = -Infinity;
+        for (let i = 0; i < 80; i++) {
+            const t = fits[Math.floor(rnd() * fits.length)];
+            const c = { x: t.x0 + s.size / 2 + rnd() * (t.x1 - t.x0 - s.size), y: t.y0 + s.size / 2 + rnd() * (t.y1 - t.y0 - s.size) };
+            // how much room to the nearest shape already placed (negative = overlap)
+            const gap = Math.min(Infinity, ...placed.map(o => Math.max(Math.abs(c.x - o.c.x), Math.abs(c.y - o.c.y)) - (s.size + o.size) / 2));
+            if (gap >= 6) { best = c; break; }
+            if (gap > bestGap) { bestGap = gap; best = c; }
+        }
+        // a little overlap is fine; burying a shape is not
+        if (placed.some(o => Math.max(Math.abs(best.x - o.c.x), Math.abs(best.y - o.c.y)) < 0.6 * (s.size + o.size) / 2)) return null;
+        start[s.id] = best;
+        placed.push({ c: best, size: s.size });
+    }
+    return start;
+}
+
 export function makePuzzle(roundIndex, rnd = Math.random) {
     const cfg = ROUNDS[Math.min(roundIndex, ROUNDS.length - 1)];
     const pick = a => a[Math.floor(rnd() * a.length)];
@@ -305,21 +336,21 @@ export function makePuzzle(roundIndex, rnd = Math.random) {
         if (actual < cfg.ratio[0] * 0.95 || actual > cfg.ratio[1] * 1.05) continue;
         const along = sum(groupsOfSizes.map(gs => Math.max(...gs))) + (groupSizes.length + 1) * g;
 
-        // Fit to the stage: rectangle in one part, a tray for the loose shapes in the other.
-        const area = wide
-            ? { rect: { w: STAGE.w - 2 * PAD, h: 270 }, tray: { x: PAD, y: 270 + 2 * PAD, w: STAGE.w - 2 * PAD, h: STAGE.h - 270 - 3 * PAD } }
-            : { rect: { w: 340, h: STAGE.h - 2 * PAD }, tray: { x: 340 + 2 * PAD, y: PAD, w: STAGE.w - 340 - 3 * PAD, h: STAGE.h - 2 * PAD } };
+        // Fit to the stage: the rectangle sits in the CENTRE; loose shapes start scattered
+        // in the margins around it (they may overlap each other a little, never the rectangle).
         const rw = wide ? along : across, rh = wide ? across : along;
-        let scale = Math.min(area.rect.w / rw, area.rect.h / rh) * between(0.92, 1);
-        // the tray must hold every shape in one line
-        const trayLong = wide ? area.tray.w : area.tray.h, trayShort = wide ? area.tray.h : area.tray.w;
-        scale = Math.min(scale, (trayLong - (n + 1) * TRAY_GAP) / sum(flat), (trayShort - 2 * TRAY_GAP) / Math.max(...flat));
+        const maxS = Math.max(...flat);
+        let scale = Math.min((STAGE.w - 2 * PAD) / rw, (STAGE.h - 2 * PAD) / rh);
+        // shrink until the biggest shape fits in the widest margin
+        const margin = k => Math.max((STAGE.w - rw * k) / 2, (STAGE.h - rh * k) / 2);
+        while (scale > 0.05 && margin(scale) < maxS * scale + 2 * PAD) scale *= 0.97;
+        scale *= between(0.92, 1);
         if (Math.min(...flat) * scale < MIN_SHAPE) continue;
         if (g * scale < MIN_GAP + 4) continue;
 
         const rect = { w: rw * scale, h: rh * scale };
-        rect.x = wide ? (STAGE.w - rect.w) / 2 : PAD + (area.rect.w - rect.w) / 2;
-        rect.y = wide ? PAD + (area.rect.h - rect.h) / 2 : (STAGE.h - rect.h) / 2;
+        rect.x = (STAGE.w - rect.w) / 2;
+        rect.y = (STAGE.h - rect.h) / 2;
         const ids = 'abcde'.slice(0, n).split('');
         const shuffledIds = [...ids].sort(() => rnd() - 0.5);
         const shapes = flat.map((s, i) => ({ id: shuffledIds[i], size: Math.round(s * scale), kind: rnd() < 0.5 ? 'circle' : 'square' }))
@@ -333,18 +364,9 @@ export function makePuzzle(roundIndex, rnd = Math.random) {
             const rowWorks = analysis.good.some(a => a.arr.groups.every(gr => gr.length === 1));
             if (rowWorks) continue;
         }
-        // loose shapes start in the tray, in a random order that gives nothing away
-        const trayOrder = [...shapes].sort(() => rnd() - 0.5);
-        const total = sum(trayOrder.map(s => s.size));
-        const space = (trayLong - total) / (n + 1);
-        let p = (wide ? area.tray.x : area.tray.y) + space;
-        const start = {};
-        for (const s of trayOrder) {
-            const c = p + s.size / 2;
-            start[s.id] = wide ? { x: c, y: area.tray.y + area.tray.h / 2 } : { x: area.tray.x + area.tray.w / 2, y: c };
-            p += s.size + space;
-        }
-        return { round: roundIndex + 1, rect, shapes, start, tray: area.tray, wide, analysis };
+        const start = scatter(shapes, rect, rnd);
+        if (!start) continue;
+        return { round: roundIndex + 1, rect, shapes, start, wide, analysis };
     }
     throw new Error('could not make a puzzle for round ' + (roundIndex + 1));
 }

@@ -358,15 +358,10 @@
             else c.rect(x - r, y - r, r * 2, r * 2);
         }
 
-        function drawStage(c, k, opts = {}) {
+        function drawStage(c, k) {
             c.setTransform(k, 0, 0, k, 0, 0);
             c.fillStyle = '#222';
             c.fillRect(0, 0, STAGE.w, STAGE.h);
-            if (opts.tray !== false) {
-                const t = puzzle.tray;
-                c.setLineDash([4, 4]); c.strokeStyle = '#3a3a3a'; c.lineWidth = 1;
-                c.strokeRect(t.x, t.y, t.w, t.h); c.setLineDash([]);
-            }
             const r = puzzle.rect;
             c.fillStyle = '#3a3a3a';
             c.fillRect(r.x, r.y, r.w, r.h);
@@ -428,7 +423,7 @@
 
         function draw() {
             if (!puzzle) return;
-            drawStage(ctx, unit, { tray: !result });
+            drawStage(ctx, unit);
             if (!result) { drawShapes(ctx, pos); return; }
             const target = result.ok ? result.match : result.nearestGood;
             if (target) drawTargets(ctx, target.geom.centers, result.ok ? 'rgba(255,255,255,0.75)' : 'rgba(245,158,11,0.9)');
@@ -608,7 +603,7 @@
         });
 
         // For the browser tests only: read-only peek at the round (no effect on play).
-        window.__bp3 = { get puzzle() { return puzzle; }, get pos() { return pos; }, get result() { return result; } };
+        window.__bp3 = { get puzzle() { return puzzle; }, get pos() { return pos; }, get result() { return result; }, get drawOrder() { return drawOrder; } };
 
         initFirebase();
     </script>
