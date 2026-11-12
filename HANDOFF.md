@@ -42,8 +42,8 @@ the new `balanced-placement-iii` boards.
 
 **Verified:** `tests/bp3-layout-test.mjs` 98/98, `tests/bp3-browser-test.mjs` 37/37 (desktop
 mouse, iPhone 13 touch, keyboard; no script errors; no outside requests). Static suites
-green except the old `migration.html` failures — that page is still in the repo and should
-be deleted, as the September handoff says.
+green; `migration.html` (the only failures) was deleted at Jake's request, Nov 12.
+Pushed to main (live) at Jake's request, Nov 12.
 
 **Next: Balanced Placement IV** — lines of text spaced evenly, then spaced with shapes. A
 line of text is just another box to `bp3-layout.js`; the new parts are text boxes that

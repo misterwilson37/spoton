@@ -12,6 +12,7 @@
 - leaderboard.html 1.6.0, admin.html 2.12.0 — Balanced Placement III in the game lists.
 - index.html 2.4.0 — card in the fallback list (the live list is admin → Homepage).
 - tests/bp3-layout-test.mjs, tests/bp3-browser-test.mjs (new); tests/.gitignore.
+- migration.html deleted (the September privacy round asked for it; it was still in the repo).
 
 ## Sept 2026 — Picture Perfect tuning (Figgins)
 
