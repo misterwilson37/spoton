@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balanced Placement III v1.0.0</title>
+    <link href="fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="games.css">
+
+    <style>
+        canvas { cursor: default; touch-action: none; }
+        canvas.grabbing { cursor: grabbing; }
+        canvas.draggable-cursor { cursor: grab; }
+        .round-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; min-height: 1rem; }
+        .layouts-strip { margin-top: 0.75rem; }
+        .layouts-strip h4 { font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.4rem; text-align: center; }
+        .layouts-row { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+        .layout-thumb { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+        .layout-thumb canvas { width: 132px; height: 99px; border: 2px solid var(--border); border-radius: 6px; background: #222; }
+        .layout-thumb.yours canvas { border-color: var(--success); }
+        .layout-thumb span { font-size: 0.7rem; color: var(--text-muted); }
+        .layout-thumb.yours span { color: var(--success); font-weight: 600; }
+        #gapText { font-size: 0.7rem; color: var(--text-muted); min-height: 1rem; }
+    </style>
+</head>
+<body>
+    <!-- Persistent Navigation -->
+    <div class="nav-links">
+        <a href="index.html" class="nav-link">← All Games</a>
+        <div class="nav-group">
+            <a href="leaderboard.html" class="nav-link">🏆 Leaderboard</a>
+            <a href="privacy.html" class="nav-link">🔒 Privacy</a>
+        </div>
+    </div>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <!-- Start Screen -->
+            <div id="startScreen" class="screen active">
+                <h1 class="game-title">Balanced Placement III</h1>
+                <p class="game-subtitle">More shapes, different sizes, one even gap.</p>
+                <div class="how-to-play">
+                    <h3>How to Play:</h3>
+                    <ul>
+                        <li>• 10 rounds — drag every shape into the rectangle</li>
+                        <li>• Measure the space between <b>edges</b>, not centers: every gap should match</li>
+                        <li>• You can stack shapes — the gaps above, below and between them should match too</li>
+                        <li>• More than one layout can work. Mirror-matched sizes (small–BIG–small) score full marks; lopsided ones just pass</li>
+                    </ul>
+                </div>
+                <!-- User status -->
+                <div id="userStatus" class="mb-2">
+                    <button id="signInBtn" class="btn btn-google">
+                        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Sign in with Google
+                    </button>
+                    <p class="loading-text mt-1">Sign in to save your score</p>
+                </div>
+                <div id="userSignedIn" class="mb-2 hidden">
+                    <div class="user-badge">
+                        <img id="userPhoto" src="" alt="">
+                        <span id="userName">Player</span>
+                        <span id="signOutBtn" class="sign-out">✕</span>
+                    </div>
+                </div>
+                <button id="startGameBtn" class="btn btn-primary">Start Game</button>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="gameScreen" class="screen">
+                <h1 class="game-title" style="font-size: clamp(1.25rem, 4vw, 1.75rem); margin-bottom: 0.25rem;">Balanced Placement III</h1>
+                <p id="instructionText" class="game-subtitle" style="margin-bottom: 0.25rem;">Drag every shape into the rectangle so all the gaps match.</p>
+                <p id="roundHint" class="round-hint text-center"></p>
+
+                <div id="canvasContainer" class="canvas-container">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+
+                <div class="game-stats">
+                    <div>
+                        <p class="stat-label">Round</p>
+                        <p class="stat-value"><span id="roundCounter">1</span> / 10</p>
+                    </div>
+                    <div class="text-center" style="flex: 1;">
+                        <p id="feedbackText" class="feedback-text">Place the shapes and submit!</p>
+                        <p id="gapText"></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p class="stat-label">Score</p>
+                        <p class="stat-value highlight" id="totalScore">0</p>
+                    </div>
+                </div>
+
+                <div class="text-center" style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button id="submitButton" class="btn btn-primary" style="padding: 0.625rem 1.5rem; font-size: 1rem;">Submit Placement</button>
+                    <button id="nextButton" class="btn btn-next hidden">Next Round</button>
+                </div>
+
+                <div id="layoutsStrip" class="layouts-strip hidden">
+                    <h4 id="layoutsTitle">Layouts that work</h4>
+                    <div id="layoutsRow" class="layouts-row"></div>
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="screen">
+                <h1 class="game-title">Game Over!</h1>
+                <p class="final-score-label">Final Score</p>
+                <p id="finalScore" class="final-score">0</p>
+                <p id="averageScore" class="game-subtitle"></p>
+                <div id="initialsEntry" class="hidden mb-2">
+                    <p class="game-subtitle mb-1">Enter your initials:</p>
+                    <div class="score-submit">
+                        <input type="text" id="initialsInput" class="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
+                        <button id="submitScoreBtn" class="btn btn-primary">Submit</button>
+                    </div>
+                    <p id="initialsError" class="feedback-text incorrect hidden">Please choose different initials.</p>
+                </div>
+                <div id="scoreSubmitted" class="hidden mb-2">
+                    <p class="feedback-text correct">✓ Score saved!</p>
+                    <p id="playerRank" class="game-subtitle"></p>
+                </div>
+                <div id="notSignedInMsg" class="hidden mb-2">
+                    <p class="loading-text">Sign in before playing to save your score!</p>
+                </div>
+                <div class="leaderboard">
+                    <h3 class="leaderboard-title">🏆 Top 10 Scores</h3>
+                    <div id="leaderboardList">
+                        <p class="loading-text text-center">Loading...</p>
+                    </div>
+                </div>
+                <button id="playAgainButton" class="btn btn-primary">Play Again</button>
+            </div>
+        </div>
+        <footer class="game-footer">
+            <p>Balanced Placement III | by Claude, from Mr. Wilson's design</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { firebaseConfig } from "./firebase-config.js";
+        import { saveScore } from "./score-save.js";
+        import { makePuzzle, scorePlacement, measuredGaps, STAGE, LAYOUT_PENALTY, LOPSIDED_PENALTY } from "./bp3-layout.js";
+
+        const GAME_ID = 'balanced-placement-iii';
+        const MAX_ROUNDS = 10;
+
+        // ============================================
+        // FIREBASE & AUTH
+        // ============================================
+        let app, db, auth;
+        let currentUser = null;
+
+        const PROFANITY_LIST = [
+            'ass', 'cum', 'fag', 'fuk', 'fuc', 'fck', 'dik', 'dic', 'cok', 'kok',
+            'tit', 'nig', 'ngg', 'cnt', 'pis', 'sht', 'shi', 'dam', 'wtf', 'stf',
+            'sex', 'xxx', 'gay', 'lez', 'jew', 'joo', 'kik', 'kkk', 'naz', 'poo',
+            'cra', 'bit', 'hor', 'slu', 'who', 'whr', 'ped', 'rap', 'rac', 'hat'
+        ];
+        function containsProfanity(text) {
+            const lower = text.toLowerCase();
+            return PROFANITY_LIST.some(word => lower.includes(word));
+        }
+
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                onAuthStateChanged(auth, (user) => { currentUser = user; updateAuthUI(); });
+                return true;
+            } catch (error) {
+                console.error('Firebase init error:', error);
+                return false;
+            }
+        }
+
+        function updateAuthUI() {
+            if (currentUser) {
+                document.getElementById('userStatus').classList.add('hidden');
+                document.getElementById('userSignedIn').classList.remove('hidden');
+                document.getElementById('userPhoto').src = currentUser.photoURL || '';
+                document.getElementById('userName').textContent = currentUser.displayName || currentUser.email.split('@')[0];
+            } else {
+                document.getElementById('userStatus').classList.remove('hidden');
+                document.getElementById('userSignedIn').classList.add('hidden');
+            }
+        }
+
+        async function signInWithGoogle() {
+            try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+            catch (error) { if (error.code !== 'auth/popup-closed-by-user') console.error('Sign in error:', error); }
+        }
+        async function signOut() {
+            try { await fbSignOut(auth); } catch (error) { console.error('Sign out error:', error); }
+        }
+
+        // ============================================
+        // LEADERBOARD
+        // ============================================
+        function describeFirestoreError(error) {
+            if (error && error.code === 'failed-precondition') return 'Leaderboard is temporarily unavailable (index building). Try again shortly.';
+            if (error && error.code === 'permission-denied') return 'You do not have permission to view scores right now.';
+            return 'Error loading leaderboard.';
+        }
+
+        async function loadLeaderboard(highlightId = null) {
+            const list = document.getElementById('leaderboardList');
+            if (!db) { list.innerHTML = '<p class="loading-text text-center">Leaderboard unavailable</p>'; return []; }
+            let scores;
+            try {
+                const q = query(collection(db, 'scores'), where('gameId', '==', GAME_ID), orderBy('score', 'desc'), limit(10));
+                const snapshot = await getDocs(q);
+                scores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error('Load leaderboard error:', error);
+                list.innerHTML = `<p class="feedback-text incorrect text-center">${describeFirestoreError(error)}</p>`;
+                return [];
+            }
+            renderLeaderboard(scores, highlightId);
+            return scores;
+        }
+
+        function renderLeaderboard(scores, highlightId = null) {
+            const list = document.getElementById('leaderboardList');
+            if (scores.length === 0) { list.innerHTML = '<p class="loading-text text-center">No scores yet. Be the first!</p>'; return; }
+            list.innerHTML = scores.map((s, i) => `
+                <div class="leaderboard-row ${s.id === highlightId ? 'highlight' : ''}">
+                    <span class="leaderboard-rank">#${i + 1}</span>
+                    <span class="leaderboard-initials">${escapeHtml(s.initials)}</span>
+                    <span class="leaderboard-score">${s.score}</span>
+                </div>`).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function getPlayerRank(playerScore) {
+            if (!db) return null;
+            try {
+                const q = query(collection(db, 'scores'), where('gameId', '==', GAME_ID), where('score', '>', playerScore));
+                const snapshot = await getDocs(q);
+                return snapshot.size + 1;
+            } catch (error) { console.error('Get rank error:', error); return null; }
+        }
+
+        async function submitScore(initials) {
+            if (!currentUser || !db) return null;
+            try {
+                // Email, name and photo are NOT written here — see score-save.js.
+                return await saveScore(db, currentUser, {
+                    gameId: GAME_ID,
+                    initials: initials.toUpperCase(),
+                    score: totalScore,
+                    roundCount: MAX_ROUNDS,
+                    averageScore: Math.round(totalScore / MAX_ROUNDS),
+                    flagged: containsProfanity(initials)
+                });
+            } catch (error) { console.error('Submit score error:', error); return null; }
+        }
+
+        async function handleScoreSubmit() {
+            const input = document.getElementById('initialsInput');
+            const err = document.getElementById('initialsError');
+            const btn = document.getElementById('submitScoreBtn');
+            const initials = input.value.trim().toUpperCase();
+            if (initials.length < 1 || initials.length > 3) { err.textContent = 'Enter 1-3 characters.'; err.classList.remove('hidden'); return; }
+            if (containsProfanity(initials)) { err.textContent = 'Please choose different initials.'; err.classList.remove('hidden'); return; }
+            btn.disabled = true; btn.textContent = 'Saving...';
+            const scoreId = await submitScore(initials);
+            if (scoreId) {
+                document.getElementById('initialsEntry').classList.add('hidden');
+                document.getElementById('scoreSubmitted').classList.remove('hidden');
+                const rank = await getPlayerRank(totalScore);
+                if (rank) document.getElementById('playerRank').textContent = `Your rank: #${rank}`;
+                await loadLeaderboard(scoreId);
+            } else {
+                err.textContent = 'Failed to save score. Try again.';
+                err.classList.remove('hidden');
+            }
+            btn.disabled = false; btn.textContent = 'Submit';
+        }
+
+        // ============================================
+        // GAME STATE
+        // ============================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const submitButton = document.getElementById('submitButton');
+        const nextButton = document.getElementById('nextButton');
+        const feedbackText = document.getElementById('feedbackText');
+        const gapText = document.getElementById('gapText');
+
+        let roundNumber = 0, totalScore = 0, gameActive = false;
+        let puzzle = null;          // from makePuzzle()
+        let pos = {};               // id → {x, y}, logical units (600 × 450 stage)
+        let drawOrder = [];         // ids, last is on top
+        let result = null;          // after submit
+        let dragId = null, dragDX = 0, dragDY = 0;
+        let unit = 1;               // canvas pixels per logical unit
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function setupCanvas() {
+            const box = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.round(box.clientWidth * dpr);
+            canvas.height = Math.round(box.clientHeight * dpr);
+            unit = canvas.width / STAGE.w;
+        }
+
+        function startGame() {
+            roundNumber = 0; totalScore = 0;
+            document.getElementById('totalScore').textContent = '0';
+            showScreen('gameScreen');
+            setupCanvas();
+            newRound();
+        }
+
+        function newRound() {
+            roundNumber++;
+            if (roundNumber > MAX_ROUNDS) { endGame(); return; }
+            puzzle = makePuzzle(roundNumber - 1);
+            pos = Object.fromEntries(puzzle.shapes.map(s => [s.id, { ...puzzle.start[s.id] }]));
+            drawOrder = puzzle.shapes.map(s => s.id);
+            result = null; gameActive = true;
+            document.getElementById('roundCounter').textContent = roundNumber;
+            feedbackText.textContent = 'Place the shapes and submit!';
+            feedbackText.className = 'feedback-text';
+            gapText.textContent = '';
+            document.getElementById('canvasContainer').classList.remove('feedback-correct', 'feedback-incorrect');
+            document.getElementById('roundHint').textContent = roundNumber >= 4
+                ? 'Tip: if a row won’t fit with even gaps, try stacking.' : '';
+            document.getElementById('layoutsStrip').classList.add('hidden');
+            nextButton.classList.add('hidden');
+            submitButton.classList.remove('hidden');
+            draw();
+        }
+
+        // ============================================
+        // DRAWING (everything in logical 600 × 450 units)
+        // ============================================
+        const shapeById = id => puzzle.shapes.find(s => s.id === id);
+
+        function pathShape(c, s, x, y, inset = 0) {
+            const r = s.size / 2 - inset;
+            c.beginPath();
+            if (s.kind === 'circle') c.arc(x, y, r, 0, Math.PI * 2);
+            else if (c.roundRect) c.roundRect(x - r, y - r, r * 2, r * 2, Math.min(6, r / 4));
+            else c.rect(x - r, y - r, r * 2, r * 2);
+        }
+
+        function drawStage(c, k, opts = {}) {
+            c.setTransform(k, 0, 0, k, 0, 0);
+            c.fillStyle = '#222';
+            c.fillRect(0, 0, STAGE.w, STAGE.h);
+            if (opts.tray !== false) {
+                const t = puzzle.tray;
+                c.setLineDash([4, 4]); c.strokeStyle = '#3a3a3a'; c.lineWidth = 1;
+                c.strokeRect(t.x, t.y, t.w, t.h); c.setLineDash([]);
+            }
+            const r = puzzle.rect;
+            c.fillStyle = '#3a3a3a';
+            c.fillRect(r.x, r.y, r.w, r.h);
+        }
+
+        function drawShapes(c, where, outline = false) {
+            for (const id of drawOrder) {
+                const s = shapeById(id), p = where[id];
+                c.fillStyle = s.color;
+                pathShape(c, s, p.x, p.y);
+                c.fill();
+                if (outline) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); }
+            }
+        }
+
+        function drawTargets(c, centers, color) {
+            c.save();
+            c.setLineDash([6, 4]); c.strokeStyle = color; c.lineWidth = 2.5;
+            for (const s of puzzle.shapes) { pathShape(c, s, centers[s.id].x, centers[s.id].y, 1); c.stroke(); }
+            c.restore();
+        }
+
+        function drawBars(c, bars, mainGap) {
+            c.save();
+            c.font = '600 11px Inter, sans-serif';
+            c.textAlign = 'center'; c.textBaseline = 'middle';
+            for (const b of bars) {
+                if (b.len < 2) continue;
+                let col;
+                if (b.single) {
+                    // a shape on its own only has to be centered: grey when it is,
+                    // green when it also matches the main gap (it frames the layout)
+                    const pair = bars.filter(o => o.single && o.group === b.group);
+                    const centered = Math.abs(pair[0].len - pair[1].len) <= 4;
+                    col = !centered ? '#ef4444' : Math.abs(b.len - mainGap) <= 4 ? '#22c55e' : '#9ca3af';
+                } else {
+                    const miss = Math.abs(b.len - b.target);
+                    col = miss <= 4 ? '#22c55e' : miss <= 10 ? '#f59e0b' : '#ef4444';
+                }
+                c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 2;
+                const horiz = b.y1 === b.y2;
+                c.beginPath(); c.moveTo(b.x1, b.y1); c.lineTo(b.x2, b.y2);
+                // end ticks
+                const t = 5;
+                if (horiz) { c.moveTo(b.x1, b.y1 - t); c.lineTo(b.x1, b.y1 + t); c.moveTo(b.x2, b.y2 - t); c.lineTo(b.x2, b.y2 + t); }
+                else { c.moveTo(b.x1 - t, b.y1); c.lineTo(b.x1 + t, b.y1); c.moveTo(b.x2 - t, b.y2); c.lineTo(b.x2 + t, b.y2); }
+                c.stroke();
+                const label = String(Math.round(b.len));
+                const mx = (b.x1 + b.x2) / 2, my = (b.y1 + b.y2) / 2;
+                const w = c.measureText(label).width + 6;
+                const lx = horiz ? mx : mx + w / 2 + 4, ly = horiz ? my - 10 : my;
+                c.fillStyle = 'rgba(20,20,20,0.85)';
+                c.fillRect(lx - w / 2, ly - 7, w, 14);
+                c.fillStyle = col;
+                c.fillText(label, lx, ly);
+            }
+            c.restore();
+        }
+
+        function draw() {
+            if (!puzzle) return;
+            drawStage(ctx, unit, { tray: !result });
+            if (!result) { drawShapes(ctx, pos); return; }
+            const target = result.ok ? result.match : result.nearestGood;
+            if (target) drawTargets(ctx, target.geom.centers, result.ok ? 'rgba(255,255,255,0.75)' : 'rgba(245,158,11,0.9)');
+            drawShapes(ctx, pos, true);
+            drawBars(ctx, result.bars, result.match.geom.gMain);
+        }
+
+        // Small pictures of every layout that works, after each round.
+        function showLayouts() {
+            const row = document.getElementById('layoutsRow');
+            row.innerHTML = '';
+            const all = puzzle.analysis.layouts;   // full marks first
+            // always show the student's own layout if it works, plus the best others, 4 max
+            let layouts = all.slice(0, 4);
+            const mine0 = result && result.ok ? all.find(l => l.key === result.key) : null;
+            if (mine0 && !layouts.includes(mine0)) layouts = [mine0, ...all.slice(0, 3)];
+            document.getElementById('layoutsTitle').textContent =
+                all.length === 1 ? 'The layout that works' : `${all.length} layouts work` + (all.length > 4 ? ' — here are 4' : '');
+            const r = puzzle.rect, margin = 8;
+            for (const l of layouts) {
+                const wrap = document.createElement('div');
+                const mine = result && result.ok && l.key === result.key;
+                wrap.className = 'layout-thumb' + (mine ? ' yours' : '');
+                const cv = document.createElement('canvas');
+                const dpr = window.devicePixelRatio || 1;
+                cv.width = 132 * dpr; cv.height = 99 * dpr;
+                const c = cv.getContext('2d');
+                const k = Math.min((cv.width - 2 * margin * dpr) / r.w, (cv.height - 2 * margin * dpr) / r.h);
+                c.setTransform(k, 0, 0, k, (cv.width - r.w * k) / 2 - r.x * k, (cv.height - r.h * k) / 2 - r.y * k);
+                c.fillStyle = '#3a3a3a'; c.fillRect(r.x, r.y, r.w, r.h);
+                for (const s of puzzle.shapes) {
+                    const p = l.geom.centers[s.id];
+                    c.fillStyle = s.color; pathShape(c, s, p.x, p.y); c.fill();
+                }
+                const label = document.createElement('span');
+                label.textContent = mine ? 'Yours ✓' : l.lopsided ? `Lopsided (−${LOPSIDED_PENALTY})` : 'Full marks';
+                wrap.append(cv, label);
+                row.append(wrap);
+            }
+            document.getElementById('layoutsStrip').classList.remove('hidden');
+        }
+
+        // ============================================
+        // SUBMIT & SCORE
+        // ============================================
+        function handleSubmit() {
+            if (!gameActive) return;
+            gameActive = false;
+            dragId = null;
+            const r = scorePlacement(puzzle.shapes, puzzle.rect, pos, puzzle.analysis);
+            const shown = r.match;
+            r.bars = measuredGaps(shown.arr, puzzle.shapes, puzzle.rect, pos, shown.geom);
+            result = r;
+            totalScore += r.score;
+            document.getElementById('totalScore').textContent = totalScore;
+
+            let msg, cls = 'feedback-text';
+            if (r.score >= 95) { msg = `🎯 Perfect! +${r.score}`; cls += ' correct'; }
+            else if (r.score >= 85) { msg = `Excellent! +${r.score}`; cls += ' correct'; }
+            else if (r.score >= 70) { msg = `Great! +${r.score}`; cls += ' correct'; }
+            else if (r.score >= 50) { msg = `Good. +${r.score}`; }
+            else { msg = `+${r.score}`; }
+            if (!r.ok) { msg += `  (gaps can’t all match −${LAYOUT_PENALTY})`; cls = 'feedback-text incorrect'; }
+            else if (r.lopsided) { msg += `  (lopsided −${LOPSIDED_PENALTY})`; }
+            feedbackText.textContent = msg;
+            feedbackText.className = cls;
+
+            const target = Math.round(shown.geom.gMain);
+            gapText.textContent = !r.ok
+                ? 'Your layout can’t have equal gaps in this rectangle. Orange outline = the closest one that can.'
+                : r.lopsided
+                    ? 'Works, but lopsided — try mirroring the sizes (small–BIG–small).'
+                    : `Even gap here ≈ ${target}. Green = matches; grey = just centered.`;
+            document.getElementById('canvasContainer').classList.add(r.ok ? 'feedback-correct' : 'feedback-incorrect');
+
+            submitButton.classList.add('hidden');
+            nextButton.classList.remove('hidden');
+            draw();
+            showLayouts();
+        }
+
+        function endGame() {
+            gameActive = false;
+            showScreen('gameOverScreen');
+            document.getElementById('finalScore').textContent = totalScore;
+            const avg = Math.round(totalScore / MAX_ROUNDS);
+            const word = avg >= 90 ? 'Excellent!' : avg >= 80 ? 'Great Job!' : avg >= 70 ? 'Good Effort!' : 'Keep practicing!';
+            document.getElementById('averageScore').textContent = `Average: ${avg}/100 — ${word}`;
+            document.getElementById('scoreSubmitted').classList.add('hidden');
+            document.getElementById('initialsError').classList.add('hidden');
+            if (currentUser) {
+                document.getElementById('initialsEntry').classList.remove('hidden');
+                document.getElementById('notSignedInMsg').classList.add('hidden');
+                document.getElementById('initialsInput').value = '';
+                document.getElementById('initialsInput').focus();
+            } else {
+                document.getElementById('initialsEntry').classList.add('hidden');
+                document.getElementById('notSignedInMsg').classList.remove('hidden');
+            }
+            loadLeaderboard();
+        }
+
+        // ============================================
+        // DRAG & DROP (pointer events: mouse, touch and pen alike)
+        // ============================================
+        function stagePoint(e) {
+            const r = canvas.getBoundingClientRect();
+            return { x: (e.clientX - r.left) * STAGE.w / r.width, y: (e.clientY - r.top) * STAGE.h / r.height };
+        }
+        function hit(p, id) {
+            const s = shapeById(id), c = pos[id], r = s.size / 2;
+            return s.kind === 'circle' ? Math.hypot(p.x - c.x, p.y - c.y) <= r
+                : Math.abs(p.x - c.x) <= r && Math.abs(p.y - c.y) <= r;
+        }
+        function topShapeAt(p) {
+            for (let i = drawOrder.length - 1; i >= 0; i--) if (hit(p, drawOrder[i])) return drawOrder[i];
+            return null;
+        }
+        canvas.addEventListener('pointerdown', e => {
+            if (!gameActive) return;
+            const p = stagePoint(e), id = topShapeAt(p);
+            if (!id) return;
+            e.preventDefault();
+            dragId = id; dragDX = p.x - pos[id].x; dragDY = p.y - pos[id].y;
+            drawOrder = drawOrder.filter(x => x !== id).concat(id);
+            canvas.setPointerCapture(e.pointerId);
+            canvas.classList.add('grabbing');
+            draw();
+        });
+        canvas.addEventListener('pointermove', e => {
+            if (!puzzle) return;
+            const p = stagePoint(e);
+            if (dragId) {
+                e.preventDefault();
+                const r = shapeById(dragId).size / 2;
+                pos[dragId] = {
+                    x: Math.min(STAGE.w - r, Math.max(r, p.x - dragDX)),
+                    y: Math.min(STAGE.h - r, Math.max(r, p.y - dragDY)),
+                };
+                draw();
+            } else if (gameActive) {
+                canvas.classList.toggle('draggable-cursor', !!topShapeAt(p));
+            }
+        });
+        const endDrag = () => { if (!dragId) return; dragId = null; canvas.classList.remove('grabbing'); };
+        canvas.addEventListener('pointerup', endDrag);
+        canvas.addEventListener('pointercancel', endDrag);
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        document.getElementById('signInBtn').addEventListener('click', signInWithGoogle);
+        document.getElementById('signOutBtn').addEventListener('click', signOut);
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('submitScoreBtn').addEventListener('click', handleScoreSubmit);
+        document.getElementById('initialsInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleScoreSubmit(); });
+        document.getElementById('initialsInput').addEventListener('input', e => {
+            e.target.value = e.target.value.toUpperCase();
+            document.getElementById('initialsError').classList.add('hidden');
+        });
+        submitButton.addEventListener('click', handleSubmit);
+        nextButton.addEventListener('click', newRound);
+        document.getElementById('playAgainButton').addEventListener('click', startGame);
+
+        // Positions are in logical units, so a resize just redraws at the new scale.
+        window.addEventListener('resize', () => {
+            if (document.getElementById('gameScreen').classList.contains('active')) { setupCanvas(); draw(); }
+        });
+
+        window.addEventListener('keydown', e => {
+            if (e.code !== 'Space' || e.target.tagName === 'INPUT') return;
+            e.preventDefault();
+            if (!submitButton.classList.contains('hidden') && gameActive) handleSubmit();
+            else if (!nextButton.classList.contains('hidden')) newRound();
+            else if (document.getElementById('gameOverScreen').classList.contains('active')) startGame();
+            else if (document.getElementById('startScreen').classList.contains('active')) startGame();
+        });
+
+        // For the browser tests only: read-only peek at the round (no effect on play).
+        window.__bp3 = { get puzzle() { return puzzle; }, get pos() { return pos; }, get result() { return result; } };
+
+        initFirebase();
+    </script>
+</body>
+</html>

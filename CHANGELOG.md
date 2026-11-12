@@ -1,5 +1,18 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement III
+
+- balancedplacement3.html 1.0.0 (new) — 3–5 circles and squares, sizes growing more
+  different each round (1.3× → 3×). Equal gaps between EDGES; stacks allowed (gaps above,
+  below and between must match too); several layouts can work. Mirror-matched order
+  (a C b, C a b D) is full marks, a lopsided layout that works is −20, a layout whose gaps
+  can't all match is −40. After each round: measured gap bars and pictures of the layouts
+  that work. gameId `balanced-placement-iii`.
+- bp3-layout.js 1.0.0 (new) — the spacing math (no page code; Balanced IV can reuse it).
+- leaderboard.html 1.6.0, admin.html 2.12.0 — Balanced Placement III in the game lists.
+- index.html 2.4.0 — card in the fallback list (the live list is admin → Homepage).
+- tests/bp3-layout-test.mjs, tests/bp3-browser-test.mjs (new); tests/.gitignore.
+
 ## Sept 2026 — Picture Perfect tuning (Figgins)
 
 - pictureperfect.html 2.4.2 — pixelated blocks 6 → 5 px, so the effect is a little

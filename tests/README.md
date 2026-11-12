@@ -13,6 +13,8 @@ Not part of the website. Run by a Claude session with a shell (Jake has no CLI).
 | rules-test.mjs | The real firestore.rules / storage.rules and the real score-save.js, in the emulator |
 | purge-retention-test.mjs | The real privacy-tools.js on seeded data, in the emulator |
 | auth-cleanup-test.py | The real scripts/auth-cleanup.py against the Auth emulator |
+| bp3-layout-test.mjs | Balanced Placement III's spacing math (`bp3-layout.js`): Jake's examples, symmetry, 300 generated puzzles per round. `node bp3-layout-test.mjs` |
+| bp3-browser-test.mjs | Plays all 10 BP3 rounds in headless Chromium by mouse, touch (iPhone 13) and keyboard; mistakes cost points. Firebase stubbed. Uses the machine's preinstalled Node Playwright. `node bp3-browser-test.mjs` |
 | browser-smoke-test.py | Every real page in headless Chromium: no script errors, no outside requests, admin gate, Leaderboards tab, How-to. `npm run test:browser` (needs `pip install playwright && playwright install chromium`). Screenshots in `.screens/` |
 
 `register.mjs` maps the pages' `www.gstatic.com/firebasejs/11.6.1/...` imports to the

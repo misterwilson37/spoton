@@ -16,6 +16,41 @@ the score records down to what the leaderboards need. Keeps SpotOn's typefounder
 
 ---
 
+## Balanced Placement III — Nov 2026
+
+**Built:** `balancedplacement3.html` + `bp3-layout.js` (all the spacing math, no page code).
+Not deployed. Jake still has to add the home-page card in admin → Homepage (the page's
+fallback list has it; the live list lives in Firestore `site-config/index`). No rules
+change: `validNewScore()` accepts any gameId, and the existing (gameId, score) index covers
+the new `balanced-placement-iii` boards.
+
+**Jake's design decisions (Nov 12, 2026):**
+- Equal spacing = equal gaps between EDGES (as in BP1/BP2). Shapes may stack; then the gaps
+  above, below and between them must match the gap across too.
+- More than one layout can be right. Which ones work depends on the rectangle's proportions.
+  The game builds each puzzle backwards from one working layout, then finds every other
+  layout that also works (all arrangements: 3,840 for 5 shapes, about 50 ms).
+- "Roughly equal" = within 25% (`TOL`). Jake: "25% feels right" — **untested with kids; tune
+  it after classroom play.** Gaps under 14 units are too cramped to count (`MIN_GAP`).
+- Order: sizes mirror-symmetric (a C b, a C D b, C a b D) = full marks. A working but lopsided
+  layout (a b C) = a pass, −20 — unless no symmetric layout works for that rectangle.
+  A layout whose gaps can't all match = −40, and the game outlines the nearest one that works.
+- After every round: pictures of the layouts that work (up to 4, the student's own marked).
+- **Our call, not Jake's — check with him:** a shape alone in its column only has to be
+  centred (its gap bars show grey); a 2-group layout like [a/b stacked | C] is judged by
+  the same mirror rule, so it is "lopsided" only when a symmetric option also works.
+
+**Verified:** `tests/bp3-layout-test.mjs` 98/98, `tests/bp3-browser-test.mjs` 37/37 (desktop
+mouse, iPhone 13 touch, keyboard; no script errors; no outside requests). Static suites
+green except the old `migration.html` failures — that page is still in the repo and should
+be deleted, as the September handoff says.
+
+**Next: Balanced Placement IV** — lines of text spaced evenly, then spaced with shapes. A
+line of text is just another box to `bp3-layout.js`; the new parts are text boxes that
+aren't square (width ≠ height) and maybe alignment rules from BP2.
+
+---
+
 ## Privacy round — Figgins, Sept 2026
 
 ### Why
