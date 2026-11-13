@@ -1,5 +1,5 @@
 // =============================================
-// bp3-layout.js v2.1.0 — the spacing math for Balanced Placement III.
+// bp3-layout.js v2.2.0 — the spacing math for Balanced Placement III.
 // Pure functions, no page code, so it can be tested on its own and reused by
 // Balanced Placement IV (lines of text are just more boxes).
 //
@@ -26,10 +26,13 @@
 //   "everything stacked down one side" — that is what Jake saw.
 // =============================================
 
-export const VERSION = '2.1.0';
+export const VERSION = '2.2.0';
 export const GAP_FREE = 0.15;       // gaps within 15% of each other cost nothing
 export const GAP_FULL = 0.75;       // …and cost the full GAP_WEIGHT by 75%
-export const GAP_WEIGHT = 30;
+export const GAP_WEIGHT = 30;       // gaps in the SAME direction that should match but don't
+export const ACROSS_FREE = 2.5;     // gaps across vs gaps down: free up to 2.5× apart (Jake: "still spaced evenly")…
+export const ACROSS_FULL = 5;       // …the full ACROSS_WEIGHT only at 5× apart
+export const ACROSS_WEIGHT = 20;
 export const SYM_FREE = 0.15;       // mirror partners within 15% of each other's size are twins
 export const SYM_FULL = 0.65;
 export const SYM_WEIGHT = 25;       // per mirror pair, at worst
@@ -107,18 +110,26 @@ export function geometry(arr, dimOf, rect) {
 
 const ramp = (x, free, full) => Math.max(0, Math.min(1, (x - free) / (full - free)));
 
-// How well this arrangement's gaps can match. off = the worst relative mismatch between
-// the gap across and the tightest group (the frame) or any stacked group's inside gap.
+// How well this arrangement's gaps can match. Two different things (v2.2, Jake Nov 13):
+//   SAME direction — two stacks side by side whose inside gaps differ: looks wrong, full weight.
+//   ACROSS vs DOWN — even gaps one way, even (but roomier) gaps the other: a smaller thing,
+//     free up to ACROSS_FREE× and only the full ACROSS_WEIGHT at ACROSS_FULL× (one row
+//     crammed into a tall box still loses; "more room side to side" doesn't).
 export function evaluate(arr, geom) {
     const fits = geom.gMain > 0 && geom.gIns.every(g => g > 0);
     const frame = Math.min(...geom.gIns);
-    const stacksOff = arr.groups.map((g, i) => g.length > 1 ? rel(geom.gIns[i], geom.gMain) : 0);
-    const off = Math.max(rel(frame, geom.gMain), ...stacksOff);
-    // too tight to see: a slope too (0 at MIN_GAP, all of CRAMPED at half of it)
+    const stackGaps = arr.groups.map((g, i) => g.length > 1 ? geom.gIns[i] : null).filter(v => v !== null);
+    const within = stackGaps.length > 1 ? rel(Math.max(...stackGaps), Math.min(...stackGaps)) : 0;
+    const acrossGaps = [frame, ...stackGaps];
+    const ratio = Math.max(...acrossGaps.map(g => Math.max(g, geom.gMain) / Math.max(1e-9, Math.min(g, geom.gMain))));
+    const off = Math.max(within, rel(frame, geom.gMain));             // kept for messages/tests
     const tightest = Math.min(geom.gMain, ...geom.gIns);
     const cramped = tightest < MIN_GAP;
-    const gapPenalty = Math.max(GAP_WEIGHT * ramp(off, GAP_FREE, GAP_FULL), CRAMPED * ramp(MIN_GAP - tightest, 0, MIN_GAP / 2));
-    return { fits, off, cramped, gapPenalty };
+    const withinPenalty = GAP_WEIGHT * ramp(within, GAP_FREE, GAP_FULL);
+    const acrossPenalty = ACROSS_WEIGHT * ramp(Math.log(ratio), Math.log(ACROSS_FREE), Math.log(ACROSS_FULL));
+    // too tight to see: a slope too (0 at MIN_GAP, all of CRAMPED at half of it)
+    const gapPenalty = Math.max(withinPenalty + acrossPenalty, CRAMPED * ramp(MIN_GAP - tightest, 0, MIN_GAP / 2));
+    return { fits, off, ratio, cramped, withinPenalty, acrossPenalty, gapPenalty };
 }
 
 // How lopsided, as a number of "whole" mirror mismatches (0 = perfectly balanced).

@@ -150,6 +150,19 @@ section("Jake's classroom screenshots (Nov 13) — judged on the layout the stud
         asBuilt.score >= 80 && swapped.score - asBuilt.score <= 20);
     check('student judged on their own rows', asBuilt.match.arr.groups.map(g => g.join('/')).join('|') === 'blue/pink|purple|green/orange');
 }
+section("Jake's screenshot (Nov 13, later): even across, even down, just roomier across");
+{
+    const sh = [{ id: 'orange', size: 89 }, { id: 'blue', size: 82 }, { id: 'pink', size: 120 }];
+    const rect = { x: 0, y: 0, w: 304, h: 265 };
+    const placed = { orange: { x: 84.3, y: 60.6 }, blue: { x: 217.2, y: 60.1 }, pink: { x: 150, y: 186.4 } };
+    const r = L.scorePlacement(sh, rect, placed, L.analyse(sh, rect));
+    check(`gaps 40·48·47 across and 16·21·19 down: no layout penalty, scores ${r.score} (was 75)`, r.penalty === 0 && r.score >= 95);
+    // but a single row crammed into a tall box (gaps across 5× the gaps down) still loses
+    const tall = { x: 0, y: 0, w: 260, h: 420 }, s3 = [{ id: 'a', size: 70 }, { id: 'b', size: 70 }, { id: 'c', size: 70 }];
+    const an = L.analyse(s3, tall);
+    const row = an.all.find(a => a.fits && a.arr.dir === 'columns' && a.arr.groups.length === 3);
+    check(`one row across a tall box still loses most layout points (−${row.penalty})`, row.penalty >= 15);
+}
 section('No cliffs: nudging one shape a little never moves the score by more than a little');
 {
     const r = rng(7);

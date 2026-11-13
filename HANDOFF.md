@@ -16,6 +16,12 @@ the score records down to what the leaderboards need. Keeps SpotOn's typefounder
 
 ---
 
+## Across vs down gaps — Nov 13, 2026 (bp3-layout.js 2.2.0)
+
+Jake: a layout even across and even down, just roomier across, shouldn't score 75. Same-
+direction mismatches keep full weight; across-vs-down is free to 2.5× (ACROSS_FREE), full
+−20 at 5× (ACROSS_FULL). Applies to BP3 and BP4 (BP4 went live just before this change).
+
 ## Balanced Placement IV — Nov 13, 2026
 
 **Built:** `balancedplacement4.html`, `bp4-layout.js` (round builder), `bp4-posters.js` (20

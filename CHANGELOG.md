@@ -1,5 +1,12 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Across vs down gaps (Balanced III and IV)
+
+- bp3-layout.js 2.2.0 — gaps in the SAME direction that should match but don't still cost up
+  to 30. Even gaps across vs even (roomier) gaps down are now a smaller thing: free up to
+  2.5× apart, sloping to −20 at 5× (so one row crammed into a tall box still loses). Jake's
+  screenshot (40·48·47 across, 16·21·19 down) went from 75 to 96. Now a test case.
+
 ## Nov 2026 — Balanced Placement IV (B-movie posters)
 
 - balancedplacement4.html 1.0.0 (new) — 10 rounds from 20 made-up B-movies, 5 tall theatre
