@@ -1,5 +1,5 @@
 // =============================================
-// bp4-layout.js v1.0.0 — builds Balanced Placement IV's rounds: one made-up B-movie
+// bp4-layout.js v1.1.0 — builds Balanced Placement IV's rounds: one made-up B-movie
 // poster per round, as pieces (title, tagline, picture or film stills, tilted badge) on a
 // tall theatre poster (2:3) or a wide billboard (16:9).
 //
@@ -16,7 +16,7 @@
 import { analyse, scorePlacement } from './bp3-layout.js';
 import { POSTERS } from './bp4-posters.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 export const STAGE = { w: 600, h: 450 };
 export const PAGES = {
     tall: { x: 160, y: 15, w: 280, h: 420 },    // theatre poster, 2:3
@@ -50,7 +50,22 @@ const PRESETS = {
         stillsBadge: [{ dir: 'rows', groups: [['T'], ['S1', 'S2'], ['G'], ['B']] }, { dir: 'rows', groups: [['B'], ['T'], ['S1', 'S2'], ['G']] }],
     },
 };
-export const ROUNDS = ['basic', 'basic', 'basic', 'badge', 'badge', 'badge', 'badge', 'stills', 'stills', 'stillsBadge'];
+// Rounds come in pairs — one tall poster and one billboard, in random order (Jake, Nov 13:
+// "once wide, once tall, then the tilted stuff… the tilted stuff gets to be different sizes").
+//   badge: font size range of the badge; tilt: chance the TITLE is tilted too.
+export const ROUNDS = [
+    { kind: 'basic' }, { kind: 'basic' },
+    { kind: 'badge', badge: [13, 18] }, { kind: 'badge', badge: [13, 18] },
+    { kind: 'badge', badge: [19, 28], tilt: 1 }, { kind: 'badge', badge: [19, 28], tilt: 1 },
+    { kind: 'stills' }, { kind: 'stills' },
+    { kind: 'stillsBadge', badge: [13, 28], tilt: 0.5 }, { kind: 'stillsBadge', badge: [13, 28], tilt: 0.5 },
+];
+
+// Pictures always sit BEHIND text and badges (Jake: a picture was covering text that still
+// needed placing). Draw / pick-up order: pictures first, then everything else in `ids` order.
+export function layerOrder(ids, roleOf) {
+    return [...ids.filter(id => roleOf(id) === 'pic'), ...ids.filter(id => roleOf(id) !== 'pic')];
+}
 
 const ID = { T: 'title', G: 'tagline', B: 'badge', P: 'pic', S1: 'still1', S2: 'still2', S3: 'still3' };
 
@@ -66,21 +81,26 @@ export function readingOrder(arr, geom) {
 
 // Text → pieces. measure(text, font, maxWidth) → { lines, w, h } where w/h are the VISIBLE
 // ink box (what the student sees), supplied by the page (canvas) or the tests (estimate).
-function textPiece(id, role, text, size, maxW, measure) {
-    const m = measure(text, { ...FONTS[role], size }, maxW);
-    return { id, role, text, size, w: m.w, h: m.h, lines: m.lines, ink: m };
+// A tilted piece is measured by the box it visibly takes up: its rotated outline's bounds.
+function tiltBox(w, h, angle) {
+    const a = Math.abs(angle) * Math.PI / 180;
+    return { w: w * Math.cos(a) + h * Math.sin(a), h: w * Math.sin(a) + h * Math.cos(a) };
+}
+function textPiece(id, role, text, size, maxW, measure, angle = 0) {
+    // a tilted title wraps a little narrower so its tilted box still fits the room
+    const m = measure(text, { ...FONTS[role], size }, angle ? maxW * 0.86 : maxW);
+    const box = angle ? tiltBox(m.w, m.h, angle) : { w: m.w, h: m.h };
+    return { id, role, text, size, angle, bw: m.w, bh: m.h, w: box.w, h: box.h, lines: m.lines, ink: m };
 }
 function badgePiece(text, size, angle, measure) {
     const m = measure(text, { ...FONTS.badge, size }, 1e6);
     const padX = size * 0.55, padY = size * 0.4;
     const bw = m.w + 2 * padX, bh = m.h + 2 * padY;
-    const a = Math.abs(angle) * Math.PI / 180;
-    return { id: 'badge', role: 'badge', text, size, angle, bw, bh, lines: m.lines, ink: m,
-             w: bw * Math.cos(a) + bh * Math.sin(a), h: bw * Math.sin(a) + bh * Math.cos(a) };
+    return { id: 'badge', role: 'badge', text, size, angle, bw, bh, lines: m.lines, ink: m, ...tiltBox(bw, bh, angle) };
 }
 
 // Size every piece so `preset` has exactly even gaps g on this page. Returns pieces or null.
-export function build(preset, page, poster, measure, rnd) {
+export function build(preset, page, poster, measure, rnd, cfg = {}) {
     const between = (a, b) => a + rnd() * (b - a);
     const rows = preset.dir === 'rows';
     const along = rows ? page.h : page.w, across = rows ? page.w : page.h;
@@ -88,8 +108,9 @@ export function build(preset, page, poster, measure, rnd) {
     const widePage = page.w > page.h;
     const titleSize = widePage ? between(22, 28) : stillsRound ? between(38, 46) : between(30, 38);
     const tagSize = between(12.5, 14.5);
-    const badgeSize = between(14, 17);
-    const angle = (rnd() < 0.5 ? -1 : 1) * between(6, 11);
+    const badgeSize = cfg.badge ? between(cfg.badge[0], cfg.badge[1]) : between(14, 17);
+    const angle = (rnd() < 0.5 ? -1 : 1) * between(5, 14);
+    const titleAngle = rnd() < (cfg.tilt || 0) ? (rnd() < 0.5 ? -1 : 1) * between(3, 7) : 0;
     const has = k => preset.groups.some(g => g.includes(k));
     const badge = has('B') ? badgePiece(poster.badge, badgeSize, angle, measure) : null;
     const pics = preset.groups.flat().filter(k => k === 'P' || k.startsWith('S'));
@@ -109,7 +130,7 @@ export function build(preset, page, poster, measure, rnd) {
                     room = across - (grp.length + 1) * g - others.reduce((a, b) => a + b, 0);
                 } else room = along * 0.42; // a text column on a billboard
                 if (k === 'G' && rows && grp.length === 1) room *= 0.86;
-                pieces[k] = k === 'T' ? textPiece('title', 'title', poster.title, titleSize, room, measure)
+                pieces[k] = k === 'T' ? textPiece('title', 'title', poster.title, titleSize, room, measure, titleAngle)
                                       : textPiece('tagline', 'tagline', poster.tagline, tagSize, room, measure);
                 if (pieces[k].w > room + 0.5) { pieces.bad = true; }
             }
@@ -149,7 +170,7 @@ export function build(preset, page, poster, measure, rnd) {
         for (let ts = 24; ts <= 46; ts += 2) for (const frac of [0.34, 0.38, 0.42, 0.46]) {
             const colRoom = along * frac, pieces = {};
             if (badge) pieces.B = badge;
-            pieces.T = textPiece('title', 'title', poster.title, ts, colRoom, measure);
+            pieces.T = textPiece('title', 'title', poster.title, ts, colRoom, measure, titleAngle);
             pieces.G = textPiece('tagline', 'tagline', poster.tagline, tagSize, colRoom * 0.92, measure);
             const stackH = textGroup.map(k => pieces[k].h).reduce((a, b) => a + b, 0);
             const g = (across - stackH) / (textGroup.length + 1);
@@ -197,7 +218,9 @@ function messyStart(pieces, page, analysis, rnd) {
 
 // True if any piece is mostly hidden under pieces drawn after it (start draw order = the
 // pieces' order). A student can't grab what they can't see: each piece keeps ≥ 40% showing.
-export function buried(pieces, at) {
+export function buried(piecesIn, at) {
+    const byId = Object.fromEntries(piecesIn.map(p => [p.id, p]));
+    const pieces = layerOrder(piecesIn.map(p => p.id), id => byId[id].role).map(id => byId[id]);
     for (let i = 0; i < pieces.length; i++) {
         const p = pieces[i], c = at[p.id];
         let shown = 0, n = 0;
@@ -219,12 +242,12 @@ export function shufflePosters(rnd = Math.random) {
 
 // One round. shape: 'tall' | 'wide'.
 export function makeRound(roundIndex, poster, shape, measure, rnd = Math.random) {
-    const kind = ROUNDS[Math.min(roundIndex, ROUNDS.length - 1)];
+    const cfg = ROUNDS[Math.min(roundIndex, ROUNDS.length - 1)], kind = cfg.kind;
     const page = PAGES[shape];
     const presets = PRESETS[shape][kind];
     for (let tries = 0; tries < 60; tries++) {
         const preset = presets[Math.floor(rnd() * presets.length)];
-        const built = build(preset, page, poster, measure, rnd);
+        const built = build(preset, page, poster, measure, rnd, cfg);
         if (!built) continue;
         const analysis = analyse(built.pieces, page, { extra: readingOrder, leftRightOnly: true, gapWeight: GAP_WEIGHT });
         // the preset itself must be one of the best layouts for this page
@@ -240,11 +263,12 @@ export function makeRound(roundIndex, poster, shape, measure, rnd = Math.random)
     throw new Error(`could not build round ${roundIndex + 1} (${kind}, ${shape}) for ${poster.id}`);
 }
 
-// Ten rounds, ten different posters, a mix of page shapes (5 tall, 5 wide, shuffled).
+// Ten rounds, ten different posters. Each pair of rounds is one tall poster and one
+// billboard, in random order.
 export function planGame(rnd = Math.random) {
     const posters = shufflePosters(rnd).slice(0, ROUNDS.length);
-    const shapes = ['tall', 'tall', 'tall', 'tall', 'tall', 'wide', 'wide', 'wide', 'wide', 'wide'];
-    for (let i = shapes.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [shapes[i], shapes[j]] = [shapes[j], shapes[i]]; }
+    const shapes = [];
+    for (let i = 0; i < ROUNDS.length / 2; i++) shapes.push(...(rnd() < 0.5 ? ['tall', 'wide'] : ['wide', 'tall']));
     return posters.map((p, i) => ({ poster: p, shape: shapes[i] }));
 }
 

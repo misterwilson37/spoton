@@ -21,7 +21,7 @@ A collection of educational games that train visual perception skills: alignment
 | **Balanced Placement** | 2.3.0 | balancedplacement.html | Position two shapes with equal spacing inside containers. Measuring lines after Submit (`gap-bars.js`). |
 | **Balanced Placement II** | 2.3.0 | balancedplacement2.html | Place images and text with equal spacing. Alignment rules determine which side elements belong on. Measuring lines after Submit (`gap-bars.js`). |
 | **Balanced Placement III** | 1.1.0 | balancedplacement3.html | 3–5 shapes of growing size difference. Even edge gaps; stack when a row won't fit; mirror-matched order for full marks. Spacing math in `bp3-layout.js`. |
-| **Balanced Placement IV** | 1.0.0 | balancedplacement4.html | 20 made-up B-movie posters (tall theatre posters + wide billboards): title, tagline, picture or film stills, tilted badge. Start messy; even gaps between what you can see; title before tagline. Builder in `bp4-layout.js`, posters and drawings in `bp4-posters.js`. |
+| **Balanced Placement IV** | 1.1.0 | balancedplacement4.html | 20 made-up B-movie posters (tall theatre posters + wide billboards): title, tagline, picture or film stills, tilted badge. Start messy; even gaps between what you can see; title before tagline. Builder in `bp4-layout.js`, posters and drawings in `bp4-posters.js`. |
 | **Sweet Spot** | 2.4.1 | sweetspot.html | Find the perfect placement for text on curated images. Polygon scoring zones. |
 
 ### Visual Perception

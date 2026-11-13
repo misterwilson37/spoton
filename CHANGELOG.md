@@ -1,5 +1,14 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement IV 1.1.0
+
+- Pictures always sit behind text and badges, even right after being dragged (one was
+  covering text that still needed placing).
+- Rounds come in pairs, one tall poster + one billboard in random order: basic · small
+  badge · BIG badge + tilted title · film stills · stills + any-size badge (title sometimes
+  tilted). Badges range 13–28 pt and tilt 5–14°; tilted titles 3–7°, measured like badges
+  by the box they visibly take up. (bp4-layout.js 1.1.0, balancedplacement4.html 1.1.0)
+
 ## Nov 2026 — Across vs down gaps (Balanced III and IV)
 
 - bp3-layout.js 2.2.0 — gaps in the SAME direction that should match but don't still cost up

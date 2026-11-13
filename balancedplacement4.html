@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement IV v1.0.0</title>
+    <title>Balanced Placement IV v1.1.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
 
@@ -144,7 +144,7 @@
         import { firebaseConfig } from "./firebase-config.js";
         import { saveScore } from "./score-save.js";
         import { scorePlacement, measuredGaps } from "./bp3-layout.js";
-        import { makeRound, planGame, STAGE, FONTS } from "./bp4-layout.js";
+        import { makeRound, planGame, layerOrder, STAGE, FONTS } from "./bp4-layout.js";
         import { artSVG, STILLS } from "./bp4-posters.js";
 
         const GAME_ID = 'balanced-placement-iv';
@@ -371,7 +371,7 @@
             const { poster, shape } = plan[roundNumber - 1];
             round = makeRound(roundNumber - 1, poster, shape, measure);
             pos = Object.fromEntries(round.pieces.map(p => [p.id, { ...round.start[p.id] }]));
-            drawOrder = round.pieces.map(p => p.id);
+            drawOrder = layerOrder(round.pieces.map(p => p.id), id => pieceById(id).role);
             result = null; gameActive = true;
             document.getElementById('roundCounter').textContent = roundNumber;
             document.getElementById('roundHint').textContent =
@@ -424,6 +424,12 @@
                 c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 2; c.stroke();
                 drawText(c, { ...p, h: p.ink.h }, 0, 0, poster.badge_c[1], false);
                 c.restore();
+            } else if (p.angle) {
+                // a tilted title: drawn turned; measured by the box it visibly takes up
+                c.save();
+                c.translate(x, y); c.rotate(p.angle * Math.PI / 180);
+                drawText(c, { ...p, h: p.bh }, 0, 0, poster.title_c, true);
+                c.restore();
             } else {
                 drawText(c, p, x, y, p.role === 'title' ? poster.title_c : poster.tag_c, p.role === 'title');
             }
@@ -439,7 +445,7 @@
         // the outline of where a piece belongs (badges: their tilted outline)
         function outlinePiece(c, p, x, y) {
             c.beginPath();
-            if (p.role === 'badge') {
+            if (p.angle) {
                 c.save(); c.translate(x, y); c.rotate(p.angle * Math.PI / 180);
                 c.rect(-p.bw / 2, -p.bh / 2, p.bw, p.bh); c.restore();
             } else c.rect(x - p.w / 2, y - p.h / 2, p.w, p.h);
@@ -514,7 +520,7 @@
                 const k = Math.min((cv.width - 12 * dpr) / pg.w, (cv.height - 12 * dpr) / pg.h);
                 c.setTransform(k, 0, 0, k, (cv.width - pg.w * k) / 2 - pg.x * k, (cv.height - pg.h * k) / 2 - pg.y * k);
                 drawPage(c, pg);
-                for (const p of round.pieces) drawPiece(c, p, l.geom.centers[p.id].x, l.geom.centers[p.id].y);
+                for (const id of layerOrder(round.pieces.map(p => p.id), x => pieceById(x).role)) drawPiece(c, pieceById(id), l.geom.centers[id].x, l.geom.centers[id].y);
                 const label = document.createElement('span');
                 label.textContent = (mine ? 'Yours — ' : '') + (l.ok ? 'full marks' : `−${l.penalty}`);
                 wrap.append(cv, label);
@@ -605,7 +611,8 @@
             if (!id) return;
             e.preventDefault();
             dragId = id; dragDX = pt.x - pos[id].x; dragDY = pt.y - pos[id].y;
-            drawOrder = drawOrder.filter(x => x !== id).concat(id);
+            // to the top of its layer — pictures always stay behind text and badges
+            drawOrder = layerOrder(drawOrder.filter(x => x !== id).concat(id), x => pieceById(x).role);
             canvas.setPointerCapture(e.pointerId);
             canvas.classList.add('grabbing');
             draw();

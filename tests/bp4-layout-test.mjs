@@ -54,15 +54,28 @@ section('Round plan');
     for (let i = 0; i < 200; i++) {
         const plan = B.planGame(r);
         const ids = new Set(plan.map(x => x.poster.id));
-        const tall = plan.filter(x => x.shape === 'tall').length;
-        if (plan.length === 10 && ids.size === 10 && tall === 5) ok++;
+        const pairs = [0, 2, 4, 6, 8].every(i => new Set([plan[i].shape, plan[i + 1].shape]).size === 2);
+        if (plan.length === 10 && ids.size === 10 && pairs) ok++;
     }
-    check('every game: 10 rounds, 10 different posters, 5 tall + 5 wide', ok === 200);
+    check('every game: 10 rounds, 10 different posters, each pair of rounds = one tall + one wide', ok === 200);
     const seen = new Set();
     const r2 = rng(9);
     for (let i = 0; i < 30; i++) B.planGame(r2).forEach(x => seen.add(x.poster.id));
     check(`over 30 games every one of the 20 posters shows up (${seen.size})`, seen.size === 20);
-    check('rounds ramp: 3 basic, 4 with a badge, then film stills', B.ROUNDS.join(',') === 'basic,basic,basic,badge,badge,badge,badge,stills,stills,stillsBadge');
+    check('rounds ramp in pairs: basic, small badge, big badge + tilted title, stills, stills + badge',
+        B.ROUNDS.map(r => r.kind).join(',') === 'basic,basic,badge,badge,badge,badge,stills,stills,stillsBadge,stillsBadge');
+    // badges come in different sizes; titles tilt in rounds 5–6
+    const r3 = rng(21), sizes = [], tilted = [];
+    for (let i = 0; i < 60; i++) {
+        const round = B.makeRound(i % 2 ? 2 : 4, POSTERS[i % 20], i % 3 ? 'tall' : 'wide', B.estimateMeasure, r3);
+        sizes.push(round.pieces.find(p => p.role === 'badge').size);
+        if (i % 2 === 0) tilted.push(!!round.pieces.find(p => p.role === 'title').angle);
+    }
+    check(`badge sizes vary a lot (${Math.min(...sizes).toFixed(0)}–${Math.max(...sizes).toFixed(0)})`, Math.max(...sizes) / Math.min(...sizes) > 1.7);
+    check('rounds 5–6: the title is tilted', tilted.every(Boolean));
+    // pictures are always drawn first (behind text)
+    const order = B.layerOrder(['title', 'pic', 'badge', 'still1', 'tagline'], id => id === 'pic' || id.startsWith('still') ? 'pic' : 'text');
+    check(`pictures always behind text (${order.join(' < ')})`, order.join(',') === 'pic,still1,title,badge,tagline');
 }
 
 section('Rules');
@@ -80,6 +93,7 @@ section('Rules');
     // a tilted badge is measured by the box it visibly takes up
     const p = B.makeRound(4, POSTERS[0], 'tall', B.estimateMeasure, rng(3)).pieces.find(q => q.role === 'badge');
     const a = Math.abs(p.angle) * Math.PI / 180;
+    // rounds 3–4 badges
     check(`badge box = its tilted outline's bounding box (${p.w.toFixed(1)} × ${p.h.toFixed(1)})`,
         Math.abs(p.w - (p.bw * Math.cos(a) + p.bh * Math.sin(a))) < 0.01 && Math.abs(p.h - (p.bw * Math.sin(a) + p.bh * Math.cos(a))) < 0.01 && p.w > p.bw);
 }

@@ -122,10 +122,10 @@ section('Desktop: play all 10 rounds, placing the best layout by mouse');
     await page.screenshot({ path: join(SHOTS, 'bp4-start.png') });
     await page.click('#startGameBtn');
     await waitRound(page);
-    const scores = [], posters = new Set(), shapes = { tall: 0, wide: 0 };
+    const scores = [], posters = new Set(), shapes = { tall: 0, wide: 0 }, shapeSeq = [];
     for (let r = 1; r <= 10; r++) {
         const s = await state(page);
-        posters.add(s.poster); shapes[s.shape]++;
+        posters.add(s.poster); shapes[s.shape]++; shapeSeq.push(s.shape);
         await page.screenshot({ path: join(SHOTS, `bp4-round${r}-before.png`) });
         await placeAll(page, s.best, (a, b) => dragMouse(page, a, b));
         const placed = (await state(page)).pos;
@@ -138,6 +138,7 @@ section('Desktop: play all 10 rounds, placing the best layout by mouse');
     }
     check(`10 different posters (${posters.size})`, posters.size === 10);
     check(`both page shapes, 5 each (${JSON.stringify(shapes)})`, shapes.tall === 5 && shapes.wide === 5);
+    check(`rounds 1–2 are one tall and one wide (${shapeSeq.slice(0, 2).join(', ')})`, shapeSeq[0] !== shapeSeq[1]);
     check('game over screen after round 10', await page.locator('#gameOverScreen.active').count() === 1);
     const total = await page.textContent('#finalScore');
     check(`final score is the sum of rounds (${total})`, Number(total) === scores.reduce((a, b) => a + b, 0));
@@ -158,6 +159,20 @@ section('All 20 poster pictures load as images in the browser');
         return POSTERS.filter((p, i) => !r[i]).map(p => p.id);
     });
     check(`every picture loads (${loaded.length ? 'failed: ' + loaded.join(', ') : 'all 20'})`, loaded.length === 0);
+    check('no script errors', errors.length === 0, errors.join(' | '));
+    await ctx.close();
+}
+
+section('A dragged picture stays behind the text');
+{
+    const { ctx, page, errors } = await open(browser, { viewport: { width: 1280, height: 1000 } });
+    await page.goto(BASE + '/balancedplacement4.html');
+    await page.click('#startGameBtn');
+    await waitRound(page);
+    const g = await visibleSpot(page, 'pic');
+    if (g) await dragMouse(page, { x: g.x, y: g.y }, { x: 300, y: 225 });
+    const order = await page.evaluate(() => [...__bp4.drawOrder]);
+    check(`after dragging the picture, it is still drawn first (${order.join(' < ')})`, order[0] === 'pic');
     check('no script errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
 }
