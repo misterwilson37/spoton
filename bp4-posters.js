@@ -1,12 +1,13 @@
 // =============================================
-// bp4-posters.js v1.0.0 — the 20 made-up B-movie posters for Balanced Placement IV.
+// bp4-posters.js v1.1.0 — the 40 made-up B-movie posters for Balanced Placement IV.
 // Every picture is drawn here as SVG (300 × 300), so nothing loads from another website
 // and the art stays sharp at any size. Pictures are drawn "cover" style: any part of the
 // 300 × 300 square can be cropped to fit a wide billboard or a tall poster slot.
 // Titles approved by Jake, Nov 13 2026 (no cafeteria jokes; the CS teacher is fair game).
+// v1.1.0: the second 20, same day.
 // =============================================
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 // ---------- little drawing kit ----------
 const grad = (id, a, b, vertical = true) =>
@@ -185,7 +186,167 @@ const ART = {
         <circle cx="150" cy="120" r="60" stroke="#ff4dd2" stroke-width="10" stroke-dasharray="80 24"/><circle cx="150" cy="120" r="30" stroke="#ffe14d" stroke-width="10" stroke-dasharray="40 16"/></g>
         <g fill="#4ad0ff"><polygon points="232,96 252,120 222,124"/></g><g fill="#ff4dd2"><polygon points="196,82 214,100 188,108"/></g>
         <rect x="110" y="190" width="80" height="54" rx="4" fill="#20262e"/><rect x="116" y="196" width="68" height="40" fill="#0b6aa8"/><rect x="100" y="244" width="100" height="8" rx="3" fill="#3a434e"/>
-        <circle cx="150" cy="216" r="11" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="40 30"/>`,
+        <circle cx="150" cy="216" r="11" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="40 30"/>`,    // ---------- the second 20 (Nov 13, 2026) ----------
+    stapler: () => grad('h1', '#2a1c12', '#4a3020') +
+        `<polygon points="210,0 250,0 300,180 140,180" fill="#ffe9a8" opacity=".18"/><rect x="214" y="0" width="30" height="16" fill="#555"/>` + ground(200, '#6b4423') +
+        `<g transform="rotate(-8 150 190)"><rect x="60" y="180" width="180" height="20" rx="6" fill="#333"/>
+        <path d="M70 178 L230 178 L230 160 Q150 120 70 150 Z" fill="#d62c2c"/><path d="M70 150 Q150 70 236 110 L236 128 Q150 100 72 168 Z" fill="#e84a3a"/>
+        <g fill="#eee">${[0, 1, 2, 3, 4, 5, 6].map(i => `<polygon points="${92 + i * 20},${150 - i * 3} ${100 + i * 20},${150 - i * 3} ${96 + i * 20},${162 - i * 3}"/>`).join('')}</g>
+        <circle cx="200" cy="118" r="9" fill="#fff"/><circle cx="202" cy="118" r="4" fill="#111"/><path d="M186 104 l26 6" stroke="#111" stroke-width="4"/></g>
+        <g transform="rotate(12 70 230)"><rect x="20" y="215" width="70" height="50" fill="#f4f4f4"/><path d="M28 228 h50 M28 240 h50 M28 252 h36" stroke="#9ab" stroke-width="3"/></g>`,
+
+    gerbil: () => `<defs><radialGradient id="h2" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#4a3a5e"/><stop offset="1" stop-color="#0d0a14"/></radialGradient></defs><rect width="300" height="300" fill="url(#h2)"/>
+        <polygon points="150,0 90,300 210,300" fill="#fff6c8" opacity=".08"/>
+        <circle cx="150" cy="170" r="105" fill="none" stroke="#9aa6b4" stroke-width="10"/><g stroke="#6c7686" stroke-width="4">${[0, 30, 60, 90, 120, 150].map(a => `<line x1="${150 + 100 * Math.cos(a * Math.PI / 180)}" y1="${170 + 100 * Math.sin(a * Math.PI / 180)}" x2="${150 - 100 * Math.cos(a * Math.PI / 180)}" y2="${170 - 100 * Math.sin(a * Math.PI / 180)}"/>`).join('')}</g>
+        <ellipse cx="150" cy="222" rx="48" ry="40" fill="#c99a5b"/><path d="M104 230 q46 -60 92 0 l-6 40 h-80 z" fill="#8a5a2a"/><path d="M150 196 v70" stroke="#5e3a18" stroke-width="3"/>
+        <circle cx="150" cy="168" r="30" fill="#d9a968"/><ellipse cx="128" cy="146" rx="9" ry="13" fill="#e8b98a"/><ellipse cx="172" cy="146" rx="9" ry="13" fill="#e8b98a"/>
+        <circle cx="140" cy="166" r="5" fill="#111"/><circle cx="160" cy="166" r="5" fill="#111"/><circle cx="150" cy="178" r="4" fill="#e06b8b"/>
+        <path d="M112 142 h76 l-8 -18 h-60 z" fill="#3a2a1a"/><rect x="104" y="140" width="92" height="8" rx="3" fill="#2a1d10"/>`,
+
+    gnomes: () => grad('h3', '#0f1838', '#2d4a6a') + moon(240, 60, 28) + stars('#fff', 8) + ground(230, '#1f3a1a') +
+        `${[40, 110, 180, 250].map((x, i) => `<circle cx="${x - 15}" cy="${240 + (i % 2) * 8}" r="9" fill="#e85a8a"/><circle cx="${x + 18}" cy="${246 - (i % 2) * 6}" r="7" fill="#f2d14a"/>`).join('')}
+        ${[60, 150, 240].map((x, i) => `<g transform="translate(${x} ${180 + (i % 2) * 12})">
+          <rect x="-20" y="10" width="40" height="44" rx="8" fill="#2f6fd0"/><rect x="-22" y="52" width="16" height="10" rx="3" fill="#5a3a1a"/><rect x="6" y="52" width="16" height="10" rx="3" fill="#5a3a1a"/>
+          <circle cx="0" cy="0" r="16" fill="#f1c39c"/><path d="M-16 4 q16 34 32 0 q-2 22 -16 26 q-14 -4 -16 -26z" fill="#fff"/>
+          <polygon points="-18,-6 18,-6 0,-50" fill="#d62c2c"/><circle cx="-6" cy="-2" r="2.5" fill="#111"/><circle cx="6" cy="-2" r="2.5" fill="#111"/>
+          <path d="M-8 -9 l6 3 M8 -9 l-6 3" stroke="#111" stroke-width="2"/></g>`).join('')}`,
+
+    rubberbands: () => grad('h4', '#3a6fa8', '#f2c27a') + city('#2a3550', '#ffe7a3', 30) + ground(262, '#555c66') +
+        `<rect y="276" width="300" height="4" fill="#ddd" opacity=".6"/>
+        <circle cx="150" cy="170" r="92" fill="#c43c3c"/>
+        <g fill="none" stroke-width="9">${['#e8b81a', '#3aa655', '#2f6fd0', '#e85a8a', '#f08a24', '#8a5ad0', '#e8b81a', '#3aa655'].map((c, i) => `<ellipse cx="150" cy="170" rx="${92 - i * 3}" ry="${30 + i * 8}" stroke="${c}" transform="rotate(${i * 23} 150 170)"/>`).join('')}</g>
+        <path d="M240 250 q20 -10 40 -4" stroke="#e8b81a" stroke-width="5" fill="none"/>`,
+
+    lostfound: () => grad('h5', '#1c2433', '#3a4458') +
+        `<rect x="40" y="190" width="220" height="110" fill="#8a6a3a"/><rect x="40" y="190" width="220" height="14" fill="#6b4f28"/>
+        <rect x="80" y="230" width="140" height="30" fill="#f2e6c8"/><text x="150" y="252" font-size="18" text-anchor="middle" font-family="Bangers, sans-serif" fill="#3a2a10">LOST &amp; FOUND</text>
+        <path d="M70 196 q-10 -90 50 -120 q30 -16 60 0 q60 30 50 120 z" fill="#7d8796"/><path d="M110 96 q40 -30 80 0 q-10 30 -40 32 q-30 -2 -40 -32z" fill="#5d6776"/>
+        <circle cx="132" cy="110" r="12" fill="#ffe14d"/><circle cx="168" cy="110" r="12" fill="#ffe14d"/><circle cx="134" cy="112" r="5" fill="#111"/><circle cx="170" cy="112" r="5" fill="#111"/>
+        <path d="M128 140 l8 8 l8 -8 l8 8 l8 -8 l8 8" stroke="#111" stroke-width="3" fill="none"/>
+        <path d="M70 160 l-30 -20 l6 -14 l32 16 z" fill="#e85a8a"/><path d="M230 150 l26 -26 l10 10 l-26 26 z" fill="#3aa6c0"/>
+        <ellipse cx="96" cy="196" rx="20" ry="9" fill="#2a2a2a"/><path d="M200 170 l8 26 l16 0 l-4 -26 z" fill="#f2c230"/>`,
+
+    toaster: () => grad('h6', '#08061a', '#2a1a4a') + stars('#fff', 11) + moon(70, 230, 50, '#c9c2dc') +
+        `<circle cx="52" cy="214" r="9" fill="#a89fbf"/><circle cx="86" cy="250" r="6" fill="#a89fbf"/>
+        <g transform="rotate(-18 170 140)"><polygon points="110,190 90,230 120,200" fill="#d62c2c"/><polygon points="230,190 250,230 220,200" fill="#d62c2c"/>
+        <path d="M130 200 l10 40 l10 -40 M170 200 l10 46 l10 -46 M200 200 l8 34 l8 -34" fill="#ffb347"/>
+        <rect x="110" y="100" width="120" height="100" rx="22" fill="#c9d1da"/><rect x="118" y="108" width="20" height="84" rx="8" fill="#eef2f6" opacity=".7"/>
+        <rect x="140" y="92" width="22" height="14" rx="3" fill="#2a2a2a"/><rect x="178" y="92" width="22" height="14" rx="3" fill="#2a2a2a"/>
+        <rect x="140" y="62" width="22" height="38" rx="4" fill="#d9a35b"/><rect x="178" y="56" width="22" height="44" rx="4" fill="#d9a35b"/>
+        <rect x="222" y="140" width="14" height="8" fill="#555"/></g>`,
+
+    dandelions: () => grad('h7', '#7ac0e8', '#e8f4d0') + ground(250, '#5fa040') +
+        `<g fill="#c4472f"><polygon points="20,250 60,214 100,250"/><polygon points="200,250 245,210 290,250"/></g><g fill="#f2ead3"><rect x="30" y="248" width="60" height="36"/><rect x="210" y="248" width="70" height="40"/></g>
+        ${[[90, 90, 52], [215, 70, 36], [160, 170, 28], [50, 175, 22]].map(([x, y, r]) => `<line x1="${x}" y1="${y + r}" x2="${x + 6}" y2="300" stroke="#4a8a2a" stroke-width="4"/>
+          <circle cx="${x}" cy="${y}" r="${r * .25}" fill="#c9b48a"/><g stroke="#fff" stroke-width="2">${Array.from({ length: 20 }, (_, i) => { const a = i * Math.PI / 10; return `<line x1="${x}" y1="${y}" x2="${x + r * Math.cos(a)}" y2="${y + r * Math.sin(a)}"/>`; }).join('')}</g>
+          <g fill="#fff">${Array.from({ length: 20 }, (_, i) => { const a = i * Math.PI / 10; return `<circle cx="${x + r * Math.cos(a)}" cy="${y + r * Math.sin(a)}" r="3"/>`; }).join('')}</g>`).join('')}
+        <g fill="#fff" opacity=".8"><circle cx="150" cy="40" r="2"/><circle cx="170" cy="30" r="2"/><circle cx="260" cy="130" r="2"/></g>`,
+
+    vending: () => grad('h8', '#0b0b12', '#1c1c2a') +
+        `<polygon points="0,300 60,240 240,240 300,300" fill="#1a1a24"/><rect x="0" y="0" width="300" height="20" fill="#000"/>
+        <rect x="80" y="30" width="140" height="230" rx="6" fill="#d62c2c"/><rect x="92" y="44" width="92" height="180" fill="#bfe8ff" opacity=".9"/>
+        ${[0, 1, 2, 3].map(r => [0, 1, 2].map(c => `<rect x="${98 + c * 30}" y="${52 + r * 42}" width="22" height="30" rx="3" fill="${['#f2c230', '#3aa655', '#2f6fd0', '#e85a8a'][(r + c) % 4]}"/>`).join('')).join('')}
+        <circle cx="132" cy="64" r="4" fill="#fff"/><circle cx="140" cy="64" r="4" fill="#fff"/><circle cx="133" cy="65" r="2" fill="#111"/><circle cx="141" cy="65" r="2" fill="#111"/>
+        <rect x="190" y="60" width="22" height="40" fill="#222"/><rect x="194" y="110" width="14" height="6" fill="#555"/><rect x="100" y="232" width="76" height="16" fill="#222"/>
+        <rect x="80" y="30" width="140" height="230" rx="6" fill="none" stroke="#ff6b6b" stroke-width="3" opacity=".6"/>
+        <ellipse cx="150" cy="268" rx="90" ry="10" fill="#bfe8ff" opacity=".12"/>`,
+
+    ceilingfan: () => `<defs><radialGradient id="h9" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#f2e2b0"/><stop offset="1" stop-color="#5a4a3a"/></radialGradient></defs><rect width="300" height="300" fill="url(#h9)"/>
+        <g fill="#2a1d12" opacity=".35" transform="rotate(20 150 150) scale(1.15) translate(-20 -20)">${[0, 1, 2, 3, 4].map(i => `<path d="M150 150 L${150 + 140 * Math.cos(i * 1.2566)} ${150 + 140 * Math.sin(i * 1.2566)} q-10 -30 -40 -36 z" transform="rotate(${i * 4} 150 150)"/>`).join('')}</g>
+        <g fill="#6b4423" stroke="#3a2412" stroke-width="3">${[0, 1, 2, 3, 4].map(i => `<path d="M150 150 L${150 + 125 * Math.cos(i * 1.2566 - .2)} ${150 + 125 * Math.sin(i * 1.2566 - .2)} L${150 + 125 * Math.cos(i * 1.2566 + .2)} ${150 + 125 * Math.sin(i * 1.2566 + .2)} Z"/>`).join('')}</g>
+        <circle cx="150" cy="150" r="28" fill="#c9a24a" stroke="#8a6a2a" stroke-width="4"/><circle cx="150" cy="150" r="12" fill="#fff6c8"/>
+        <g fill="#ff3b3b"><circle cx="140" cy="146" r="4"/><circle cx="160" cy="146" r="4"/></g>`,
+
+    homeroom: () => grad('h10', '#3a0f5a', '#e07a3a') + stars('#fff', 12) + moon(60, 50, 22, '#b6ff6a') + moon(240, 40, 16, '#7fd0ff') + moon(190, 90, 10, '#ffb3d9') +
+        `<path d="M0 230 q60 -20 120 0 q60 20 180 -10 v80 h-300z" fill="#6b3a6b"/><g fill="#4a2350"><ellipse cx="40" cy="262" rx="18" ry="6"/><ellipse cx="250" cy="270" rx="24" ry="7"/></g>
+        <rect x="80" y="150" width="140" height="80" fill="#c4472f"/><polygon points="70,152 150,112 230,152" fill="#7a2a1a"/><rect x="134" y="80" width="32" height="40" fill="#c4472f"/><polygon points="128,82 150,62 172,82" fill="#7a2a1a"/>
+        <circle cx="150" cy="100" r="8" fill="#f2c230"/><rect x="138" y="190" width="24" height="40" fill="#3a1a0a"/>
+        ${[0, 1, 2, 3].map(i => `<rect x="${92 + i * 32}" y="162" width="18" height="16" fill="#ffe680"/>`).join('')}
+        <line x1="150" y1="62" x2="150" y2="30" stroke="#ddd" stroke-width="3"/><polygon points="150,30 176,38 150,46" fill="#3aa6c0"/>`,
+
+    squirrel: () => grad('h11', '#f2c27a', '#c4692a') +
+        `${Array.from({ length: 22 }, (_, i) => `<g transform="translate(${40 + (i % 8) * 30 + (Math.floor(i / 8) % 2) * 15} ${270 - Math.floor(i / 8) * 26})"><ellipse rx="12" ry="14" fill="#8a5a2a"/><path d="M-12 -6 q12 -16 24 0 z" fill="#5a3a18"/></g>`).join('')}
+        <path d="M200 210 q70 -40 30 -130 q-20 -40 -60 -20 q40 20 30 80 q-10 40 0 70z" fill="#b3602a"/>
+        <ellipse cx="150" cy="180" rx="42" ry="48" fill="#c4702f"/><ellipse cx="150" cy="190" rx="24" ry="32" fill="#f2c79a"/>
+        <circle cx="150" cy="120" r="30" fill="#c4702f"/><polygon points="126,98 132,74 142,96" fill="#c4702f"/><polygon points="174,98 168,74 158,96" fill="#c4702f"/>
+        <circle cx="140" cy="118" r="5" fill="#111"/><circle cx="160" cy="118" r="5" fill="#111"/><ellipse cx="150" cy="132" rx="5" ry="4" fill="#3a1a0a"/>
+        <path d="M124 92 l6 -24 l12 14 l8 -18 l8 18 l12 -14 l6 24 z" fill="#ffd23a" stroke="#c4902a" stroke-width="2"/><circle cx="150" cy="76" r="4" fill="#e04848"/>`,
+
+    leftovers: () => grad('h12', '#1a1f1a', '#0a0d0a') +
+        `<rect x="60" y="20" width="180" height="270" rx="8" fill="#e8edf2"/><rect x="72" y="32" width="156" height="246" fill="#b8ffb0"/>
+        <rect x="72" y="110" width="156" height="6" fill="#dfe6ec"/><rect x="72" y="190" width="156" height="6" fill="#dfe6ec"/>
+        <polygon points="240,20 290,40 290,280 240,290" fill="#cfd6dc"/><rect x="280" y="120" width="5" height="50" fill="#9aa"/>
+        <rect x="90" y="80" width="40" height="30" fill="#f2c230"/><rect x="170" y="160" width="36" height="30" fill="#e85a8a"/><circle cx="110" cy="176" r="12" fill="#e8b81a"/>
+        <rect x="128" y="226" width="60" height="44" rx="6" fill="#d9f2ff" stroke="#9ab" stroke-width="2"/>
+        <path d="M128 232 q10 -24 20 -6 q8 -22 18 -4 q10 -20 22 2 v8 h-60z" fill="#6bbf3a"/>
+        <circle cx="148" cy="246" r="6" fill="#fff"/><circle cx="168" cy="246" r="6" fill="#fff"/><circle cx="149" cy="247" r="3" fill="#111"/><circle cx="169" cy="247" r="3" fill="#111"/>
+        <rect width="300" height="300" fill="#7dff6a" opacity=".08"/>`,
+
+    snowmen: () => grad('h13', '#0d1a3a', '#4a6a9a') + stars('#fff', 13) +
+        `<path d="M0 170 L300 260 L300 300 L0 300 Z" fill="#e8f0ff"/><rect x="230" y="200" width="50" height="40" fill="#5a3a1a"/><polygon points="222,202 255,176 288,202" fill="#3a2410"/><rect x="246" y="212" width="16" height="14" fill="#ffd23a"/>
+        ${[[50, 170, 1], [110, 190, .9], [165, 210, .8]].map(([x, y, k]) => `<g transform="translate(${x} ${y}) scale(${k}) rotate(15)">
+          <circle cx="0" cy="40" r="26" fill="#fff"/><circle cx="0" cy="0" r="19" fill="#fff"/><circle cx="0" cy="-30" r="14" fill="#fff"/>
+          <rect x="-14" y="-60" width="28" height="18" fill="#111"/><rect x="-20" y="-44" width="40" height="5" fill="#111"/>
+          <polygon points="0,-30 22,-27 0,-25" fill="#f08a24"/><circle cx="-5" cy="-35" r="2.5" fill="#d62c2c"/><circle cx="5" cy="-35" r="2.5" fill="#d62c2c"/>
+          <line x1="-18" y1="0" x2="-40" y2="-18" stroke="#5a3a1a" stroke-width="3"/><line x1="18" y1="0" x2="40" y2="-18" stroke="#5a3a1a" stroke-width="3"/></g>`).join('')}`,
+
+    backpack: () => grad('h14', '#2a1a3a', '#120a1c') + ground(260, '#3a2a20') +
+        `<path d="M70 270 q-14 -150 80 -170 q94 20 80 170 z" fill="#2f6fd0"/><rect x="104" y="190" width="92" height="60" rx="10" fill="#2559a8"/>
+        <path d="M110 120 q40 -40 80 0" stroke="#1a3a78" stroke-width="10" fill="none"/>
+        <path d="M86 130 q64 -40 128 0 l-10 20 q-54 -30 -108 0 z" fill="#0b0712"/>
+        <g fill="#5ee05a">${[[90, 120, -40], [210, 118, 40], [150, 104, 0]].map(([x, y, r]) => `<path d="M${x} ${y} q${r} -40 ${r * .4} -80 q-8 -6 -10 4 q${-r * .3} 40 ${-r * .6} 76 z"/>`).join('')}</g>
+        <circle cx="150" cy="132" r="18" fill="#fff"/><circle cx="152" cy="134" r="9" fill="#111"/>
+        <g transform="rotate(-20 230 250)"><rect x="210" y="230" width="44" height="30" fill="#fff"/><path d="M216 240 h32 M216 250 h22" stroke="#9ab" stroke-width="2"/></g>`,
+
+    armadillo: () => grad('h15', '#f4a65a', '#7a2a5a') + city('#3a1a3a', '#ffd86b') +
+        `<g transform="rotate(-25 160 180)"><circle cx="160" cy="180" r="78" fill="#9a8a7a"/>
+        ${[0, 1, 2, 3, 4, 5].map(i => `<path d="M${100 + i * 22} ${118 + Math.abs(2.5 - i) * 6} q-12 62 0 124" stroke="#6b5a4a" stroke-width="7" fill="none"/>`).join('')}
+        <ellipse cx="96" cy="196" rx="20" ry="16" fill="#b0a090"/><circle cx="88" cy="190" r="4" fill="#111"/><ellipse cx="104" cy="178" rx="5" ry="10" fill="#b0a090"/></g>
+        <g fill="#3a1a3a"><rect x="40" y="200" width="20" height="30" transform="rotate(-30 50 215)"/><rect x="250" y="190" width="20" height="40" transform="rotate(35 260 210)"/></g>
+        <path d="M60 280 q30 -20 60 0 M190 285 q30 -16 60 0" stroke="#ffd86b" stroke-width="3" fill="none" opacity=".6"/>`,
+
+    remote: () => grad('h16', '#2a1a12', '#1a100a') +
+        `<polygon points="150,0 40,300 260,300" fill="#fff3c8" opacity=".12"/>
+        <rect x="20" y="150" width="260" height="110" rx="16" fill="#7a3a5a"/><rect x="20" y="110" width="260" height="70" rx="16" fill="#8a4a6a"/>
+        <rect x="10" y="140" width="40" height="110" rx="14" fill="#6a2a4a"/><rect x="250" y="140" width="40" height="110" rx="14" fill="#6a2a4a"/>
+        <line x1="150" y1="180" x2="150" y2="250" stroke="#4a1a3a" stroke-width="5"/>
+        <g transform="rotate(-12 152 180)"><rect x="140" y="140" width="24" height="56" rx="6" fill="#222"/><circle cx="152" cy="152" r="5" fill="#e04848"/>
+        ${[0, 1, 2].map(i => `<rect x="${145 + (i % 2) * 8}" y="${162 + i * 8}" width="6" height="4" fill="#888"/>`).join('')}</g>
+        <ellipse cx="152" cy="190" rx="40" ry="10" fill="#fff6c8" opacity=".25"/><text x="230" y="80" font-size="40" font-family="Bangers, sans-serif" fill="#ffe680" opacity=".9">?</text>`,
+
+    slime: () => grad('h17', '#16263a', '#0a1018') +
+        `<rect y="230" width="300" height="70" fill="#5a6470"/><rect y="230" width="300" height="8" fill="#3a434e"/>
+        <path d="M110 230 h80 l-10 -60 v-70 h-60 v70 z" fill="#d9f2ff" opacity=".35" stroke="#bfe" stroke-width="3"/>
+        <path d="M118 230 h64 l-8 -50 h-48 z" fill="#a64dd8"/><path d="M118 110 q10 -30 30 -10 q20 -30 34 6 q10 20 -2 30 l0 70 h-62 v-60 q-14 -10 0 -36z" fill="#b65ce8"/>
+        <path d="M180 140 q40 10 36 60 q-2 30 14 30 h30 q-20 -6 -18 -40 q2 -50 -62 -66z" fill="#b65ce8"/><path d="M118 160 q-40 0 -50 70 h20 q6 -50 30 -56z" fill="#b65ce8"/>
+        <circle cx="140" cy="130" r="9" fill="#fff"/><circle cx="164" cy="128" r="9" fill="#fff"/><circle cx="142" cy="132" r="4" fill="#111"/><circle cx="166" cy="130" r="4" fill="#111"/>
+        ${[[60, 80, 8], [230, 60, 6], [250, 110, 10]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#c98af0" stroke-width="2"/>`).join('')}`,
+
+    bigfoot: () => grad('h18', '#9fd6f2', '#f6e7b8') + ground(250, '#555c66') +
+        `<rect x="10" y="110" width="280" height="130" rx="14" fill="#f2c230"/><rect x="10" y="200" width="280" height="10" fill="#1d1d1d"/>
+        ${[0, 1, 2, 3].map(i => `<rect x="${30 + i * 64}" y="126" width="52" height="56" rx="6" fill="#bfe8ff"/>`).join('')}
+        <circle cx="70" cy="252" r="22" fill="#1d1d1d"/><circle cx="230" cy="252" r="22" fill="#1d1d1d"/><circle cx="70" cy="252" r="9" fill="#888"/><circle cx="230" cy="252" r="9" fill="#888"/>
+        <path d="M94 186 q0 -76 64 -76 q64 0 64 76 z" fill="#6b4423"/><ellipse cx="158" cy="150" rx="30" ry="26" fill="#a7744a"/>
+        <circle cx="146" cy="144" r="5" fill="#111"/><circle cx="170" cy="144" r="5" fill="#111"/><path d="M148 164 q10 6 20 0" stroke="#111" stroke-width="3" fill="none"/>
+        <path d="M94 186 l-6 -40 l14 -10 M222 186 l6 -40 l-14 -10" stroke="#6b4423" stroke-width="10" fill="none"/>
+        <text x="150" y="234" font-size="16" text-anchor="middle" font-family="Bangers, sans-serif" fill="#1d1d1d">SCHOOL BUS</text>`,
+
+    flamingo: () => grad('h19', '#1a2a2a', '#4a6a5a') + moon(220, 60, 30, '#e8f4d0') +
+        `<rect y="200" width="300" height="100" fill="#1f3a30"/><g fill="#e8f4d0" opacity=".15"><rect y="190" width="300" height="20"/><rect y="230" width="300" height="12"/></g>
+        <g stroke="#0f2a1a" stroke-width="5">${[20, 40, 260, 280, 60].map((x, i) => `<line x1="${x}" y1="300" x2="${x + 6}" y2="${150 + i * 10}"/>`).join('')}</g>
+        <line x1="150" y1="200" x2="150" y2="280" stroke="#e86a9a" stroke-width="5"/><path d="M150 230 l18 -12 l4 6" stroke="#e86a9a" stroke-width="5" fill="none"/>
+        <ellipse cx="150" cy="180" rx="44" ry="30" fill="#ff7aa8"/><path d="M180 172 q30 -10 20 -60 q-6 -30 -30 -24" stroke="#ff7aa8" stroke-width="12" fill="none" stroke-linecap="round"/>
+        <circle cx="170" cy="88" r="16" fill="#ff7aa8"/><path d="M184 86 q20 4 18 20 l-6 4 q0 -14 -14 -14z" fill="#1d1d1d"/><circle cx="168" cy="84" r="4" fill="#ffe14d"/><circle cx="169" cy="84" r="2" fill="#111"/>
+        <path d="M120 176 q-30 -4 -40 14 q30 0 44 -6z" fill="#e85a8a"/><ellipse cx="150" cy="282" rx="60" ry="6" fill="#e8f4d0" opacity=".2"/>`,
+
+    groupproject: () => grad('h20', '#2a2f3a', '#12151c') +
+        `<rect x="70" y="40" width="160" height="120" fill="#f4f4f4"/><line x1="90" y1="160" x2="80" y2="240" stroke="#7a4a24" stroke-width="6"/><line x1="210" y1="160" x2="220" y2="240" stroke="#7a4a24" stroke-width="6"/>
+        <text x="150" y="68" font-size="18" text-anchor="middle" font-family="Bangers, sans-serif" fill="#2f6fd0">OUR PROJECT</text>
+        <path d="M90 80 h120 M90 96 h100 M90 112 h110 M90 128 h80" stroke="#9ab" stroke-width="4"/><path d="M190 130 l14 -20 l8 10 l12 -24" stroke="#d62c2c" stroke-width="4" fill="none"/>
+        ${[[40, 1], [100, 0], [200, 0], [260, 0]].map(([x, mad]) => `<g fill="#0a0c12"><circle cx="${x}" cy="226" r="20"/><path d="M${x - 30} 300 q0 -56 30 -56 q30 0 30 56 z"/></g>
+          ${mad ? `<g fill="#ff3b3b"><circle cx="${x - 7}" cy="224" r="4"/><circle cx="${x + 7}" cy="224" r="4"/></g><path d="M${x - 13} 214 l10 6 M${x + 13} 214 l-10 6" stroke="#ff3b3b" stroke-width="3"/>`
+               : `<g fill="#9ab"><circle cx="${x - 7}" cy="226" r="2.5"/><circle cx="${x + 7}" cy="226" r="2.5"/></g>`}`).join('')}
+        <text x="20" y="190" font-size="22" font-family="Bangers, sans-serif" fill="#ff3b3b">!</text>`,
 };
 
 // ---------- the posters ----------
@@ -210,7 +371,27 @@ export const POSTERS = [
     { id: 'rutabaga', title: 'Return of the Radioactive Rutabaga', tagline: 'Eat your vegetables… before they eat YOU.', badge: 'COMING SOON', page: '#081a0c', title_c: '#b6ff6a', tag_c: '#e8f7dc', badge_c: ['#9b5fc0', '#fff'] },
     { id: 'blob', title: 'The Blob That Ate My Homework', tagline: "It's not an excuse. It's a WARNING.", badge: 'NOW SHOWING', page: '#0a120a', title_c: '#5ee05a', tag_c: '#e2f5df', badge_c: ['#fff', '#0a120a'] },
     { id: 'grandma', title: 'Robot Grandma 3000', tagline: "She's knitting a sweater. Out of STEEL.", badge: 'IN 3-D!', page: '#2e1238', title_c: '#ff8fc4', tag_c: '#f8e6ff', badge_c: ['#ffd23a', '#2e1238'] },
-    { id: 'loop', title: 'Attack of the Infinite Loop', tagline: 'It never ends. It never ends. It never ends.', badge: 'HELD OVER… FOREVER', page: '#040c16', title_c: '#4ad0ff', tag_c: '#dff4ff', badge_c: ['#ff4dd2', '#fff'] },
+    { id: 'loop', title: 'Attack of the Infinite Loop', tagline: 'It never ends. It never ends. It never ends.', badge: 'HELD OVER… FOREVER', page: '#040c16', title_c: '#4ad0ff', tag_c: '#dff4ff', badge_c: ['#ff4dd2', '#fff'] },    // the second 20 (Jake: "absolutely stupidly delightful", Nov 13, 2026)
+    { id: 'stapler', title: 'Revenge of the Sentient Stapler', tagline: "It's been jammed for the LAST time.", badge: 'NOW SHOWING', page: '#1e140c', title_c: '#ff5a4a', tag_c: '#fbe9d6', badge_c: ['#ffe9a8', '#1e140c'] },
+    { id: 'gerbil', title: 'The Gerbil Who Knew Too Much', tagline: 'He saw everything from the wheel.', badge: 'COMING SOON', page: '#0d0a14', title_c: '#e8b98a', tag_c: '#e6def0', badge_c: ['#8a5a2a', '#fff'] },
+    { id: 'gnomes', title: 'Invasion of the Garden Gnomes', tagline: 'They were never standing still.', badge: 'IN 3-D!', page: '#0b1430', title_c: '#ff5a5a', tag_c: '#dfe8ff', badge_c: ['#2f6fd0', '#fff'] },
+    { id: 'rubberbands', title: 'Night of the 1,000 Rubber Bands', tagline: 'Snap. Snap. SNAP.', badge: 'ONE NIGHT ONLY', page: '#1c2438', title_c: '#ffd23a', tag_c: '#ffeedd', badge_c: ['#3aa655', '#fff'] },
+    { id: 'lostfound', title: 'Creature from the Lost & Found', tagline: 'One mitten. One shoe. One MONSTER.', badge: 'SEE IT IF YOU DARE', page: '#121826', title_c: '#ffe14d', tag_c: '#e2e8f2', badge_c: ['#e85a8a', '#fff'] },
+    { id: 'toaster', title: 'The Toaster That Came from Space', tagline: 'It only makes toast. Or does it?', badge: 'IN 3-D!', page: '#08061a', title_c: '#ffb347', tag_c: '#e8e2ff', badge_c: ['#d62c2c', '#fff'] },
+    { id: 'dandelions', title: 'Attack of the Killer Dandelions', tagline: "Make a wish. It's your last.", badge: 'HELD OVER!', page: '#1d3a12', title_c: '#fff36b', tag_c: '#eef8e0', badge_c: ['#c4472f', '#fff'] },
+    { id: 'vending', title: 'The Haunted Vending Machine', tagline: 'Exact change only. FOREVER.', badge: 'ONE NIGHT ONLY', page: '#08080e', title_c: '#ff6b6b', tag_c: '#dbefff', badge_c: ['#bfe8ff', '#08080e'] },
+    { id: 'ceilingfan', title: 'Beware the Ceiling Fan', tagline: "It's been spinning for 40 years. Waiting.", badge: 'SEE IT IF YOU DARE', page: '#2a1d12', title_c: '#ffe680', tag_c: '#f6ead2', badge_c: ['#6b4423', '#fff'] },
+    { id: 'homeroom', title: 'Escape from Planet Homeroom', tagline: 'Attendance is MANDATORY.', badge: 'COMING SOON', page: '#24082e', title_c: '#b6ff6a', tag_c: '#f5e0ff', badge_c: ['#e07a3a', '#fff'] },
+    { id: 'squirrel', title: 'The Squirrel King of Maple Street', tagline: 'All acorns belong to HIM.', badge: 'NOW SHOWING', page: '#3a1d0a', title_c: '#ffd23a', tag_c: '#fff0dc', badge_c: ['#c4702f', '#fff'] },
+    { id: 'leftovers', title: 'Return of the Forgotten Leftovers', tagline: 'Something is growing in the back of the fridge.', badge: 'IN SMELL-O-VISION', page: '#0a0d0a', title_c: '#7dff6a', tag_c: '#e2f5df', badge_c: ['#e8edf2', '#0a0d0a'] },
+    { id: 'snowmen', title: 'When Snowmen Attack', tagline: 'Carrot noses. Cold hearts.', badge: 'FREE HOT COCOA', page: '#0b1530', title_c: '#bfe3ff', tag_c: '#ffffff', badge_c: ['#f08a24', '#fff'] },
+    { id: 'backpack', title: 'The Thing That Lives in the Backpack', tagline: "It's under the crumpled worksheets.", badge: 'COMING SOON', page: '#120a1c', title_c: '#5ee05a', tag_c: '#ece2f8', badge_c: ['#2f6fd0', '#fff'] },
+    { id: 'armadillo', title: 'Godzillo the Giant Armadillo', tagline: 'He rolls. The city falls.', badge: 'IN 3-D!', page: '#2a0f22', title_c: '#ffd86b', tag_c: '#ffe6f0', badge_c: ['#9a8a7a', '#fff'] },
+    { id: 'remote', title: 'Mystery of the Missing Remote', tagline: 'It was here a minute ago.', badge: 'ONE NIGHT ONLY', page: '#1a100a', title_c: '#ffe680', tag_c: '#f6e6da', badge_c: ['#7a3a5a', '#fff'] },
+    { id: 'slime', title: "The Slime That Wouldn't Wash Off", tagline: 'Science fair. Gone. WRONG.', badge: 'RATED G FOR GROSS', page: '#0a1018', title_c: '#c98af0', tag_c: '#e8e0f5', badge_c: ['#5ee05a', '#0a1018'] },
+    { id: 'bigfoot', title: 'Bigfoot Takes the Bus', tagline: 'Exact fare. Enormous feet.', badge: 'NOW SHOWING', page: '#20323e', title_c: '#ffd23a', tag_c: '#f2f6f8', badge_c: ['#6b4423', '#fff'] },
+    { id: 'flamingo', title: 'The Flamingo from the Black Lagoon', tagline: 'Pink. Silent. Deadly.', badge: 'SEE IT IF YOU DARE', page: '#0f1c18', title_c: '#ff7aa8', tag_c: '#e8f4ec', badge_c: ['#e8f4d0', '#0f1c18'] },
+    { id: 'groupproject', title: 'Attack of the Group Project', tagline: 'One person did all the work. Now they want REVENGE.', badge: 'HELD OVER… FOREVER', page: '#0e1118', title_c: '#ff3b3b', tag_c: '#e6ebf5', badge_c: ['#2f6fd0', '#fff'] },
 ];
 
 export function artSVG(id) {

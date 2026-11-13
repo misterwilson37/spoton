@@ -1,5 +1,15 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement IV: 20 more movies (40 total)
+
+- bp4-posters.js 1.1.0 — the second 20, Jake-approved: Sentient Stapler, The Gerbil Who
+  Knew Too Much, Garden Gnomes, 1,000 Rubber Bands, Lost & Found, Toaster from Space,
+  Killer Dandelions, Haunted Vending Machine, Ceiling Fan, Planet Homeroom, Squirrel King,
+  Forgotten Leftovers, When Snowmen Attack, the Backpack, Godzillo, Missing Remote, the
+  Slime, Bigfoot Takes the Bus, Flamingo from the Black Lagoon, Attack of the Group
+  Project. Each game still draws 10, so repeats are much rarer.
+- tailwind.css rebuilt (three unused height rules picked up from the drawing code).
+
 ## Nov 2026 — Balanced Placement IV 1.3.0: the title gets its own line
 
 - bp4-layout.js 1.2.0 — new poster rule: the title has its own line, centred on the page

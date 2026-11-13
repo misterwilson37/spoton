@@ -1,4 +1,4 @@
-// bp4-layout-test.mjs — Balanced Placement IV's round builder (bp4-layout.js) and posters.
+// bp4-layout-test.mjs — Balanced Placement IV's round builder (bp4-layout.js) and its 40 posters.
 // node bp4-layout-test.mjs   (text is measured with estimateMeasure; the browser test uses real fonts)
 import { check, section, finish } from './harness.mjs';
 import * as B from '../bp4-layout.js';
@@ -10,8 +10,8 @@ const centres = a => Object.fromEntries(Object.entries(a.geom.centers).map(([k, 
 
 section('The posters');
 {
-    check('20 posters', POSTERS.length === 20);
-    check('ids are unique', new Set(POSTERS.map(p => p.id)).size === 20);
+    check('40 posters', POSTERS.length === 40);
+    check('ids are unique', new Set(POSTERS.map(p => p.id)).size === POSTERS.length);
     check('every poster has a title, tagline, badge and colours', POSTERS.every(p => p.title && p.tagline && p.badge && p.page && p.title_c && p.tag_c && p.badge_c?.length === 2));
     check('no cafeteria jokes (Jake, Nov 13)', !POSTERS.some(p => /cafeteria|lunch lad/i.test(p.title + p.tagline)));
     check('every picture is an SVG drawn here (no outside addresses)', POSTERS.every(p => { const s = artSVG(p.id); return s.startsWith('<svg') && !/https?:\/\/(?!www\.w3\.org)/.test(s) && !/href=/.test(s); }));
@@ -60,8 +60,8 @@ section('Round plan');
     check('every game: 10 rounds, 10 different posters, each pair of rounds = one tall + one wide', ok === 200);
     const seen = new Set();
     const r2 = rng(9);
-    for (let i = 0; i < 30; i++) B.planGame(r2).forEach(x => seen.add(x.poster.id));
-    check(`over 30 games every one of the 20 posters shows up (${seen.size})`, seen.size === 20);
+    for (let i = 0; i < 80; i++) B.planGame(r2).forEach(x => seen.add(x.poster.id));
+    check(`over 80 games every one of the ${POSTERS.length} posters shows up (${seen.size})`, seen.size === POSTERS.length);
     check('rounds ramp in pairs: basic, small badge, big badge + tilted title, stills, stills + badge',
         B.ROUNDS.map(r => r.kind).join(',') === 'basic,basic,badge,badge,badge,badge,stills,stills,stillsBadge,stillsBadge');
     // badges come in different sizes; titles tilt in rounds 5–6

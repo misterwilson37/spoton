@@ -147,7 +147,7 @@ section('Desktop: play all 10 rounds, placing the best layout by mouse');
     await ctx.close();
 }
 
-section('All 20 poster pictures load as images in the browser');
+section('Every poster picture loads as an image in the browser');
 {
     const { ctx, page, errors } = await open(browser, { viewport: { width: 800, height: 600 } });
     await page.goto(BASE + '/balancedplacement4.html');
@@ -158,7 +158,7 @@ section('All 20 poster pictures load as images in the browser');
         const r = await Promise.all(POSTERS.map(p => one(p.id)));
         return POSTERS.filter((p, i) => !r[i]).map(p => p.id);
     });
-    check(`every picture loads (${loaded.length ? 'failed: ' + loaded.join(', ') : 'all 20'})`, loaded.length === 0);
+    check(`every picture loads (${loaded.length ? 'failed: ' + loaded.join(', ') : 'all of them'})`, loaded.length === 0);
     check('no script errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
 }
