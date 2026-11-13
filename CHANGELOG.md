@@ -1,5 +1,19 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement III scoring fix (from classroom playthroughs)
+
+- bp3-layout.js 2.0.0 — two bugs Jake saw in student games:
+  1. The scorer tried every layout and kept whichever scored highest, so a perfect
+     diamond (one / two / one) was re-read as "everything stacked down one side" and
+     scored 69. Now the student is judged on the layout they actually built.
+  2. Pass/fail rules with cliffs: swapping two near-identical shapes could cost 40 points.
+     Now every layout gets a quality score on a slope — uneven gaps up to −30, cramped gaps
+     up to −40, lopsided (per mirror pair, by how different the sizes are) up to −25 —
+     and the student loses only the difference from the best layout for that rectangle
+     (max −45). A 3-unit nudge now moves a score by at most a point.
+- balancedplacement3.html 1.1.0 — messages and layout pictures show the actual penalty.
+- tests/bp3-layout-test.mjs — both screenshots are now permanent test cases; a "no cliffs" check.
+
 ## Nov 2026 — Measuring lines in Balanced Placement I and II
 
 - gap-bars.js 1.0.0 (new) — after Submit, draws the gaps the student actually left:

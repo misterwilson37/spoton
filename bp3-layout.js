@@ -1,5 +1,5 @@
 // =============================================
-// bp3-layout.js v1.0.0 — the spacing math for Balanced Placement III.
+// bp3-layout.js v2.0.0 — the spacing math for Balanced Placement III.
 // Pure functions, no page code, so it can be tested on its own and reused by
 // Balanced Placement IV (lines of text are just more boxes).
 //
@@ -11,23 +11,33 @@
 //                dir 'rows':    groups go top→bottom, each group runs left→right.
 //   rect         { x, y, w, h }      — the container.
 //
-// The rule (agreed with Jake, Nov 2026):
+// The rule (agreed with Jake, Nov 2026; v2 after the first classroom playthroughs):
 //   1. Groups are evenly spaced along the main axis (edges, not centers).
 //   2. Shapes inside a group are evenly spaced and the group is centred.
-//   3. The tightest group sets the "frame" gap; the gap along the main axis must
-//      roughly match it, and every stacked group's gap must too (within TOL).
-//   4. Order: mirror-symmetric sizes (a C b, C a b D) is full marks. A layout that
-//      works but is lopsided (a b C) is a pass, not full marks — UNLESS no
-//      symmetric layout works for that rectangle, then lopsided is the best there is.
+//   3. Every layout gets a QUALITY out of 100 — no pass/fail cliffs:
+//        − gaps:    how far the gaps across and the gaps inside stacks drift from each
+//                   other (free up to 15%, then up to −30; cramped gaps slope to −40 at half of MIN_GAP)
+//        − balance: each mirror pair (a C b, C a b D) loses points in proportion to how
+//                   different the two sides are (a near-twin swapped costs a point or two;
+//                   a lone shape beside a whole stack costs up to −25)
+//   4. The student is judged on the layout THEY built (the one nearest their shapes) and
+//      loses only the difference between it and the best layout this rectangle allows.
+//   v1 picked whichever layout scored highest instead, so a perfect diamond got re-read as
+//   "everything stacked down one side" — that is what Jake saw.
 // =============================================
 
-export const VERSION = '1.0.0';
-export const TOL = 0.25;            // "roughly equal" gaps. Tune after classroom play.
-export const SYM_TOL = 0.15;        // two sizes "match" for mirror symmetry
-export const LAYOUT_PENALTY = 40;   // a layout whose gaps can't all match
-export const LOPSIDED_PENALTY = 20; // works, but a more symmetric layout was available
-export const PX_PER_POINT = 1;
-export const MIN_GAP = 14;          // a layout with gaps tighter than this (logical units) is cramped, not "working"      // precision: lose 1 point per logical px of average miss
+export const VERSION = '2.0.0';
+export const GAP_FREE = 0.15;       // gaps within 15% of each other cost nothing
+export const GAP_FULL = 0.75;       // …and cost the full GAP_WEIGHT by 75%
+export const GAP_WEIGHT = 30;
+export const SYM_FREE = 0.15;       // mirror partners within 15% of each other's size are twins
+export const SYM_FULL = 0.65;
+export const SYM_WEIGHT = 25;       // per mirror pair, at worst
+export const CRAMPED = 40;          // gaps at half of MIN_GAP or tighter (sloped from MIN_GAP down)
+export const MAX_PENALTY = 45;
+export const FULL_MARKS_WITHIN = 2; // layouts this close to the best one count as "full marks"
+export const PX_PER_POINT = 1;      // precision: lose 1 point per logical px of average miss
+export const MIN_GAP = 14;          // logical units; tighter than this is too cramped to judge
 
 const sum = a => a.reduce((t, v) => t + v, 0);
 const rel = (a, b) => Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-9);
@@ -85,32 +95,36 @@ export function geometry(arr, sizeOf, rect) {
     return { gMain, gIns, lens, depths, centers };
 }
 
-// Does this arrangement follow the spacing rule?
+const ramp = (x, free, full) => Math.max(0, Math.min(1, (x - free) / (full - free)));
+
+// How well this arrangement's gaps can match. off = the worst relative mismatch between
+// the gap across and the tightest group (the frame) or any stacked group's inside gap.
 export function evaluate(arr, geom) {
     const fits = geom.gMain > 0 && geom.gIns.every(g => g > 0);
     const frame = Math.min(...geom.gIns);
-    const off = rel(frame, geom.gMain);
     const stacksOff = arr.groups.map((g, i) => g.length > 1 ? rel(geom.gIns[i], geom.gMain) : 0);
-    const ok = fits && geom.gMain >= MIN_GAP && off <= TOL && stacksOff.every(o => o <= TOL);
-    return { ok, fits, off: Math.max(off, ...stacksOff) };
+    const off = Math.max(rel(frame, geom.gMain), ...stacksOff);
+    // too tight to see: a slope too (0 at MIN_GAP, all of CRAMPED at half of it)
+    const tightest = Math.min(geom.gMain, ...geom.gIns);
+    const cramped = tightest < MIN_GAP;
+    const gapPenalty = Math.max(GAP_WEIGHT * ramp(off, GAP_FREE, GAP_FULL), CRAMPED * ramp(MIN_GAP - tightest, 0, MIN_GAP / 2));
+    return { fits, off, cramped, gapPenalty };
 }
 
-// How lopsided: the number of mirror pairs whose sizes don't match.
+// How lopsided, as a number of "whole" mirror mismatches (0 = perfectly balanced).
 // Groups are compared by (length, depth); shapes inside a group by size.
 export function asymmetry(arr, sizeOf) {
-    const match = (a, b) => rel(a, b) <= SYM_TOL;
+    const miss = (a, b) => ramp(rel(a, b), SYM_FREE, SYM_FULL);
     let bad = 0;
     const gs = arr.groups;
     for (let i = 0; i < Math.floor(gs.length / 2); i++) {
         const a = gs[i], b = gs[gs.length - 1 - i];
         const la = Math.max(...a.map(sizeOf)), lb = Math.max(...b.map(sizeOf));
         const da = sum(a.map(sizeOf)), db = sum(b.map(sizeOf));
-        if (!match(la, lb) || !match(da, db)) bad++;
+        bad += Math.max(miss(la, lb), miss(da, db));
     }
     for (const g of gs) {
-        for (let i = 0; i < Math.floor(g.length / 2); i++) {
-            if (!match(sizeOf(g[i]), sizeOf(g[g.length - 1 - i]))) bad++;
-        }
+        for (let i = 0; i < Math.floor(g.length / 2); i++) bad += miss(sizeOf(g[i]), sizeOf(g[g.length - 1 - i]));
     }
     return bad;
 }
@@ -129,7 +143,7 @@ export function pictureKey(geom, shapes, rect, mirrors = true) {
     return keys.sort()[0];
 }
 
-// Every arrangement with its geometry and verdict.
+// Every arrangement with its geometry and quality.
 export function analyse(shapes, rect) {
     const size = Object.fromEntries(shapes.map(s => [s.id, s.size]));
     const sizeOf = id => size[id];
@@ -137,47 +151,59 @@ export function analyse(shapes, rect) {
     for (const arr of arrangements(shapes.map(s => s.id))) {
         const geom = geometry(arr, sizeOf, rect);
         const ev = evaluate(arr, geom);
-        all.push({ arr, geom, ...ev, asym: asymmetry(arr, sizeOf) });
+        if (!ev.fits) { all.push({ arr, geom, ...ev }); continue; }
+        const asym = asymmetry(arr, sizeOf);
+        const symPenalty = SYM_WEIGHT * asym;
+        all.push({ arr, geom, ...ev, asym, symPenalty, quality: 100 - ev.gapPenalty - symPenalty });
     }
-    const good = all.filter(a => a.ok);
-    const bestAsym = good.length ? Math.min(...good.map(a => a.asym)) : 0;
-    // One entry per distinct picture, most symmetric first.
+    const fitting = all.filter(a => a.fits);
+    const best = Math.max(...fitting.map(a => a.quality));
+    for (const a of fitting) {
+        a.penalty = Math.min(MAX_PENALTY, Math.round(best - a.quality));
+        a.ok = a.penalty <= FULL_MARKS_WITHIN;
+    }
+    const good = fitting.filter(a => a.ok);
+    // One entry per distinct picture, best first (for the "layouts that work" strip).
     const seen = new Set(), layouts = [];
-    for (const a of [...good].sort((p, q) => p.asym - q.asym || p.off - q.off)) {
+    for (const a of [...fitting].sort((p, q) => q.quality - p.quality)) {
+        if (a.penalty > 10) break;
         const k = pictureKey(a.geom, shapes, rect);
-        if (!seen.has(k)) { seen.add(k); layouts.push({ ...a, key: k, lopsided: a.asym > bestAsym }); }
+        if (!seen.has(k)) { seen.add(k); layouts.push({ ...a, key: k, lopsided: !a.ok }); }
     }
-    return { all, good, bestAsym, layouts };
+    return { all, good, best, layouts };
 }
 
 // ---------- scoring a student's placement ----------
 
 // placed: { id: {x, y} } — centers where the student left each shape.
 export function scorePlacement(shapes, rect, placed, analysis = analyse(shapes, rect)) {
-    let best = null;
+    const dist = a => sum(shapes.map(s => Math.hypot(placed[s.id].x - a.geom.centers[s.id].x, placed[s.id].y - a.geom.centers[s.id].y))) / shapes.length;
+    // The layout the student built = the nearest one. Two descriptions of nearly the same
+    // picture (within 3 units) → the better one, so ties never go against the student.
+    let mine = null, md = Infinity;
     for (const a of analysis.all) {
         if (!a.fits) continue;
-        const dists = shapes.map(s => Math.hypot(placed[s.id].x - a.geom.centers[s.id].x, placed[s.id].y - a.geom.centers[s.id].y));
-        const meanDist = sum(dists) / dists.length;
-        const precision = Math.max(0, 100 - meanDist * PX_PER_POINT);
-        const lopsided = a.ok && a.asym > analysis.bestAsym;
-        const penalty = !a.ok ? LAYOUT_PENALTY : lopsided ? LOPSIDED_PENALTY : 0;
-        const score = Math.max(0, Math.round(precision - penalty));
-        if (!best || score > best.score || (score === best.score && meanDist < best.meanDist)) {
-            best = { score, precision: Math.round(precision), meanDist, penalty, lopsided, ok: a.ok, match: a };
-        }
+        const d = dist(a);
+        if (d < md - 3 || (Math.abs(d - md) <= 3 && a.quality > mine.quality)) { mine = a; md = Math.min(md, d); }
     }
-    // A layout that breaks the rule: show the closest one that works instead.
-    if (best && !best.ok) {
+    const precision = Math.max(0, 100 - md * PX_PER_POINT);
+    const score = Math.max(0, Math.round(precision - mine.penalty));
+    // which part of the penalty is which (for the message under the score)
+    const bestA = analysis.all.find(a => a.fits && a.penalty === 0);
+    const gapPart = Math.max(0, Math.round(mine.gapPenalty - bestA.gapPenalty));
+    const result = {
+        score, precision: Math.round(precision), meanDist: md, penalty: mine.penalty,
+        ok: mine.ok, gapPart, symPart: Math.max(0, mine.penalty - gapPart),
+        lopsided: !mine.ok && mine.penalty - gapPart > gapPart,
+        match: mine, key: pictureKey(mine.geom, shapes, rect),
+    };
+    // A layout well short of the best: show the nearest full-marks one.
+    if (mine.penalty > 5) {
         let near = null, nd = Infinity;
-        for (const a of analysis.good) {
-            const d = sum(shapes.map(s => Math.hypot(placed[s.id].x - a.geom.centers[s.id].x, placed[s.id].y - a.geom.centers[s.id].y)));
-            if (d < nd) { nd = d; near = a; }
-        }
-        best.nearestGood = near;
+        for (const a of analysis.good) { const d = dist(a); if (d < nd) { nd = d; near = a; } }
+        result.nearestGood = near;
     }
-    if (best) best.key = pictureKey(best.match.geom, shapes, rect);
-    return best;
+    return result;
 }
 
 // The gaps the student actually left, for the arrangement they were matched to.
@@ -358,10 +384,10 @@ export function makePuzzle(roundIndex, rnd = Math.random) {
             .map((s, i) => ({ ...s, color: COLORS[i] }));
 
         const analysis = analyse(shapes, rect);
-        if (!analysis.good.length) continue;
+        if (!analysis.good.length || analysis.best < 80) continue;
         if (cfg.plan === 'stack') {
             // teach the stack: lining everything up in one row must NOT work here
-            const rowWorks = analysis.good.some(a => a.arr.groups.every(gr => gr.length === 1));
+            const rowWorks = analysis.all.some(a => a.fits && a.penalty <= 5 && a.arr.groups.every(gr => gr.length === 1));
             if (rowWorks) continue;
         }
         const start = scatter(shapes, rect, rnd);

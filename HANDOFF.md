@@ -16,6 +16,14 @@ the score records down to what the leaderboards need. Keeps SpotOn's typefounder
 
 ---
 
+## Balanced Placement III scoring v2 — Nov 13, 2026
+
+Jake's students found two bugs (screenshots in the conversation): a perfect diamond was
+re-read as a one-sided stack, and swapping near-twin shapes flipped a 40-point penalty.
+bp3-layout.js 2.0.0 judges the layout the student built and scores layout quality on a
+slope (see the header comment for the weights). **The pass/fail TOL = 25% decision below is
+replaced** — "roughly equal" is now: free up to 15% apart, full −30 by 75%.
+
 ## Balanced Placement III — Nov 2026
 
 **Built:** `balancedplacement3.html` + `bp3-layout.js` (all the spacing math, no page code).

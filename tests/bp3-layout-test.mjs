@@ -12,21 +12,20 @@ section("Jake's examples (two small a, b and one big C)");
     const A = { id: 'a', size: 60 }, B = { id: 'b', size: 60 }, C = { id: 'C', size: 150 };
     const show = an => an.layouts.map(l => `${l.arr.dir}:${l.arr.groups.map(g => g.join('/')).join('|')}`);
     const tight = L.analyse([A, B, C], { x: 0, y: 0, w: 300, h: 210 });
-    check('tight 300×210: only "a/b stacked beside C" works', tight.layouts.length === 1 &&
-        tight.layouts[0].arr.groups.some(g => g.length === 2), show(tight));
-    check('tight: that stack gets full marks (no symmetric option exists)', tight.layouts[0].lopsided === false);
+    check('tight 300×210: the best layout is "a/b stacked beside C"', tight.layouts[0].arr.groups.some(g => g.length === 2), show(tight));
+    check('tight: that stack gets full marks (no balanced option fits)', tight.layouts[0].ok && tight.layouts[0].penalty === 0);
     const wide = L.analyse([A, B, C], { x: 0, y: 0, w: 420, h: 210 });
     // a row = all three centres on one horizontal line (however the arrangement describes it)
     const row = wide.layouts.find(l => new Set(Object.values(l.geom.centers).map(c => Math.round(c.y))).size === 1);
     check('wide 420×210: a side-by-side row works', !!row, show(wide));
-    const sym = wide.good.find(l => l.arr.dir === 'columns' && l.arr.groups.map(g => g[0]).join('') === 'aCb');
-    const lop = wide.good.find(l => l.arr.dir === 'columns' && l.arr.groups.map(g => g[0]).join('') === 'abC');
+    const sym = wide.all.find(l => l.arr.dir === 'columns' && l.arr.groups.map(g => g[0]).join('') === 'aCb');
+    const lop = wide.all.find(l => l.arr.dir === 'columns' && l.arr.groups.map(g => g[0]).join('') === 'abC');
     check('wide: a C b is symmetric (asym 0)', sym && sym.asym === 0);
-    check('wide: a b C is lopsided', lop && lop.asym > wide.bestAsym);
+    check(`wide: a b C is lopsided (−${lop && lop.penalty})`, lop && lop.penalty >= 15 && lop.penalty <= 30);
     const perfectSym = L.scorePlacement([A, B, C], { x: 0, y: 0, w: 420, h: 210 }, centres(sym), wide);
     const perfectLop = L.scorePlacement([A, B, C], { x: 0, y: 0, w: 420, h: 210 }, centres(lop), wide);
     check('a C b placed perfectly scores 100', perfectSym.score === 100, perfectSym.score);
-    check(`a b C placed perfectly passes but not full (${perfectLop.score})`, perfectLop.score === 100 - L.LOPSIDED_PENALTY);
+    check(`a b C placed perfectly passes but not full (${perfectLop.score})`, perfectLop.score === 100 - lop.penalty && perfectLop.lopsided);
 }
 section('Four shapes: a C D b and C a b D are both symmetric; D b a C too');
 {
@@ -118,13 +117,53 @@ section('Wrong layout costs the layout penalty and points to a working one');
     const an = L.analyse(s, rect);
     const rowArr = an.all.find(a => a.arr.dir === 'columns' && a.arr.groups.length === 3 && a.fits);
     const sc = L.scorePlacement(s, rect, centres(rowArr), an);
-    check(`row in the tight rectangle is not ok (score ${sc.score})`, !sc.ok && sc.score <= 100 - L.LAYOUT_PENALTY);
+    check(`row in the tight rectangle loses most of the layout points (score ${sc.score})`, !sc.ok && sc.score <= 65);
     check('…and the nearest working layout is offered', !!sc.nearestGood && sc.nearestGood.ok);
     const bars = L.measuredGaps(sc.match.arr, s, rect, centres(rowArr), sc.match.geom);
     const expect = sc.match.arr.groups.length + 1 + sc.match.arr.groups.reduce((t, g) => t + g.length + 1, 0);
     check(`measured gaps: one bar per gap (${expect})`, bars.length === expect, bars.length);
     check('measured main gaps equal the planned gap when placed exactly',
         bars.filter(b => b.axis === 'main').every(b => Math.abs(b.len - b.target) < 0.01));
+}
+
+section("Jake's classroom screenshots (Nov 13) — judged on the layout the student built");
+{
+    const lbl = a => `${a.arr.dir}:${a.arr.groups.map(g => g.join('/')).join('|')}`;
+    const sz = sh => Object.fromEntries(sh.map(s => [s.id, s.size]));
+    const place = (sh, rect, arr) => L.geometry(arr, id => sz(sh)[id], rect).centers;
+    // 1: green circle / pink + orange squares / blue circle, tall rectangle — a diamond
+    const s1 = [{ id: 'green', size: 120 }, { id: 'pink', size: 77 }, { id: 'orange', size: 80 }, { id: 'blue', size: 103 }];
+    const r1 = { x: 0, y: 0, w: 266, h: 395 }, a1 = L.analyse(s1, r1);
+    const diamond = L.scorePlacement(s1, r1, place(s1, r1, { dir: 'rows', groups: [['green'], ['pink', 'orange'], ['blue']] }), a1);
+    check(`diamond placed exactly scores 100 (${diamond.score}) and is judged AS the diamond (${lbl(diamond.match)})`,
+        diamond.score === 100 && diamond.match.arr.dir === 'rows' && diamond.match.arr.groups.length === 3);
+    const side = L.scorePlacement(s1, r1, place(s1, r1, { dir: 'columns', groups: [['green', 'pink', 'blue'], ['orange']] }), a1);
+    check(`everything stacked down one side scores below the diamond (${side.score}), called lopsided`, side.score <= 90 && side.lopsided);
+    check('the best-layout pictures are not led by a one-sided stack',
+        !a1.layouts.slice(0, 2).some(l => l.arr.groups.length === 2 && l.arr.groups.some(g => g.length === 1)), a1.layouts.slice(0, 4).map(lbl).join(' ; '));
+    // 2: two near-twin squares/circles swapped between rows — no 40-point cliff
+    const s2 = [{ id: 'blue', size: 95 }, { id: 'pink', size: 88 }, { id: 'purple', size: 146 }, { id: 'green', size: 74 }, { id: 'orange', size: 68 }];
+    const r2 = { x: 0, y: 0, w: 219, h: 406 }, a2 = L.analyse(s2, r2);
+    const asBuilt = L.scorePlacement(s2, r2, place(s2, r2, { dir: 'rows', groups: [['blue', 'pink'], ['purple'], ['green', 'orange']] }), a2);
+    const swapped = L.scorePlacement(s2, r2, place(s2, r2, { dir: 'rows', groups: [['blue', 'orange'], ['purple'], ['green', 'pink']] }), a2);
+    check(`student's rows score ≥ 80 (${asBuilt.score}; swapped: ${swapped.score}) — the swap matters only because the top row gets cramped`,
+        asBuilt.score >= 80 && swapped.score - asBuilt.score <= 20);
+    check('student judged on their own rows', asBuilt.match.arr.groups.map(g => g.join('/')).join('|') === 'blue/pink|purple|green/orange');
+}
+section('No cliffs: nudging one shape a little never moves the score by more than a little');
+{
+    const r = rng(7);
+    let worst = 0;
+    for (let i = 0; i < 300; i++) {
+        const p = L.makePuzzle(Math.floor(r() * 10), r);
+        const base = centres(p.analysis.layouts[0]);
+        const id = p.shapes[Math.floor(r() * p.shapes.length)].id;
+        const nudged = JSON.parse(JSON.stringify(base)); nudged[id].x += 3;
+        const a = L.scorePlacement(p.shapes, p.rect, base, p.analysis).score;
+        const b = L.scorePlacement(p.shapes, p.rect, nudged, p.analysis).score;
+        worst = Math.max(worst, a - b);
+    }
+    check(`a 3-unit nudge costs at most 5 points (worst ${worst})`, worst <= 5);
 }
 
 finish('bp3-layout-test');

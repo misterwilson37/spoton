@@ -72,7 +72,7 @@ async function dragTouch(page, cdp, from, to) {
 const state = page => page.evaluate(() => ({
     shapes: __bp3.puzzle.shapes, pos: __bp3.pos, rect: __bp3.puzzle.rect,
     best: __bp3.puzzle.analysis.layouts[0].geom.centers,
-    layouts: __bp3.puzzle.analysis.layouts.map(l => ({ lopsided: l.lopsided, centers: l.geom.centers, groups: l.arr.groups, dir: l.arr.dir })),
+    layouts: __bp3.puzzle.analysis.all.filter(l => l.fits).map(l => ({ lopsided: l.penalty >= 10 && l.symPenalty > l.gapPenalty, penalty: l.penalty, centers: l.geom.centers, groups: l.arr.groups, dir: l.arr.dir })),
     round: __bp3.puzzle.round,
 }));
 // shapes may start in a pile, so drag the TOP one first (what a student would grab)
@@ -83,7 +83,7 @@ async function placeAll(page, targets, drag) {
         await drag(cur, targets[id]);
     }
 }
-const submit = async page => { await page.click('#submitButton'); return page.evaluate(() => ({ score: __bp3.result.score, ok: __bp3.result.ok, lopsided: __bp3.result.lopsided })); };
+const submit = async page => { await page.click('#submitButton'); return page.evaluate(() => ({ score: __bp3.result.score, ok: __bp3.result.ok, lopsided: __bp3.result.lopsided, penalty: __bp3.result.penalty })); };
 
 const browser = await chromium.launch();
 
@@ -126,7 +126,7 @@ section('Mistakes cost points');
     await page.click('#nextButton');
     // Round 2: space by CENTERS instead of edges
     let s = await state(page);
-    const best = s.layouts[0];
+    const best = { centers: s.best };
     // round 2 is always a single row: find which way it runs, then space the CENTRES evenly
     const pts = Object.entries(best.centers);
     const horiz = new Set(pts.map(([, c]) => Math.round(c.y))).size === 1;
@@ -146,13 +146,13 @@ section('Mistakes cost points');
     for (let r = 3; r <= 10 && !found; r++) {
         await page.click('#nextButton');
         s = await state(page);
-        const lop = s.layouts.find(l => l.lopsided);
+        const lop = s.layouts.find(l => l.lopsided && l.penalty <= 30);
         if (!lop) {
             await submit(page); continue;
         }
         await placeAll(page, lop.centers, (a, b) => dragMouse(page, a, b));
         res = await submit(page);
-        check(`round ${r}: lopsided layout passes but not full marks (${res.score}, lopsided=${res.lopsided})`, res.ok && res.lopsided && res.score >= 75 && res.score <= 80);
+        check(`round ${r}: lopsided layout loses its balance points (${res.score}, −${res.penalty}, lopsided=${res.lopsided})`, !res.ok && res.lopsided && res.score <= 92 && res.score >= 100 - 45 - 3);
         await page.screenshot({ path: join(SHOTS, 'bp3-lopsided.png'), fullPage: true });
         found = true;
     }

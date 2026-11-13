@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement III v1.0.1</title>
+    <title>Balanced Placement III v1.1.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
 
@@ -44,7 +44,7 @@
                         <li>• 10 rounds — drag every shape into the rectangle</li>
                         <li>• Measure the space between <b>edges</b>, not centers: every gap should match</li>
                         <li>• You can stack shapes — the gaps above, below and between them should match too</li>
-                        <li>• More than one layout can work. Mirror-matched sizes (small–BIG–small) score full marks; lopsided ones just pass</li>
+                        <li>• More than one layout can work. Balanced, mirror-matched sizes (small–BIG–small) score best</li>
                     </ul>
                 </div>
                 <!-- User status -->
@@ -142,7 +142,7 @@
         import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
         import { saveScore } from "./score-save.js";
-        import { makePuzzle, scorePlacement, measuredGaps, STAGE, LAYOUT_PENALTY, LOPSIDED_PENALTY } from "./bp3-layout.js";
+        import { makePuzzle, scorePlacement, measuredGaps, STAGE } from "./bp3-layout.js";
 
         const GAME_ID = 'balanced-placement-iii';
         const MAX_ROUNDS = 10;
@@ -425,8 +425,8 @@
             if (!puzzle) return;
             drawStage(ctx, unit);
             if (!result) { drawShapes(ctx, pos); return; }
-            const target = result.ok ? result.match : result.nearestGood;
-            if (target) drawTargets(ctx, target.geom.centers, result.ok ? 'rgba(255,255,255,0.75)' : 'rgba(245,158,11,0.9)');
+            const target = result.nearestGood || result.match;
+            if (target) drawTargets(ctx, target.geom.centers, result.nearestGood ? 'rgba(245,158,11,0.9)' : 'rgba(255,255,255,0.75)');
             drawShapes(ctx, pos, true);
             drawBars(ctx, result.bars, result.match.geom.gMain);
         }
@@ -459,7 +459,7 @@
                     c.fillStyle = s.color; pathShape(c, s, p.x, p.y); c.fill();
                 }
                 const label = document.createElement('span');
-                label.textContent = (mine ? 'Yours — ' : '') + (l.lopsided ? `lopsided (−${LOPSIDED_PENALTY})` : 'full marks');
+                label.textContent = (mine ? 'Yours — ' : '') + (l.ok ? 'full marks' : `−${l.penalty}`);
                 wrap.append(cv, label);
                 row.append(wrap);
             }
@@ -486,18 +486,20 @@
             else if (r.score >= 70) { msg = `Great! +${r.score}`; cls += ' correct'; }
             else if (r.score >= 50) { msg = `Good. +${r.score}`; }
             else { msg = `+${r.score}`; }
-            if (!r.ok) { msg += `  (gaps can’t all match −${LAYOUT_PENALTY})`; cls = 'feedback-text incorrect'; }
-            else if (r.lopsided) { msg += `  (lopsided −${LOPSIDED_PENALTY})`; }
+            // layout penalty, named for its bigger part
+            if (r.penalty > 0) msg += r.lopsided ? `  (lopsided −${r.penalty})` : `  (uneven gaps −${r.penalty})`;
+            if (r.penalty > 10) cls = 'feedback-text incorrect';
             feedbackText.textContent = msg;
             feedbackText.className = cls;
 
             const target = Math.round(shown.geom.gMain);
-            gapText.textContent = !r.ok
-                ? 'Your layout can’t have equal gaps in this rectangle. Orange outline = the closest one that can.'
+            const outline = r.nearestGood ? ' Orange outline = the closest layout that gets full marks.' : '';
+            gapText.textContent = r.ok
+                ? `Even gap here ≈ ${target}. Green = matches; grey = just centered.`
                 : r.lopsided
-                    ? 'Works, but lopsided — try mirroring the sizes (small–BIG–small).'
-                    : `Even gap here ≈ ${target}. Green = matches; grey = just centered.`;
-            document.getElementById('canvasContainer').classList.add(r.ok ? 'feedback-correct' : 'feedback-incorrect');
+                    ? 'Lopsided — try mirroring the sizes (small–BIG–small).' + outline
+                    : 'In this layout the gaps can’t all match (or they get cramped).' + outline;
+            document.getElementById('canvasContainer').classList.add(r.penalty <= 10 ? 'feedback-correct' : 'feedback-incorrect');
 
             submitButton.classList.add('hidden');
             nextButton.classList.remove('hidden');
