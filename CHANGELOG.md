@@ -1,5 +1,11 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement IV 1.4.0
+
+- Centre line + "off center" arrows removed after Submit (Jake: too confusing; the spacer
+  lines either side of each piece already show it). The "Give the title its own line"
+  note stays.
+
 ## Nov 2026 — Balanced Placement IV: 20 more movies (40 total)
 
 - bp4-posters.js 1.1.0 — the second 20, Jake-approved: Sentient Stapler, The Gerbil Who
