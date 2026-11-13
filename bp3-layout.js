@@ -1,5 +1,5 @@
 // =============================================
-// bp3-layout.js v2.2.0 — the spacing math for Balanced Placement III.
+// bp3-layout.js v2.3.0 — the spacing math for Balanced Placement III.
 // Pure functions, no page code, so it can be tested on its own and reused by
 // Balanced Placement IV (lines of text are just more boxes).
 //
@@ -26,7 +26,7 @@
 //   "everything stacked down one side" — that is what Jake saw.
 // =============================================
 
-export const VERSION = '2.2.0';
+export const VERSION = '2.3.0';
 export const GAP_FREE = 0.15;       // gaps within 15% of each other cost nothing
 export const GAP_FULL = 0.75;       // …and cost the full GAP_WEIGHT by 75%
 export const GAP_WEIGHT = 30;       // gaps in the SAME direction that should match but don't
@@ -229,8 +229,9 @@ export function scorePlacement(shapes, rect, placed, analysis = analyse(shapes, 
         // two separate checks, the worse one counts: the gaps that should match each other,
         // and whether each lone piece is centred (so neither waters the other down)
         const mean = a => a.length ? a.reduce((t, v) => t + v, 0) / a.length : 0;
-        const spacing = mean(bars.filter(b => !b.single).map(b => Math.abs(b.len - b.target)));
-        const centring = mean(bars.filter(b => b.single).map(b => Math.abs(b.len - bars.find(o => o !== b && o.single && o.group === b.group).len) / 2));
+        const pairOf = b => bars.find(o => o !== b && (b.pairId ? o.pairId === b.pairId : o.single && o.group === b.group));
+        const spacing = mean(bars.filter(b => !b.single && !b.pairId).map(b => Math.abs(b.len - b.target)));
+        const centring = mean(bars.filter(b => b.single || b.pairId).map(b => Math.abs(b.len - pairOf(b).len) / 2));
         gapMiss = Math.max(spacing, centring) / Math.max(mine.geom.gMain, 10);
         precision = Math.max(0, precision - Math.min(40, gw * gapMiss));
     }
@@ -294,6 +295,19 @@ export function measuredGaps(arr, shapes, rect, placed, geom) {
             p = C(placed[id]) + halfC(id);
         }
         bars.push({ ...bar(p, crossEnd, line, false), len: crossEnd - p, target: geom.gIns[gi], axis: 'cross', group: gi, single: g.length === 1 });
+    });
+    // inside a stack: a piece narrower than its stack should be centred in it — the space
+    // either side of it, out to the stack's edges, at the piece's own middle line (v2.3; Jake
+    // asked why a title narrower than the tagline under it had no lines beside it).
+    arr.groups.forEach((g, gi) => {
+        if (g.length < 2) return;
+        for (const id of g) {
+            const lo = M(placed[id]) - halfM(id), hi = M(placed[id]) + halfM(id);
+            if ((lo - ext[gi].lo) + (ext[gi].hi - hi) < 4) continue;      // it IS the stack's width
+            const line = C(placed[id]);
+            bars.push({ ...bar(ext[gi].lo, lo, line, true), len: lo - ext[gi].lo, axis: 'inStack', group: gi, pairId: id });
+            bars.push({ ...bar(hi, ext[gi].hi, line, true), len: ext[gi].hi - hi, axis: 'inStack', group: gi, pairId: id });
+        }
     });
     return bars;
 }

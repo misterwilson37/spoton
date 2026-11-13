@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement IV v1.1.0</title>
+    <title>Balanced Placement IV v1.2.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
 
@@ -459,7 +459,11 @@
             for (const b of bars) {
                 if (b.len < 2) continue;
                 let col;
-                if (b.single) {
+                if (b.pairId) {
+                    // a piece narrower than its stack: centred in it? grey when both sides match
+                    const other = bars.find(o => o !== b && o.pairId === b.pairId);
+                    col = Math.abs(b.len - other.len) <= 4 ? '#9ca3af' : '#ef4444';
+                } else if (b.single) {
                     const pair = bars.filter(o => o.single && o.group === b.group);
                     const centered = Math.abs(pair[0].len - pair[1].len) <= 4;
                     col = !centered ? '#ef4444' : Math.abs(b.len - mainGap) <= 4 ? '#22c55e' : '#9ca3af';

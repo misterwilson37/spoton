@@ -1,5 +1,13 @@
 # Changelog — SpotOn
 
+## Nov 2026 — "Centred in its stack" lines (Balanced III and IV)
+
+- bp3-layout.js 2.3.0 — a piece narrower than the stack it sits in (a title above a wider
+  tagline, a badge under it) now gets a pair of lines showing the space either side of it
+  out to the stack's edges: grey when centred, red when not. It always counted toward the
+  score (an off-centre piece is off its spot); now students can see it. BP4's direct gap
+  check counts it too. balancedplacement3.html 1.2.0, balancedplacement4.html 1.2.0.
+
 ## Nov 2026 — Balanced Placement IV 1.1.0
 
 - Pictures always sit behind text and badges, even right after being dragged (one was

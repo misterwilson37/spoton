@@ -121,7 +121,13 @@ section('Wrong layout costs the layout penalty and points to a working one');
     check('…and the nearest working layout is offered', !!sc.nearestGood && sc.nearestGood.ok);
     const bars = L.measuredGaps(sc.match.arr, s, rect, centres(rowArr), sc.match.geom);
     const expect = sc.match.arr.groups.length + 1 + sc.match.arr.groups.reduce((t, g) => t + g.length + 1, 0);
-    check(`measured gaps: one bar per gap (${expect})`, bars.length === expect, bars.length);
+    const base = bars.filter(b => b.axis !== 'inStack');
+    check(`measured gaps: one bar per gap (${expect})`, base.length === expect, base.length);
+    // a piece narrower than its stack gets a pair of "centred in the stack?" bars
+    const narrow = bars.filter(b => b.axis === 'inStack');
+    const ids = [...new Set(narrow.map(b => b.pairId))];
+    check(`narrower pieces in a stack get a centring pair each (${ids.join(', ') || 'none'})`,
+        ids.every(id => narrow.filter(b => b.pairId === id).length === 2) && sc.match.arr.groups.some(g => g.length > 1) === (ids.length > 0));
     check('measured main gaps equal the planned gap when placed exactly',
         bars.filter(b => b.axis === 'main').every(b => Math.abs(b.len - b.target) < 0.01));
 }
