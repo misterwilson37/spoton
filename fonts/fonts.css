@@ -31,3 +31,7 @@
   src: url('urbanist-latin-800-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Questrial'; font-style: normal; font-weight: 400; font-display: swap;
   src: url('questrial-latin-400-normal.woff2') format('woff2'); }
+/* Bangers (SIL OFL 1.1, @fontsource/bangers 5.3.0) — Balanced Placement IV's B-movie titles
+ * and badges. Added Nov 2026. */
+@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: block;
+  src: url('bangers-latin-400-normal.woff2') format('woff2'); }

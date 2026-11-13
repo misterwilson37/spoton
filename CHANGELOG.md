@@ -1,5 +1,24 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement IV (B-movie posters)
+
+- balancedplacement4.html 1.0.0 (new) — 10 rounds from 20 made-up B-movies, 5 tall theatre
+  posters + 5 wide billboards, shuffled. Rounds 1–3: title, tagline, picture; 4–7: + a
+  tilted badge; 8–10: a row of film stills (+ badge in round 10). Every poster starts as a
+  messy first draft (never already good, no piece buried). Scored with Balanced III's
+  quality rules on rectangles, measured from the visible letters/picture/badge; tilted
+  badges by the box they visibly take up. Poster-only rules: balance is left↔right only
+  (top↔bottom is reading order), the title must come before the tagline (−20), and the
+  gaps themselves are scored too (`GAP_WEIGHT`). gameId `balanced-placement-iv`.
+- bp4-posters.js 1.0.0, bp4-layout.js 1.0.0 (new) — the posters (all pictures drawn as
+  SVG in the file — nothing loads from outside) and the round builder.
+- bp3-layout.js 2.1.0 — pieces may be any rectangle; analyse() options for a game's own
+  rules. Balanced III plays exactly as before (its tests unchanged).
+- fonts: Bangers (SIL OFL, self-hosted) for poster titles and badges.
+- leaderboard.html 1.7.0, admin.html 2.13.0, index.html 2.5.0 — Balanced Placement IV listed.
+- tests/bp4-layout-test.mjs, tests/bp4-browser-test.mjs (new) — including Jake's students'
+  MAGIC! and YOGA flyers: as made they score 73 and 22; evenly spaced, 100.
+
 ## Nov 2026 — Balanced Placement III scoring fix (from classroom playthroughs)
 
 - bp3-layout.js 2.0.0 — two bugs Jake saw in student games:

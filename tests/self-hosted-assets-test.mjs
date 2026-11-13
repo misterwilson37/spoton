@@ -23,9 +23,9 @@ for (const f of [...rootFiles('.html'), ...rootFiles('.js'), ...rootFiles('.css'
 section('Fonts are self-hosted');
 const fontsCss = read('fonts/fonts.css');
 const urls = [...fontsCss.matchAll(/url\('([^']+)'\)/g)].map(m => m[1]);
-check('fonts.css declares 11 faces', urls.length === 11, urls.length);
+check('fonts.css declares 12 faces (Inter ×5, Urbanist ×5, Questrial, Bangers)', urls.length === 12, urls.length);
 for (const u of urls) check(`fonts/${u} exists`, existsSync(join(ROOT, 'fonts', u)));
-for (const fam of ['Inter', 'Urbanist', 'Questrial']) {
+for (const fam of ['Inter', 'Urbanist', 'Questrial', 'Bangers']) {
     check(`${fam} declared`, fontsCss.includes(`font-family: '${fam}'`));
     check(`${fam} licence present`, existsSync(join(ROOT, 'fonts', `LICENSE-${fam}.txt`)));
 }

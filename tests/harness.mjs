@@ -22,7 +22,7 @@ export function stripJsComments(s) {
     return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:"'`\\])\/\/.*$/gm, '$1');
 }
 export const stripAll = s => stripJsComments(stripHtmlComments(s));
-// The ten games — every page that saves a score.
-export const GAMES = ['balancedplacement.html', 'balancedplacement2.html', 'balancedplacement3.html', 'findthecenter.html',
+// The eleven games — every page that saves a score.
+export const GAMES = ['balancedplacement.html', 'balancedplacement2.html', 'balancedplacement3.html', 'balancedplacement4.html', 'findthecenter.html',
     'formatfrenzy.html', 'formattrainer.html', 'perfectalignment.html', 'pictureperfect.html',
     'spottheformat.html', 'sweetspot.html'];

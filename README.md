@@ -21,6 +21,7 @@ A collection of educational games that train visual perception skills: alignment
 | **Balanced Placement** | 2.3.0 | balancedplacement.html | Position two shapes with equal spacing inside containers. Measuring lines after Submit (`gap-bars.js`). |
 | **Balanced Placement II** | 2.3.0 | balancedplacement2.html | Place images and text with equal spacing. Alignment rules determine which side elements belong on. Measuring lines after Submit (`gap-bars.js`). |
 | **Balanced Placement III** | 1.1.0 | balancedplacement3.html | 3–5 shapes of growing size difference. Even edge gaps; stack when a row won't fit; mirror-matched order for full marks. Spacing math in `bp3-layout.js`. |
+| **Balanced Placement IV** | 1.0.0 | balancedplacement4.html | 20 made-up B-movie posters (tall theatre posters + wide billboards): title, tagline, picture or film stills, tilted badge. Start messy; even gaps between what you can see; title before tagline. Builder in `bp4-layout.js`, posters and drawings in `bp4-posters.js`. |
 | **Sweet Spot** | 2.4.1 | sweetspot.html | Find the perfect placement for text on curated images. Polygon scoring zones. |
 
 ### Visual Perception
@@ -92,13 +93,14 @@ Canonical gameId strings, higher-is-better unless noted:
 - `balanced-placement`
 - `balanced-placement-ii`
 - `balanced-placement-iii`
+- `balanced-placement-iv`
 - `picture-perfect`
 - `spot-the-format`
 - `format-frenzy` (score is time in seconds — higher still wins because it represents a faster *per-round* average in the current scoring)
 - `ft-basic`, `ft-mla`, `ft-basic-speed`, `ft-mla-speed`, `ft-random-speed` — Format Trainer time-based modes, **lower is better**
 - `ft-streak` — Format Trainer streak mode, higher is better
 
-The unified leaderboard (`leaderboard.html`) uses a `KNOWN_GAME_IDS` allowlist to exclude the Format Trainer time-based IDs from the "All Games" view, since mixing asc-sorted and desc-sorted scores in one ranked list is incoherent. Per-game filter buttons in the leaderboard only cover the 9 main games; Format Trainer shows its own per-level leaderboard in-game.
+The unified leaderboard (`leaderboard.html`) uses a `KNOWN_GAME_IDS` allowlist to exclude the Format Trainer time-based IDs from the "All Games" view, since mixing asc-sorted and desc-sorted scores in one ranked list is incoherent. Per-game filter buttons in the leaderboard only cover the 10 main games; Format Trainer shows its own per-level leaderboard in-game.
 
 ### Security rules
 

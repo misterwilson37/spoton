@@ -16,6 +16,24 @@ the score records down to what the leaderboards need. Keeps SpotOn's typefounder
 
 ---
 
+## Balanced Placement IV — Nov 13, 2026
+
+**Built:** `balancedplacement4.html`, `bp4-layout.js` (round builder), `bp4-posters.js` (20
+made-up B-movies, every picture drawn as SVG in the file). Not deployed yet. Jake needs to add
+the home-page card in admin → Homepage. No rules change.
+
+**Jake's decisions:** made-up B-movie posters (tall theatre posters + wide billboards); no
+cafeteria jokes ("they don't deserve the hate") — the CS-teacher poster with glasses and a red
+goatee is his idea; tilted badges centred by the box they visibly take up; no overlapping;
+10 rounds shuffled from the 20; presets of what good already is (not free-form — that's BP5).
+
+**Our calls (tell Jake if he asks):** balance is left↔right only on posters; title before
+tagline (−20); every round starts as a messy draft that would score ≤ 50; the gaps
+themselves are scored (`GAP_WEIGHT` = 50), calibrated so his MAGIC! flyer scores 73.
+
+**BP5 ideas parked by Jake:** grouping (related lines closer together — the MAGIC!/CARDS!
+headline, the yoga details), resizable text widths, free-form balancing.
+
 ## Balanced Placement III scoring v2 — Nov 13, 2026
 
 Jake's students found two bugs (screenshots in the conversation): a perfect diamond was
