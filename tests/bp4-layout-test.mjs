@@ -85,6 +85,9 @@ section('Rules');
     check('tagline below the title: fine', B.readingOrder(null, geom({ x: 100, y: 50 }, { x: 100, y: 200 })) === 0);
     check('tagline above the title: penalty', B.readingOrder(null, geom({ x: 100, y: 200 }, { x: 100, y: 50 })) === B.READING_ORDER_PENALTY);
     check('same line, tagline to the left: penalty', B.readingOrder(null, geom({ x: 300, y: 100 }, { x: 100, y: 100 })) === B.READING_ORDER_PENALTY);
+    check('title sharing a line (rows) with the badge: penalty', B.titleAlone({ dir: 'rows', groups: [['title', 'badge'], ['pic'], ['tagline']] }) === B.TITLE_ALONE_PENALTY);
+    check('title on its own line: fine', B.titleAlone({ dir: 'rows', groups: [['title'], ['still1', 'still2'], ['tagline']] }) === 0);
+    check('billboard text column (title stacked with tagline beside the picture): fine', B.titleAlone({ dir: 'columns', groups: [['pic'], ['title', 'tagline']] }) === 0);
     // top↔bottom isn't "lopsided" on a poster; left↔right is
     const dims = { a: { w: 200, h: 100 }, b: { w: 200, h: 20 }, c: { w: 60, h: 20 } };
     const D = id => dims[id];

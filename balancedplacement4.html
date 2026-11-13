@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement IV v1.2.0</title>
+    <title>Balanced Placement IV v1.3.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
 
@@ -144,8 +144,8 @@
         import { firebaseConfig } from "./firebase-config.js";
         import { saveScore } from "./score-save.js";
         import { scorePlacement, measuredGaps } from "./bp3-layout.js";
-        import { makeRound, planGame, layerOrder, STAGE, FONTS } from "./bp4-layout.js";
-        import { artSVG, STILLS } from "./bp4-posters.js";
+        import { makeRound, planGame, layerOrder, titleAlone, readingOrder, STAGE, FONTS } from "./bp4-layout.js";
+        import { artSVG, STILLS, POSTERS } from "./bp4-posters.js";
 
         const GAME_ID = 'balanced-placement-iv';
         const MAX_ROUNDS = 10;
@@ -361,15 +361,23 @@
             setupCanvas();
             await Promise.all([document.fonts.load('30px Bangers'), document.fonts.load('600 14px Inter')]);
             plan = planGame();
-            await Promise.all(plan.map(p => loadArt(p.poster.id)));
+            await Promise.all(POSTERS.map(p => loadArt(p.id)));
             newRound();
         }
 
         function newRound() {
             roundNumber++;
             if (roundNumber > MAX_ROUNDS) { endGame(); return; }
-            const { poster, shape } = plan[roundNumber - 1];
-            round = makeRound(roundNumber - 1, poster, shape, measure);
+            let { poster, shape } = plan[roundNumber - 1];
+            try { round = makeRound(roundNumber - 1, poster, shape, measure); }
+            catch (e) {
+                // very rare: this movie's words won't fit this round — swap in one not in this game
+                const used = new Set(plan.map(p => p.poster.id));
+                const spare = POSTERS.find(p => !used.has(p.id) && art[p.id]);
+                console.warn(e.message, '— using', spare && spare.id);
+                poster = spare || poster;
+                round = makeRound(roundNumber - 1, poster, shape, measure);
+            }
             pos = Object.fromEntries(round.pieces.map(p => [p.id, { ...round.start[p.id] }]));
             drawOrder = layerOrder(round.pieces.map(p => p.id), id => pieceById(id).role);
             result = null; gameActive = true;
@@ -501,6 +509,62 @@
             for (const p of round.pieces) outlinePiece(ctx, p, target.geom.centers[p.id].x, target.geom.centers[p.id].y);
             ctx.restore();
             drawBars(ctx, result.bars, result.match.geom.gMain);
+            drawCenterCheck(ctx);
+        }
+
+        // After Submit: the poster's centre line, and an arrow + label on anything that should
+        // sit on it but doesn't — every line of a stacked poster, and the title.
+        function offCenterItems() {
+            const pg = round.page, mid = pg.x + pg.w / 2, arr = result.match.arr, out = [];
+            // the arrow runs just ABOVE the piece(s), so it never covers the letters
+            const span = ids => {
+                const lo = Math.min(...ids.map(id => pos[id].x - pieceById(id).w / 2));
+                const hi = Math.max(...ids.map(id => pos[id].x + pieceById(id).w / 2));
+                const top = Math.min(...ids.map(id => pos[id].y - pieceById(id).h / 2));
+                return { c: (lo + hi) / 2, y: Math.max(pg.y + 22, top - 6) };
+            };
+            const names = { pic: 'picture', title: 'title', tagline: 'tagline', badge: 'badge' };
+            if (arr.dir === 'rows') {
+                for (const g of arr.groups) {
+                    if (g.includes('title') && g.length > 1) {
+                        // the title shares a line: point at the TITLE (that's the fix), not the line
+                        const sp = span(['title']);
+                        out.push({ x: pos.title.x, y: sp.y, off: pos.title.x - mid, label: 'title', force: true });
+                        continue;
+                    }
+                    const sp = span(g);
+                    out.push({ x: sp.c, y: sp.y, off: sp.c - mid, label: g.length === 1 ? names[pieceById(g[0]).role] : 'that row' });
+                }
+            } else {
+                // billboard columns: the whole layout should sit centred left↔right
+                const sp = span(round.pieces.map(p => p.id));
+                out.push({ x: sp.c, y: round.page.y + round.page.h - 8, off: sp.c - mid, label: 'the layout' });
+            }
+            return out.filter(o => o.force || Math.abs(o.off) > 5);
+        }
+        function drawCenterCheck(c) {
+            const pg = round.page, mid = pg.x + pg.w / 2;
+            const items = offCenterItems();
+            c.save();
+            c.setLineDash([3, 5]); c.strokeStyle = 'rgba(125, 211, 252, 0.7)'; c.lineWidth = 1.5;
+            c.beginPath(); c.moveTo(mid, pg.y); c.lineTo(mid, pg.y + pg.h); c.stroke();
+            c.setLineDash([]);
+            c.font = '700 11px Inter, sans-serif'; c.textBaseline = 'middle';
+            for (const o of items) {
+                if (Math.abs(o.off) <= 5) continue;
+                c.strokeStyle = '#ef4444'; c.fillStyle = '#ef4444'; c.lineWidth = 2.5;
+                c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(mid, o.y); c.stroke();
+                const dir = Math.sign(mid - o.x);
+                c.beginPath(); c.moveTo(mid, o.y); c.lineTo(mid - dir * 7, o.y - 5); c.lineTo(mid - dir * 7, o.y + 5); c.closePath(); c.fill();
+                c.beginPath(); c.arc(o.x, o.y, 4, 0, Math.PI * 2); c.fill();
+                const text = `${o.label} ${Math.round(Math.abs(o.off))} off center`;
+                const w = c.measureText(text).width + 8;
+                const lx = Math.min(pg.x + pg.w - w - 2, Math.max(pg.x + 2, (o.x + mid) / 2 - w / 2));
+                const ly = Math.max(pg.y + 1, o.y - 21);
+                c.fillStyle = 'rgba(20,20,20,0.92)'; c.fillRect(lx, ly, w, 15);
+                c.fillStyle = '#fca5a5'; c.textAlign = 'left'; c.fillText(text, lx + 4, ly + 7.5);
+            }
+            c.restore();
         }
 
         // Small pictures of the best layouts, after each round.
@@ -552,7 +616,10 @@
             else if (r.score >= 70) { msg = `Great! +${r.score}`; cls += ' correct'; }
             else if (r.score >= 50) { msg = `Good. +${r.score}`; }
             else { msg = `+${r.score}`; }
-            const why = r.extraPart >= r.gapPart && r.extraPart >= r.symPart ? 'title first'
+            const sharesLine = titleAlone(r.match.arr) > 0;
+            // the title sharing a line is the cause when it happens — name it first
+            const why = r.penalty > 0 && sharesLine ? 'title needs its own line'
+                      : r.extraPart > 0 && r.extraPart >= r.gapPart && r.extraPart >= r.symPart ? 'title first'
                       : r.lopsided ? 'lopsided' : 'uneven gaps';
             if (r.penalty > 0) msg += `  (${why} −${r.penalty})`;
             if (r.penalty > 10) cls = 'feedback-text incorrect';
@@ -562,6 +629,7 @@
             const outline = r.nearestGood ? ' Orange outline = the closest layout that gets full marks.' : '';
             gapText.textContent = r.ok
                 ? `Even gap here ≈ ${Math.round(r.match.geom.gMain)}. Green = matches; grey = just centered.`
+                : why === 'title needs its own line' ? 'Give the title its own line, centered on the page — the dashed line shows the middle.' + outline
                 : why === 'title first' ? 'The title should come before the tagline (above it, or to its left).' + outline
                 : why === 'lopsided' ? 'Lopsided left to right — balance the two sides.' + outline
                 : 'In this layout the gaps can’t all match (or they get cramped).' + outline;

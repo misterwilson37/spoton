@@ -1,5 +1,16 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Balanced Placement IV 1.3.0: the title gets its own line
+
+- bp4-layout.js 1.2.0 — new poster rule: the title has its own line, centred on the page
+  (−15 if it shares a line; a billboard's text column beside the picture is fine). Jake: a
+  title sharing a line with the badge can't be centred over the pictures below it.
+  makeRound eases off (smaller badge, no tilted title) when a long title + tagline + big
+  badge won't fit; the page swaps in an unused movie if a round still can't be built.
+- balancedplacement4.html 1.3.0 — after Submit, a dashed centre line down the poster and a
+  red arrow + "title 67 off center" (or picture / tagline / row) on anything that should sit
+  on it; the message names "title needs its own line" first when that's the cause.
+
 ## Nov 2026 — "Centred in its stack" lines (Balanced III and IV)
 
 - bp3-layout.js 2.3.0 — a piece narrower than the stack it sits in (a title above a wider

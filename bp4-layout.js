@@ -1,5 +1,5 @@
 // =============================================
-// bp4-layout.js v1.1.0 — builds Balanced Placement IV's rounds: one made-up B-movie
+// bp4-layout.js v1.2.0 — builds Balanced Placement IV's rounds: one made-up B-movie
 // poster per round, as pieces (title, tagline, picture or film stills, tilted badge) on a
 // tall theatre poster (2:3) or a wide billboard (16:9).
 //
@@ -16,7 +16,7 @@
 import { analyse, scorePlacement } from './bp3-layout.js';
 import { POSTERS } from './bp4-posters.js';
 
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 export const STAGE = { w: 600, h: 450 };
 export const PAGES = {
     tall: { x: 160, y: 15, w: 280, h: 420 },    // theatre poster, 2:3
@@ -28,6 +28,10 @@ export const FONTS = {
     badge: { family: 'Bangers', weight: 400 },
 };
 export const READING_ORDER_PENALTY = 20;
+// The title gets its own line, centred on the page (Jake, Nov 13: a title sharing a line
+// with the badge can't be centred over the picture below it). On a billboard with a text
+// column beside the picture, the title sits in that column instead — that's fine.
+export const TITLE_ALONE_PENALTY = 15;
 // Each gap's miss, as a share of the even gap, costs this many points (on top of how far the
 // pieces are from their spots). Calibrated on Jake's MAGIC! flyer: gaps of 2 to 18 where 8
 // would be even should land in the 60s–70s, not "Perfect!".
@@ -78,6 +82,13 @@ export function readingOrder(arr, geom) {
     if (Math.abs(g.y - t.y) <= 4 && g.x < t.x) return READING_ORDER_PENALTY;
     return 0;
 }
+export function titleAlone(arr) {
+    if (arr.dir !== 'rows') return 0;
+    const g = arr.groups.find(grp => grp.includes('title'));
+    return g && g.length > 1 ? TITLE_ALONE_PENALTY : 0;
+}
+// every poster-only rule, for analyse({ extra })
+export const posterRules = (arr, geom) => readingOrder(arr, geom) + titleAlone(arr);
 
 // Text → pieces. measure(text, font, maxWidth) → { lines, w, h } where w/h are the VISIBLE
 // ink box (what the student sees), supplied by the page (canvas) or the tests (estimate).
@@ -242,14 +253,17 @@ export function shufflePosters(rnd = Math.random) {
 
 // One round. shape: 'tall' | 'wide'.
 export function makeRound(roundIndex, poster, shape, measure, rnd = Math.random) {
-    const cfg = ROUNDS[Math.min(roundIndex, ROUNDS.length - 1)], kind = cfg.kind;
+    let cfg = ROUNDS[Math.min(roundIndex, ROUNDS.length - 1)];
+    const kind = cfg.kind;
     const page = PAGES[shape];
     const presets = PRESETS[shape][kind];
-    for (let tries = 0; tries < 60; tries++) {
+    for (let tries = 0; tries < 120; tries++) {
+        // a long title + long tagline + big badge sometimes can't fit: after 60 tries, ease off
+        if (tries === 60) cfg = { ...cfg, badge: cfg.badge ? [13, 17] : undefined, tilt: 0 };
         const preset = presets[Math.floor(rnd() * presets.length)];
         const built = build(preset, page, poster, measure, rnd, cfg);
         if (!built) continue;
-        const analysis = analyse(built.pieces, page, { extra: readingOrder, leftRightOnly: true, gapWeight: GAP_WEIGHT });
+        const analysis = analyse(built.pieces, page, { extra: posterRules, leftRightOnly: true, gapWeight: GAP_WEIGHT });
         // the preset itself must be one of the best layouts for this page
         const presetIds = { dir: preset.dir, groups: preset.groups.map(g => g.map(k => ID[k])) };
         const same = a => a.arr.dir === presetIds.dir && JSON.stringify(a.arr.groups) === JSON.stringify(presetIds.groups);
