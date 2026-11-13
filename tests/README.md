@@ -14,6 +14,7 @@ Not part of the website. Run by a Claude session with a shell (Jake has no CLI).
 | purge-retention-test.mjs | The real privacy-tools.js on seeded data, in the emulator |
 | auth-cleanup-test.py | The real scripts/auth-cleanup.py against the Auth emulator |
 | bp3-layout-test.mjs | Balanced Placement III's spacing math (`bp3-layout.js`): Jake's examples, symmetry, 300 generated puzzles per round. `node bp3-layout-test.mjs` |
+| bp12-gapbars-test.mjs | Measuring lines in Balanced I and II (`gap-bars.js`): a perfect BP1 placement is all green, 25 px off turns bars red, BP2 draws them. `node bp12-gapbars-test.mjs` |
 | bp3-browser-test.mjs | Plays all 10 BP3 rounds in headless Chromium by mouse, touch (iPhone 13) and keyboard; mistakes cost points. Firebase stubbed. Uses the machine's preinstalled Node Playwright. `node bp3-browser-test.mjs` |
 | browser-smoke-test.py | Every real page in headless Chromium: no script errors, no outside requests, admin gate, Leaderboards tab, How-to. `npm run test:browser` (needs `pip install playwright && playwright install chromium`). Screenshots in `.screens/` |
 

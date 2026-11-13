@@ -1,5 +1,15 @@
 # Changelog — SpotOn
 
+## Nov 2026 — Measuring lines in Balanced Placement I and II
+
+- gap-bars.js 1.0.0 (new) — after Submit, draws the gaps the student actually left:
+  edge-to-edge along the long side (should all match) and either side of each piece across
+  the short side (should match = centred). Green within 4 px, yellow close, red off.
+- balancedplacement.html 2.3.0, balancedplacement2.html 2.3.0 — use it.
+- balancedplacement3.html 1.0.1 — "close" bars are yellow (#fbbf24), not the orange shape's
+  colour, so a bar touching the orange shape can't disappear into it.
+- tests/bp12-gapbars-test.mjs (new).
+
 ## Nov 2026 — Balanced Placement III
 
 - balancedplacement3.html 1.0.0 (new) — 3–5 circles and squares, sizes growing more

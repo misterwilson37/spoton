@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement III v1.0.0</title>
+    <title>Balanced Placement III v1.0.1</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
 
@@ -399,7 +399,7 @@
                     col = !centered ? '#ef4444' : Math.abs(b.len - mainGap) <= 4 ? '#22c55e' : '#9ca3af';
                 } else {
                     const miss = Math.abs(b.len - b.target);
-                    col = miss <= 4 ? '#22c55e' : miss <= 10 ? '#f59e0b' : '#ef4444';
+                    col = miss <= 4 ? '#22c55e' : miss <= 10 ? '#fbbf24' : '#ef4444';
                 }
                 c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 2;
                 const horiz = b.y1 === b.y2;

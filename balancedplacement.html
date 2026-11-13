@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanced Placement v2.2.0</title>
+    <title>Balanced Placement v2.3.0</title>
     <link href="fonts/fonts.css" rel="stylesheet">
     <link rel="stylesheet" href="games.css">
     
@@ -153,6 +153,7 @@
         import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { firebaseConfig } from "./firebase-config.js";
         import { saveScore } from "./score-save.js";
+        import { rowGaps, drawGapBars } from "./gap-bars.js";
 
         // ============================================
         // FIREBASE & AUTH
@@ -641,6 +642,10 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
             });
+
+            // measuring lines: the gaps the student actually left (gap-bars.js)
+            const boxes = draggableShapes.map(s => ({ x: s.x, y: s.y, w: s.radius * 2, h: s.radius * 2 }));
+            drawGapBars(ctx, rowGaps(boxes, containerRect, containerRect.w >= containerRect.h));
         }
         
         function getMousePos(event) {
